@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Super Admin Dashboard - JCSGO CMS
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 class="h3 mb-0 text-primary"><i class="bi bi-shield-check"></i> Super Admin Dashboard</h1>
+            <p class="text-muted mb-0">Manage all JCSGO Church branches</p>
+          </div>
+          <div class="text-end">
+            <p class="mb-0">
+              <strong>Welcome, {{ user.full_name }}</strong>
+            </p>
+            <small class="text-muted">Super Administrator</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overall Stats -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="text-white mb-0">{{ churches.count }}</h4>
+                <p class="text-white-50 mb-0">Total Churches</p>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-building text-white fs-1"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="text-white mb-0">
+                  {% for stat in church_stats %}
+                    {% if forloop.first %}{{ stat.total_members }}{% endif %}
+                  {% endfor %}
+                </h4>
+                <p class="text-white-50 mb-0">Total Members</p>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-people text-white fs-1"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="text-white mb-0">
+                  {% for stat in church_stats %}
+                    {% if forloop.first %}{{ stat.new_friends }}{% endif %}
+                  {% endfor %}
+                </h4>
+                <p class="text-white-50 mb-0">New Friends</p>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-person-plus text-white fs-1"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4 class="text-white mb-0">
+                  {% for stat in church_stats %}
+                    {% if forloop.first %}{{ stat.regular_members }}{% endif %}
+                  {% endfor %}
+                </h4>
+                <p class="text-white-50 mb-0">Regular Members</p>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-person-check text-white fs-1"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Church Branches -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-building"></i> Church Branches Overview</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              {% for stat in church_stats %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                  <div class="card church-card h-100" onclick="viewChurchDashboard('{{ stat.church.domain }}')">
+                    <div class="card-body">
+                      <div class="d-flex align-items-center mb-3">
+                        <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                          <i class="bi bi-church text-white fs-4"></i>
+                        </div>
+                        <div>
+                          <h6 class="card-title mb-1">{{ stat.church.name }}</h6>
+                          <small class="text-muted">{{ stat.church.location }}</small>
+                        </div>
+                      </div>
+
+                      <div class="row text-center">
+                        <div class="col-4">
+                          <div class="border-end">
+                            <h6 class="text-primary mb-0">{{ stat.total_members }}</h6>
+                            <small class="text-muted">Total</small>
+                          </div>
+                        </div>
+                        <div class="col-4">
+                          <div class="border-end">
+                            <h6 class="text-success mb-0">{{ stat.new_friends }}</h6>
+                            <small class="text-muted">New</small>
+                          </div>
+                        </div>
+                        <div class="col-4">
+                          <h6 class="text-info mb-0">{{ stat.regular_members }}</h6>
+                          <small class="text-muted">Regular</small>
+                        </div>
+                      </div>
+
+                      <div class="mt-3">
+                        <button class="btn btn-outline-primary btn-sm w-100" onclick="viewChurchDashboard('{{ stat.church.domain }}', '{{ stat.church.name }}')"><i class="bi bi-eye"></i> View Dashboard</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3 mb-3">
+                <a href="/admin/" class="btn btn-outline-primary w-100"><i class="bi bi-gear"></i> Django Admin</a>
+              </div>
+              <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-success w-100"><i class="bi bi-file-earmark-text"></i> Generate Reports</a>
+              </div>
+              <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-info w-100"><i class="bi bi-people"></i> Manage Users</a>
+              </div>
+              <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-warning w-100"><i class="bi bi-building"></i> Church Settings</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Church Dashboard Modal -->
+  <div class="modal fade" id="churchDashboardModal" tabindex="-1" aria-labelledby="churchDashboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="churchDashboardModalLabel"><i class="bi bi-building"></i> <span id="modalChurchName"></span> Dashboard</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modalContent">
+          <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading dashboard...</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function viewChurchDashboard(churchDomain, churchName) {
+      // Set modal title
+      document.getElementById('modalChurchName').textContent = churchName
+    
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('churchDashboardModal'))
+      modal.show()
+    
+      // Load dashboard content via AJAX
+      fetch(`/ajax/church-dashboard/${churchDomain}/`)
+        .then((response) => response.text())
+        .then((html) => {
+          document.getElementById('modalContent').innerHTML = html
+        })
+        .catch((error) => {
+          document.getElementById('modalContent').innerHTML = `
+                <div class="alert alert-danger">
+                  <i class="bi bi-exclamation-triangle"></i> Error loading dashboard: ${error.message}
+                </div>
+              `
+        })
+    }
+  </script>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+  {{ church.name }} - Leader Dashboard
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 class="h3 mb-0"><i class="bi bi-speedometer2"></i> {{ church.name }} Dashboard</h1>
+            <p class="text-muted">Welcome back, {{ user.full_name }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h5 class="card-title text-white">Total Members</h5>
+                <h2 class="text-white mb-0">{{ total_members }}</h2>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-people display-4 text-white-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h5 class="card-title text-white">New Friends</h5>
+                <h2 class="text-white mb-0">{{ new_friends_count }}</h2>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-person-plus display-4 text-white-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h5 class="card-title text-white">Regular Members</h5>
+                <h2 class="text-white mb-0">{{ regulars_count }}</h2>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-person-check display-4 text-white-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h5 class="card-title text-white">Active Groups</h5>
+                <h2 class="text-white mb-0">{{ active_groups_count }}</h2>
+              </div>
+              <div class="align-self-center">
+                <i class="bi bi-collection display-4 text-white-50"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-primary w-100">
+                  <i class="bi bi-person-plus"></i><br />
+                  Add New Member
+                </a>
+              </div>
+              <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-success w-100">
+                  <i class="bi bi-collection"></i><br />
+                  Manage Groups
+                </a>
+              </div>
+              <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-info w-100">
+                  <i class="bi bi-graph-up"></i><br />
+                  View Reports
+                </a>
+              </div>
+              <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-warning w-100">
+                  <i class="bi bi-bell"></i><br />
+                  Send Announcements
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-activity"></i> Recent Activity</h5>
+          </div>
+          <div class="card-body">
+            {% if recent_activity %}
+              <div class="list-group list-group-flush">
+                {% for activity in recent_activity %}
+                  <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>{{ activity.user.full_name }}</strong>
+                      <span class="text-muted">{{ activity.get_action_display }}</span>
+                      <small class="text-muted d-block">{{ activity.description }}</small>
+                    </div>
+                    <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-muted text-center">No recent activity</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

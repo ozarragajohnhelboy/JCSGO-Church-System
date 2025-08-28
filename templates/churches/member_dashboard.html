@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+  {{ church.name }} - Member Dashboard
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 class="h3 mb-0"><i class="bi bi-speedometer2"></i> Welcome to {{ church.name }}</h1>
+            <p class="text-muted">Hello, {{ user.full_name }} ({{ user.role.get_name_display }})</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Member Status -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-md-8">
+                <h5 class="card-title">Your Member Status</h5>
+                {% if user.is_new_friend %}
+                  <p class="text-muted mb-2">
+                    You are a <strong>New Friend</strong> ({{ user.timer_status }}{% if user.timer_status == 1 %}
+                      st
+                    {% elif user.timer_status == 2 %}
+                      nd
+                    {% elif user.timer_status == 3 %}
+                      rd
+                    {% else %}
+                      th
+                    {% endif %}timer)
+                  </p>
+                  <div class="progress mb-2" style="height: 10px;">
+                    <div class="progress-bar" role="progressbar" style="width: {{ user.timer_status|floatformat:0 }}0%"></div>
+                  </div>
+                  <small class="text-muted">{{ user.timer_status }} of 5 visits completed</small>
+                {% else %}
+                  <p class="text-success mb-0">
+                    <i class="bi bi-check-circle"></i> You are a <strong>Regular Member</strong>
+                  </p>
+                {% endif %}
+              </div>
+              <div class="col-md-4 text-md-end">
+                {% if user.profile_picture %}
+                  <img src="{{ user.profile_picture.url }}" alt="Profile" class="rounded-circle" width="80" height="80" />
+                {% else %}
+                  <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                    <i class="bi bi-person display-6 text-muted"></i>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-primary w-100">
+                  <i class="bi bi-person"></i><br />
+                  Update Profile
+                </a>
+              </div>
+              <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-info w-100">
+                  <i class="bi bi-calendar"></i><br />
+                  View Events
+                </a>
+              </div>
+              <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-success w-100">
+                  <i class="bi bi-collection"></i><br />
+                  My Groups
+                </a>
+              </div>
+              <div class="col-md-3 mb-3">
+                <a href="#" class="btn btn-outline-warning w-100">
+                  <i class="bi bi-bell"></i><br />
+                  Notifications
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Church Information -->
+    <div class="row">
+      <div class="col-md-6 mb-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-building"></i> Church Information</h5>
+          </div>
+          <div class="card-body">
+            <h6>{{ church.name }}</h6>
+            <p class="text-muted">{{ church.location }}</p>
+            <hr />
+            <div class="row text-center">
+              <div class="col-6">
+                <h5 class="text-primary">{{ new_friends_count }}</h5>
+                <small class="text-muted">New Friends</small>
+              </div>
+              <div class="col-6">
+                <h5 class="text-success">{{ regulars_count }}</h5>
+                <small class="text-muted">Regular Members</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 mb-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="bi bi-activity"></i> Recent Activity</h5>
+          </div>
+          <div class="card-body">
+            {% if recent_activity %}
+              <div class="list-group list-group-flush">
+                {% for activity in recent_activity|slice:':3' %}
+                  <div class="list-group-item px-0">
+                    <small class="text-muted">{{ activity.get_action_display }}</small>
+                    <div class="text-muted">{{ activity.timestamp|timesince }} ago</div>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-muted text-center">No recent activity</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,267 @@
+<!-- Church Dashboard Modal Content -->
+<div class="container-fluid">
+  <!-- Statistics Cards -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card stats-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title text-white">Total Members</h5>
+              <h2 class="text-white mb-0">{{ total_members }}</h2>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-people display-4 text-white-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card stats-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title text-white">New Friends</h5>
+              <h2 class="text-white mb-0">{{ new_friends_count }}</h2>
+              <small class="text-white-50">1st-5th Timer</small>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-person-plus display-4 text-white-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card stats-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title text-white">Regular Members</h5>
+              <h2 class="text-white mb-0">{{ regulars_count }}</h2>
+              <small class="text-white-50">VSL, CSL, CL, CM</small>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-person-check display-4 text-white-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card stats-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title text-white">Active Groups</h5>
+              <h2 class="text-white mb-0">0</h2>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-collection display-4 text-white-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row mb-4">
+    <!-- New Friends Registration per Month -->
+    <div class="col-lg-6 mb-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bi bi-graph-up"></i> New Friends Registration (Monthly)</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="modalNewFriendsChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- New Friends to Regular Conversion -->
+    <div class="col-lg-6 mb-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bi bi-arrow-up-circle"></i> New Friends to Regular Conversion</h5>
+        </div>
+        <div class="card-body">
+          <canvas id="modalConversionChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Regular Members Breakdown -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bi bi-pie-chart"></i> Regular Members by Role</h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <canvas id="modalRegularRolesChart" width="400" height="300"></canvas>
+            </div>
+            <div class="col-md-6">
+              <div class="table-responsive">
+                <table class="table table-sm">
+                  <thead>
+                    <tr>
+                      <th>Role</th>
+                      <th>Count</th>
+                      <th>Percentage</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <strong>VSL</strong> (Vine Servant Leader)
+                      </td>
+                      <td>{{ vsl_count }}</td>
+                      <td>{{ vsl_percentage }}%</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>CSL</strong> (Cluster Servant Leader)
+                      </td>
+                      <td>{{ csl_count }}</td>
+                      <td>{{ csl_percentage }}%</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>CL</strong> (Care Leader)
+                      </td>
+                      <td>{{ cl_count }}</td>
+                      <td>{{ cl_percentage }}%</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>CM</strong> (Care Member)
+                      </td>
+                      <td>{{ cm_count }}</td>
+                      <td>{{ cm_percentage }}%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="card-title mb-0"><i class="bi bi-activity"></i> Recent Activity</h5>
+        </div>
+        <div class="card-body">
+          {% if recent_activity %}
+            <div class="list-group list-group-flush">
+              {% for activity in recent_activity %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>{{ activity.user.full_name }}</strong>
+                    <span class="text-muted">{{ activity.get_action_display }}</span>
+                    <small class="text-muted d-block">{{ activity.description }}</small>
+                  </div>
+                  <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-muted text-center">No recent activity</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Modal Charts
+document.addEventListener('DOMContentLoaded', function() {
+    // New Friends Registration Chart
+    const modalNewFriendsCtx = document.getElementById('modalNewFriendsChart').getContext('2d');
+    new Chart(modalNewFriendsCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+            datasets: [{
+                label: 'New Friends',
+                data: [12, 19, 15, 25, 22, 30],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            }
+        }
+    });
+
+    // Conversion Chart
+    const modalConversionCtx = document.getElementById('modalConversionChart').getContext('2d');
+    new Chart(modalConversionCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['New Friends (1st-5th)', 'Regular Members'],
+            datasets: [{
+                data: [{{ new_friends_count }}, {{ regulars_count }}],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+
+    // Regular Members by Role Chart
+    const modalRegularRolesCtx = document.getElementById('modalRegularRolesChart').getContext('2d');
+    new Chart(modalRegularRolesCtx, {
+        type: 'pie',
+        data: {
+            labels: ['VSL', 'CSL', 'CL', 'CM'],
+            datasets: [{
+                data: [{{ vsl_count }}, {{ csl_count }}, {{ cl_count }}, {{ cm_count }}],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 205, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                }
+            }
+        }
+    });
+});
+</script>
