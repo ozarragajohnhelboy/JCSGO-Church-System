@@ -16,7 +16,33 @@
               <p class="text-muted">Please select your church branch to continue</p>
             </div>
 
-            <!-- Region 4A Churches -->
+            <!-- All Churches -->
+            <div class="mb-4">
+              <h4 class="text-primary mb-3"><i class="bi bi-church"></i> Select Your Church</h4>
+              <div class="row g-3">
+                {% for church in all_churches %}
+                  <div class="col-md-6 col-lg-4">
+                    <div class="card church-card h-100" onclick="selectChurch('{{ church.domain }}')">
+                      <div class="card-body text-center p-4">
+                        <i class="bi bi-building display-4 text-primary mb-3"></i>
+                        <h5 class="card-title">{{ church.name }}</h5>
+                        <p class="card-text text-muted small">{{ church.location }}</p>
+                        <button class="btn btn-outline-primary btn-sm"><i class="bi bi-arrow-right"></i> Select</button>
+                      </div>
+                    </div>
+                  </div>
+                {% empty %}
+                  <div class="col-12">
+                    <div class="alert alert-info text-center">
+                      <i class="bi bi-info-circle"></i> No churches available at the moment.
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Region 4A Churches (if you want to keep the regional grouping) -->
+            {% if region_4a_churches %}
             <div class="mb-4">
               <h4 class="text-primary mb-3"><i class="bi bi-geo-alt"></i> Region 4A</h4>
               <div class="row g-3">
@@ -34,8 +60,10 @@
                 {% endfor %}
               </div>
             </div>
+            {% endif %}
 
-            <!-- Central Region Churches -->
+            <!-- Central Region Churches (if you want to keep the regional grouping) -->
+            {% if central_region_churches %}
             <div class="mb-4">
               <h4 class="text-primary mb-3"><i class="bi bi-geo-alt"></i> Central Region</h4>
               <div class="row g-3">
@@ -53,6 +81,7 @@
                 {% endfor %}
               </div>
             </div>
+            {% endif %}
 
             <!-- Alternative Form Selection -->
             <div class="mt-4 pt-3 border-top">

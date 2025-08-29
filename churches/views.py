@@ -29,17 +29,21 @@ def church_selection(request):
     else:
         form = ChurchSelectionForm()
     
-    # Group churches by region
-    region_4a_churches = Church.objects.filter(
+    # Get all active churches
+    all_churches = Church.objects.filter(is_active=True).order_by('name')
+    
+    # Group churches by region (optional - can be removed if not needed)
+    region_4a_churches = all_churches.filter(
         domain__in=['kasiglahan', 'sanjose', 'christinville', 'tabak']
     ).order_by('name')
     
-    central_region_churches = Church.objects.filter(
+    central_region_churches = all_churches.filter(
         domain__in=['10amfamily', '3pmfamily']
     ).order_by('name')
     
     context = {
         'form': form,
+        'all_churches': all_churches,
         'region_4a_churches': region_4a_churches,
         'central_region_churches': central_region_churches,
     }
