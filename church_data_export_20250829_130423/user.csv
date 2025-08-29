@@ -1,0 +1,3 @@
+id,email,first_name,last_name,church,role,phone_number,address,birth_date,is_new_friend,timer_status,date_joined,last_attendance,transition_date,email_verified,is_active,is_staff,is_superuser
+2,admin@jcsgo.com,Super,Admin,kasiglahan,ADMIN,,,,1,1,2025-08-29 12:17:44,,,0,1,1,1
+1,AnonymousUser,,,,,,,,1,1,2025-08-29 12:15:04,,,0,1,0,0

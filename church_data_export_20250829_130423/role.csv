@@ -1,0 +1,8 @@
+id,name,description,permissions,is_active,created_at
+1,ADMIN,Super Admin with full access,,1,2025-08-29 12:17:44
+2,CHURCH_LEADER,Church Leader with local admin access,,1,2025-08-29 12:17:44
+5,CL,Cell Leader,,1,2025-08-29 12:17:44
+6,CM,Cell Member,,1,2025-08-29 12:17:44
+4,CSL,Cell Servant Leader,,1,2025-08-29 12:17:44
+7,NEW_FRIEND,New Friend (1st-5th timer),,1,2025-08-29 12:17:44
+3,VSL,Vision Servant Leader,,1,2025-08-29 12:17:44

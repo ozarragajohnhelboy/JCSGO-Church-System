@@ -238,16 +238,16 @@ def dashboard(request):
         })
         return render(request, 'churches/admin_dashboard.html', context)
     
-    # Church leader dashboard
-    elif user.role.name == 'CHURCH_LEADER':
-        # Get groups count for church leader
-        from members.models import Group
-        active_groups_count = Group.objects.filter(
-            church=user.church, is_active=True
-        ).count()
-        
-        context['active_groups_count'] = active_groups_count
-        return render(request, 'churches/leader_dashboard.html', context)
+    # Church leader dashboard (removed - using admin role instead)
+    # elif user.role.name == 'CHURCH_LEADER':
+    #     # Get groups count for church leader
+    #     from members.models import Group
+    #     active_groups_count = Group.objects.filter(
+    #         church=user.church, is_active=True
+    #     ).count()
+    #     
+    #     context['active_groups_count'] = active_groups_count
+    #     return render(request, 'churches/leader_dashboard.html', context)
     
     # Regular member dashboard
     else:

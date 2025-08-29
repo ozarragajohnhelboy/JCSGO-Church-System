@@ -14,12 +14,11 @@ class Command(BaseCommand):
         
         # Create roles
         roles_data = [
-            {'name': 'ADMIN', 'description': 'Super Admin with full access'},
-            {'name': 'CHURCH_LEADER', 'description': 'Church Leader with local admin access'},
-            {'name': 'VSL', 'description': 'Vision Servant Leader'},
-            {'name': 'CSL', 'description': 'Cell Servant Leader'},
-            {'name': 'CL', 'description': 'Cell Leader'},
-            {'name': 'CM', 'description': 'Cell Member'},
+            {'name': 'ADMIN', 'description': 'Church Admin with full access to their church'},
+            {'name': 'VSL', 'description': 'Vine Servant Leader'},
+            {'name': 'CSL', 'description': 'Cluster Servant Leader'},
+            {'name': 'CL', 'description': 'Care Leader'},
+            {'name': 'CM', 'description': 'Care Member'},
             {'name': 'NEW_FRIEND', 'description': 'New Friend (1st-5th timer)'},
         ]
         
