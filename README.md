@@ -30,6 +30,15 @@ This system manages church members, groups, and activities across multiple churc
 - Activity logging and analytics
 - Follow-up tracking for new friends
 
+### Phase 3: Dashboards & Views (Completed ✅)
+- **Admin Dashboard**: Church selector dropdown, overview statistics, activity monitoring
+- **Church Dashboard**: Member statistics, charts and graphs, role-based views
+- **Super Admin Dashboard**: System-wide overview with church management
+- **Leader Dashboard**: Group management for VSL, CSL, CL roles
+- **Member Dashboard**: Personal information and group membership
+- **Interactive Charts**: Chart.js integration with real-time data
+- **Responsive Design**: Modern UI with Bootstrap 5 and custom styling
+
 ## 📊 Database Models
 
 ### Core Models
@@ -312,14 +321,14 @@ For support and questions:
 
 ## 🔮 Future Enhancements
 
-### Phase 3: Advanced Features (Planned)
+### Phase 4: Advanced Features (Planned)
 - Event management system
 - Attendance tracking with QR codes
 - Financial management
 - Communication tools
 - Mobile app integration
 
-### Phase 4: Analytics & Reporting (Planned)
+### Phase 5: Analytics & Reporting (Planned)
 - Advanced analytics dashboard
 - Custom report generation
 - Data visualization

@@ -110,6 +110,7 @@ class Church(models.Model):
 class Role(models.Model):
     """User roles and permissions"""
     ROLE_CHOICES = [
+        ('SUPER_ADMIN', 'Super Admin'),
         ('ADMIN', 'Admin'),
         ('VSL', 'Vine Servant Leader'),
         ('CSL', 'Cluster Servant Leader'),
@@ -138,7 +139,8 @@ class Role(models.Model):
     def get_permission_level(self):
         """Get permission level for this role"""
         permission_levels = {
-            'ADMIN': 100,
+            'SUPER_ADMIN': 100,
+            'ADMIN': 90,
             'VSL': 80,
             'CSL': 70,
             'CL': 60,
@@ -345,7 +347,7 @@ class NewFriend(models.Model):
 class RegularMember(models.Model):
     """Extended model for Regular Members"""
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='regular_member_profile')
-    role_type = models.CharField(max_length=10, choices=Role.ROLE_CHOICES[1:-1])  # Exclude ADMIN, NEW_FRIEND
+    role_type = models.CharField(max_length=10, choices=Role.ROLE_CHOICES[2:-1])  # Exclude SUPER_ADMIN, ADMIN, NEW_FRIEND
     group = models.ForeignKey('Group', on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
     ministry_involvement = models.TextField(blank=True)
     skills = models.TextField(blank=True)

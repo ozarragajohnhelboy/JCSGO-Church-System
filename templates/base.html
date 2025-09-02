@@ -139,6 +139,9 @@
       </div>
     {% endif %}
 
+    <!-- CSRF Token -->
+    {% csrf_token %}
+    
     <!-- Main Content -->
     <main class="{% if not user.is_authenticated %}login-container{% endif %}">
       {% block content %}

@@ -563,7 +563,7 @@ def export_members(request):
     church = user.church
     
     # Check permissions
-    if not user.is_staff and not user.role.name in ['ADMIN']:
+    if not user.is_staff and not user.role.name in ['SUPER_ADMIN', 'ADMIN']:
         messages.error(request, 'You do not have permission to export data.')
         return redirect('members:member_list')
     

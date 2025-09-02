@@ -14,7 +14,8 @@ class Command(BaseCommand):
         
         # Create roles
         roles_data = [
-            {'name': 'ADMIN', 'description': 'Church Admin with full access to their church'},
+            {'name': 'SUPER_ADMIN', 'description': 'Super Admin with full access to all churches'},
+            {'name': 'ADMIN', 'description': 'Church Admin with full access to their specific church'},
             {'name': 'VSL', 'description': 'Vine Servant Leader'},
             {'name': 'CSL', 'description': 'Cluster Servant Leader'},
             {'name': 'CL', 'description': 'Care Leader'},
@@ -105,7 +106,7 @@ class Command(BaseCommand):
                 last_name='Admin',
                 password='admin123456',
                 church=churches['kasiglahan'],
-                role=roles['ADMIN'],
+                role=roles['SUPER_ADMIN'],
             )
             self.stdout.write(
                 self.style.SUCCESS(f'Created superuser: {admin_user.email}')
