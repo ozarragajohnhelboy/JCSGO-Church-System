@@ -109,42 +109,6 @@
       border-bottom: none;
     }
     
-    .member-list {
-      background: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .member-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.75rem;
-      margin-bottom: 0.5rem;
-      background: #f8f9fa;
-      border-radius: 8px;
-      border: 1px solid #e9ecef;
-    }
-    
-    .member-info {
-      display: flex;
-      align-items: center;
-    }
-    
-    .member-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: #007bff;
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-right: 1rem;
-      font-weight: bold;
-    }
-    
     .quick-actions {
       background: white;
       border-radius: 15px;
@@ -166,331 +130,267 @@
     
     .action-button:hover {
       color: white;
-      transform: translateY(-2px);
       text-decoration: none;
+      transform: translateY(-2px);
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 3rem;
+      color: #6c757d;
+    }
+    
+    .empty-state i {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
     }
   </style>
 {% endblock %}
 
-{% block content %}
-  <div class="container-fluid">
-    <!-- Header -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <h1 class="h3 mb-0">
-              <i class="bi bi-people-fill"></i> 
-              {% if user.role.name == 'VSL' %}
-                Vine Servant Leader Dashboard
-              {% elif user.role.name == 'CSL' %}
-                Cluster Servant Leader Dashboard
-              {% else %}
-                Care Leader Dashboard
-              {% endif %}
-            </h1>
-            <p class="text-muted mb-0">Welcome back, {{ user.full_name }} - {{ user.church.name }}</p>
-          </div>
-          <div class="text-end">
-            <span class="badge bg-primary fs-6">{{ user.get_role_display }}</span>
-          </div>
+<!-- This template extends base.html but doesn't override the content block -->
+<!-- The base template will handle the sidebar logic based on user role -->
+<!-- For non-admin users (VSL, CSL, CL, CM, NEW_FRIEND), no sidebar will be shown -->
+
+<!-- Dashboard content will be displayed in the main content area -->
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h1 class="h3 mb-0">
+            <i class="bi bi-people-fill"></i> 
+            {% if user.role.name == 'VSL' %}
+              Vine Servant Leader Dashboard
+            {% elif user.role.name == 'CSL' %}
+              Cluster Servant Leader Dashboard
+            {% else %}
+              Care Leader Dashboard
+            {% endif %}
+          </h1>
+          <p class="text-muted mb-0">Welcome back, {{ user.full_name }} - {{ user.church.name }}</p>
+        </div>
+        <div class="text-end">
+          <span class="badge bg-primary fs-6">{{ user.role.get_name_display }}</span>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h5 class="card-title text-white">Groups Led</h5>
-                <h2 class="text-white mb-0">{{ led_groups.count }}</h2>
-                <small class="text-white-50">Active groups</small>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-collection display-4 text-white-50"></i>
-              </div>
+  <!-- Statistics Cards -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card stats-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title text-white">Groups Led</h5>
+              <h2 class="text-white mb-0">{{ led_groups.count }}</h2>
+              <small class="text-white-50">Active groups</small>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h5 class="card-title text-white">Total Members</h5>
-                <h2 class="text-white mb-0">{{ total_group_members }}</h2>
-                <small class="text-white-50">In your groups</small>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-people display-4 text-white-50"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h5 class="card-title text-white">Avg Capacity</h5>
-                <h2 class="text-white mb-0">
-                  {% if led_groups.count > 0 %}
-                    {{ total_group_members|floatformat:0 }}
-                  {% else %}
-                    0
-                  {% endif %}
-                </h2>
-                <small class="text-white-50">Members per group</small>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-bar-chart display-4 text-white-50"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h5 class="card-title text-white">Full Groups</h5>
-                <h2 class="text-white mb-0">
-                  {% for group in group_stats %}
-                    {% if group.is_full %}{{ forloop.counter }}{% endif %}
-                  {% endfor %}
-                </h2>
-                <small class="text-white-50">At capacity</small>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-exclamation-triangle display-4 text-white-50"></i>
-              </div>
+            <div class="align-self-center">
+              <i class="bi bi-collection display-4 text-white-50"></i>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="quick-actions">
-          <h5 class="card-title mb-3"><i class="bi bi-lightning"></i> Quick Actions</h5>
-          <a href="{% url 'members:group_list' %}" class="action-button">
-            <i class="bi bi-collection"></i> Manage Groups
-          </a>
-          <a href="{% url 'members:member_list' %}" class="action-button">
-            <i class="bi bi-people"></i> View Members
-          </a>
-          <a href="#" class="action-button" onclick="createNewGroup()">
-            <i class="bi bi-plus-circle"></i> Create Group
-          </a>
-          <a href="#" class="action-button">
-            <i class="bi bi-calendar-event"></i> Schedule Meeting
-          </a>
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card stats-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title text-white">Total Members</h5>
+              <h2 class="text-white mb-0">{{ total_group_members }}</h2>
+              <small class="text-white-50">In your groups</small>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-people display-4 text-white-50"></i>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Groups Overview -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <h4 class="mb-3"><i class="bi bi-collection"></i> Your Groups</h4>
-        {% if led_groups %}
-          <div class="row">
-            {% for group in led_groups %}
-              <div class="col-lg-6 mb-4">
-                <div class="group-card">
-                  <div class="group-header">
-                    <div>
-                      <div class="group-name">{{ group.name }}</div>
-                      <small class="text-muted">{{ group.get_group_type_display }}</small>
-                    </div>
-                    <span class="group-type-badge type-{{ group.group_type|lower }}">
-                      {{ group.get_group_type_display }}
-                    </span>
-                  </div>
-                  
-                  <div class="mb-3">
-                    <div class="d-flex justify-content-between mb-2">
-                      <span>Capacity</span>
-                      <span class="fw-bold">{{ group.member_count }}/{{ group.max_members }}</span>
-                    </div>
-                    <div class="capacity-bar">
-                      <div class="capacity-fill 
-                        {% if group.capacity_percentage >= 80 %}capacity-high
-                        {% elif group.capacity_percentage >= 60 %}capacity-medium
-                        {% else %}capacity-low{% endif %}"
-                        style="width: {{ group.capacity_percentage }}%">
-                      </div>
-                    </div>
-                    <small class="text-muted">{{ group.capacity_percentage }}% capacity</small>
-                  </div>
-                  
-                  {% if group.meeting_schedule or group.meeting_location %}
-                    <div class="mb-3">
-                      <strong>Meeting Info:</strong><br>
-                      {% if group.meeting_schedule %}{{ group.meeting_schedule }}{% endif %}
-                      {% if group.meeting_location %} at {{ group.meeting_location }}{% endif %}
-                    </div>
-                  {% endif %}
-                  
-                  <div class="d-flex justify-content-between">
-                    <a href="{% url 'members:group_detail' group.pk %}" class="btn btn-outline-primary btn-sm">
-                      <i class="bi bi-eye"></i> View Details
-                    </a>
-                    <button class="btn btn-outline-success btn-sm" onclick="manageGroupMembers('{{ group.pk }}')">
-                      <i class="bi bi-people"></i> Manage Members
-                    </button>
-                  </div>
-                </div>
-              </div>
-            {% endfor %}
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card stats-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title text-white">Avg Capacity</h5>
+              <h2 class="text-white mb-0">
+                {% if led_groups.count > 0 %}
+                  {{ total_group_members|floatformat:0 }}
+                {% else %}
+                  0
+                {% endif %}
+              </h2>
+              <small class="text-white-50">Members per group</small>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-bar-chart display-4 text-white-50"></i>
+            </div>
           </div>
-        {% else %}
-          <div class="text-center py-5">
-            <i class="bi bi-collection display-1 text-muted"></i>
-            <h4 class="text-muted mt-3">No Groups Yet</h4>
-            <p class="text-muted">You haven't been assigned to lead any groups yet.</p>
-            <button class="btn btn-primary" onclick="createNewGroup()">
-              <i class="bi bi-plus-circle"></i> Create Your First Group
-            </button>
-          </div>
-        {% endif %}
-      </div>
-    </div>
-
-    <!-- Recent Activity and Member Management -->
-    <div class="row mb-4">
-      <!-- Recent Group Activities -->
-      <div class="col-lg-6 mb-4">
-        <div class="activity-feed">
-          <h5 class="card-title mb-3"><i class="bi bi-activity"></i> Recent Group Activities</h5>
-          {% if recent_group_activities %}
-            {% for activity in recent_group_activities %}
-              <div class="activity-item">
-                <div class="d-flex justify-content-between">
-                  <div>
-                    <strong>{{ activity.user.full_name }}</strong>
-                    <span class="text-muted">{{ activity.get_action_display }}</span>
-                  </div>
-                  <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
-                </div>
-                <small class="text-muted">{{ activity.description }}</small>
-              </div>
-            {% endfor %}
-          {% else %}
-            <p class="text-muted">No recent group activities</p>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Group Members Summary -->
-      <div class="col-lg-6 mb-4">
-        <div class="member-list">
-          <h5 class="card-title mb-3"><i class="bi bi-people"></i> Group Members Summary</h5>
-          {% if group_stats %}
-            {% for group_stat in group_stats %}
-              <div class="member-item">
-                <div class="member-info">
-                  <div class="member-avatar">{{ group_stat.group.name|first|upper }}</div>
-                  <div>
-                    <div class="fw-bold">{{ group_stat.group.name }}</div>
-                    <small class="text-muted">{{ group_stat.member_count }} members</small>
-                  </div>
-                </div>
-                <div class="text-end">
-                  <span class="badge {% if group_stat.capacity_percentage >= 80 %}bg-danger{% elif group_stat.capacity_percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}">
-                    {{ group_stat.capacity_percentage }}%
-                  </span>
-                </div>
-              </div>
-            {% endfor %}
-          {% else %}
-            <p class="text-muted">No group data available</p>
-          {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- Group Performance Chart -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title mb-0"><i class="bi bi-bar-chart"></i> Group Performance Overview</h5>
-          </div>
-          <div class="card-body">
-            <canvas id="groupPerformanceChart" width="400" height="200"></canvas>
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card stats-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title text-white">Full Groups</h5>
+              <h2 class="text-white mb-0">
+                {% for group in group_stats %}
+                  {% if group.is_full %}{{ forloop.counter }}{% endif %}
+                {% endfor %}
+              </h2>
+              <small class="text-white-50">At capacity</small>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-exclamation-triangle display-4 text-white-50"></i>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-{% endblock %}
 
-{% block extra_js %}
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    // Group Performance Chart
-    const groupPerformanceCtx = document.getElementById('groupPerformanceChart').getContext('2d');
-    new Chart(groupPerformanceCtx, {
-      type: 'bar',
-      data: {
-        labels: [{% for group_stat in group_stats %}'{{ group_stat.group.name }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
-        datasets: [{
-          label: 'Current Members',
-          data: [{% for group_stat in group_stats %}{{ group_stat.member_count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-          backgroundColor: 'rgba(79, 172, 254, 0.8)',
-          borderColor: '#4facfe',
-          borderWidth: 1
-        }, {
-          label: 'Max Capacity',
-          data: [{% for group_stat in group_stats %}{{ group_stat.group.max_members }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-          backgroundColor: 'rgba(240, 147, 251, 0.6)',
-          borderColor: '#f093fb',
-          borderWidth: 1,
-          type: 'line'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'top',
-          },
-          title: {
-            display: true,
-            text: 'Group Performance Overview'
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              stepSize: 1
-            }
-          }
-        }
-      }
-    });
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <h5 class="mb-3">
+      <i class="bi bi-lightning me-2"></i>
+      Quick Actions
+    </h5>
+    <div class="d-flex flex-wrap">
+      <a href="{% url 'members:group_list' %}" class="action-button">
+        <i class="bi bi-collection me-2"></i>
+        Manage Groups
+      </a>
+      <a href="{% url 'members:member_list' %}" class="action-button">
+        <i class="bi bi-people me-2"></i>
+        View Members
+      </a>
+      <a href="#" class="action-button" onclick="alert('Create Group functionality coming soon!')">
+        <i class="bi bi-plus-circle me-2"></i>
+        Create Group
+      </a>
+      <a href="#" class="action-button" onclick="alert('Schedule Meeting functionality coming soon!')">
+        <i class="bi bi-calendar-event me-2"></i>
+        Schedule Meeting
+      </a>
+    </div>
+  </div>
 
-    // Group management functions
-    function createNewGroup() {
-      window.location.href = "{% url 'members:group_list' %}";
-    }
+  <!-- Your Groups -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-collection me-2"></i>
+            Your Groups
+          </h5>
+        </div>
+        <div class="card-body">
+          {% if led_groups %}
+            {% for group in group_stats %}
+              <div class="group-card">
+                <div class="group-header">
+                  <div>
+                    <div class="group-name">{{ group.group.name }}</div>
+                    <span class="badge group-type-badge type-{{ group.group.group_type|lower }}">
+                      {{ group.group.get_group_type_display }}
+                    </span>
+                  </div>
+                  <div class="text-end">
+                    <small class="text-muted">{{ group.member_count }}/{{ group.group.max_members }} members</small>
+                  </div>
+                </div>
+                
+                <div class="capacity-bar">
+                  <div class="capacity-fill {% if group.capacity_percentage < 50 %}capacity-low{% elif group.capacity_percentage < 80 %}capacity-medium{% else %}capacity-high{% endif %}" 
+                       style="width: {{ group.capacity_percentage }}%"></div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                  <small class="text-muted">Capacity: {{ group.capacity_percentage }}%</small>
+                  {% if group.is_full %}
+                    <span class="badge bg-danger">Full</span>
+                  {% else %}
+                    <span class="badge bg-success">Available</span>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="empty-state">
+              <i class="bi bi-collection"></i>
+              <h5>No Groups Yet</h5>
+              <p class="mb-3">You haven't been assigned to lead any groups yet.</p>
+              <button class="btn btn-primary" onclick="alert('Create Group functionality coming soon!')">
+                Create Your First Group
+              </button>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 
-    function manageGroupMembers(groupId) {
-      window.location.href = `/members/groups/${groupId}/`;
-    }
-  </script>
-{% endblock %}
+  <!-- Recent Activities and Summary -->
+  <div class="row mt-4">
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-activity me-2"></i>
+            Recent Group Activities
+          </h5>
+        </div>
+        <div class="card-body">
+          {% if recent_group_activities %}
+            <div class="activity-feed">
+              {% for activity in recent_group_activities %}
+                <div class="activity-item">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <strong>{{ activity.user.full_name }}</strong>
+                      <span class="text-muted">{{ activity.get_action_display }}</span>
+                    </div>
+                    <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center text-muted py-3">
+              <i class="bi bi-activity fs-1"></i>
+              <p>No recent activities</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-md-6">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-pie-chart me-2"></i>
+            Group Members Summary
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="text-center py-3">
+            <h3 class="text-primary">{{ total_group_members }}</h3>
+            <p class="text-muted mb-0">Total members across all groups</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

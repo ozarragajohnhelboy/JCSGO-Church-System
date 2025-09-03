@@ -10,14 +10,23 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.urls import reverse_lazy
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.messages.views import SuccessMessageMixin
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.core.exceptions import PermissionDenied
+import json
+import csv
+import io
+from datetime import datetime, timedelta
 
 from .models import (
-    Church, Role, CustomUser, NewFriend, RegularMember, 
-    Group, ActivityLog
+    CustomUser, NewFriend, RegularMember, Group, Role, 
+    ActivityLog
 )
 from .forms import (
     CustomUserForm, NewFriendForm, RegularMemberForm, 
-    GroupForm, ProfileUpdateForm
+    GroupForm, ProfileUpdateForm, NewFriendImportForm, RegularMemberImportForm
 )
 
 
@@ -123,30 +132,49 @@ def new_friends_list(request):
     follow_up_status = request.GET.get('follow_up_status', '')
     timer_status = request.GET.get('timer_status', '')
     
-    # Base queryset
-    new_friends = NewFriend.objects.filter(
-        user__church=church,
-        user__is_active=True,
-        is_active=True
-    ).select_related('user', 'invited_by')
+    # Base queryset - Get all new friends from CustomUser model
+    new_friends_users = CustomUser.objects.filter(
+        church=church,
+        is_active=True,
+        is_new_friend=True  # This is the key filter
+    )
     
-    # Apply filters
+    # Apply search filters
     if search:
-        new_friends = new_friends.filter(
-            Q(user__first_name__icontains=search) |
-            Q(user__last_name__icontains=search) |
-            Q(user__email__icontains=search) |
-            Q(source__icontains=search)
+        new_friends_users = new_friends_users.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search)
         )
     
-    if follow_up_status:
-        new_friends = new_friends.filter(follow_up_status=follow_up_status)
-    
     if timer_status:
-        new_friends = new_friends.filter(user__timer_status=timer_status)
+        new_friends_users = new_friends_users.filter(timer_status=timer_status)
+    
+    # Get NewFriend profiles for these users (if they exist)
+    new_friends = []
+    for user_obj in new_friends_users:
+        try:
+            new_friend_profile = NewFriend.objects.get(user=user_obj)
+            # Add follow-up status filter if specified
+            if follow_up_status and new_friend_profile.follow_up_status != follow_up_status:
+                continue
+            new_friends.append(new_friend_profile)
+        except NewFriend.DoesNotExist:
+            # Create a default NewFriend profile if it doesn't exist
+            new_friend_profile = NewFriend.objects.create(
+                user=user_obj,
+                source='',
+                notes='',
+                is_active=True
+            )
+            new_friends.append(new_friend_profile)
+    
+    # Apply follow-up status filter to the list
+    if follow_up_status:
+        new_friends = [nf for nf in new_friends if nf.follow_up_status == follow_up_status]
     
     # Order by registration date (newest first)
-    new_friends = new_friends.order_by('-registration_date')
+    new_friends.sort(key=lambda x: x.registration_date, reverse=True)
     
     # Pagination
     paginator = Paginator(new_friends, 15)
@@ -158,9 +186,9 @@ def new_friends_list(request):
         'search': search,
         'follow_up_status': follow_up_status,
         'timer_status': timer_status,
-        'total_new_friends': new_friends.count(),
-        'pending_follow_up': new_friends.filter(follow_up_status='PENDING').count(),
-        'engaged_count': new_friends.filter(follow_up_status='ENGAGED').count(),
+        'total_new_friends': len(new_friends),
+        'pending_follow_up': len([nf for nf in new_friends if nf.follow_up_status == 'PENDING']),
+        'engaged_count': len([nf for nf in new_friends if nf.follow_up_status == 'ENGAGED']),
     }
     
     return render(request, 'members/new_friends_list.html', context)
@@ -178,34 +206,47 @@ def regular_members_list(request):
     group_filter = request.GET.get('group', '')
     availability = request.GET.get('availability', '')
     
-    # Base queryset
-    regular_members = RegularMember.objects.filter(
-        user__church=church,
-        user__is_active=True,
-        is_active=True
-    ).select_related('user', 'group')
+    # Base queryset - Get all regular members from CustomUser model
+    regular_members_users = CustomUser.objects.filter(
+        church=church,
+        is_active=True,
+        is_new_friend=False  # This is the key filter
+    )
     
-    # Apply filters
+    # Apply search filters
     if search:
-        regular_members = regular_members.filter(
-            Q(user__first_name__icontains=search) |
-            Q(user__last_name__icontains=search) |
-            Q(user__email__icontains=search) |
-            Q(ministry_involvement__icontains=search) |
-            Q(skills__icontains=search)
+        regular_members_users = regular_members_users.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search)
         )
     
     if role_type:
-        regular_members = regular_members.filter(role_type=role_type)
+        regular_members_users = regular_members_users.filter(role__name=role_type)
     
-    if group_filter:
-        regular_members = regular_members.filter(group__id=group_filter)
-    
-    if availability:
-        regular_members = regular_members.filter(availability=availability)
+    # Get RegularMember profiles for these users (if they exist)
+    regular_members = []
+    for user_obj in regular_members_users:
+        try:
+            regular_member_profile = RegularMember.objects.get(user=user_obj)
+            # Add group filter if specified
+            if group_filter and str(regular_member_profile.group.id) != group_filter:
+                continue
+            # Add availability filter if specified
+            if availability and regular_member_profile.availability != availability:
+                continue
+            regular_members.append(regular_member_profile)
+        except RegularMember.DoesNotExist:
+            # Create a default RegularMember profile if it doesn't exist
+            regular_member_profile = RegularMember.objects.create(
+                user=user_obj,
+                role_type=user_obj.role.name if user_obj.role else 'CM',
+                is_active=True
+            )
+            regular_members.append(regular_member_profile)
     
     # Order by name
-    regular_members = regular_members.order_by('user__first_name', 'user__last_name')
+    regular_members.sort(key=lambda x: (x.user.first_name, x.user.last_name))
     
     # Pagination
     paginator = Paginator(regular_members, 20)
@@ -222,9 +263,16 @@ def regular_members_list(request):
         'group_filter': group_filter,
         'availability': availability,
         'groups': groups,
-        'total_regular_members': regular_members.count(),
-        'by_role_type': regular_members.values('role_type').annotate(count=Count('id')),
+        'total_regular_members': len(regular_members),
+        'by_role_type': {},
     }
+    
+    # Calculate role type counts
+    for rm in regular_members:
+        role = rm.role_type
+        if role not in context['by_role_type']:
+            context['by_role_type'][role] = {'count': 0, 'name': role}
+        context['by_role_type'][role]['count'] += 1
     
     return render(request, 'members/regular_members_list.html', context)
 
@@ -385,7 +433,6 @@ def church_statistics(request):
     }
     
     # Get growth trends (last 6 months)
-    from datetime import datetime, timedelta
     growth_data = []
     for i in range(6):
         date = datetime.now() - timedelta(days=30*i)
@@ -592,3 +639,725 @@ def export_members(request):
         response['Content-Disposition'] = f'attachment; filename="members_{church.domain}_{timezone.now().strftime("%Y%m%d")}.json"'
     
     return response
+
+
+@login_required
+def role_management(request):
+    """Role management view for admins only"""
+    user = request.user
+    
+    # Check if user has permission to access role management
+    if not (user.is_superuser or user.role.name == 'ADMIN'):
+        messages.error(request, 'You do not have permission to access role management.')
+        return redirect('churches:dashboard')
+    
+    church = user.church
+    
+    # Get search parameters
+    search = request.GET.get('search', '')
+    role_filter = request.GET.get('role', '')
+    
+    # Base queryset - get all users in the church
+    users = CustomUser.objects.filter(church=church, is_active=True)
+    
+    # Apply filters
+    if search:
+        users = users.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search)
+        )
+    
+    if role_filter:
+        users = users.filter(role__name=role_filter)
+    
+    # Order by role priority, then by name
+    users = users.order_by('role__name', 'first_name', 'last_name')
+    
+    # Pagination
+    paginator = Paginator(users, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get available roles for filter
+    roles = Role.objects.filter(
+        name__in=['VSL', 'CSL', 'CL', 'CM', 'NEW_FRIEND']
+    ).order_by('name')
+    
+    # Get role statistics
+    role_stats = {}
+    for role in roles:
+        count = users.filter(role=role).count()
+        if count > 0:
+            role_stats[role.name] = {
+                'name': role.get_name_display(),
+                'count': count,
+                'percentage': round((count / users.count() * 100) if users.count() > 0 else 0, 1)
+            }
+    
+    context = {
+        'page_obj': page_obj,
+        'search': search,
+        'role_filter': role_filter,
+        'roles': roles,
+        'role_stats': role_stats,
+        'total_users': users.count(),
+    }
+    
+    return render(request, 'members/role_management.html', context)
+
+
+@login_required
+def ajax_update_user_role(request, user_id):
+    """AJAX endpoint to update user role"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+    user = request.user
+    
+    # Check if user has permission
+    if not (user.is_superuser or user.role.name == 'ADMIN'):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        target_user = get_object_or_404(CustomUser, pk=user_id, church=user.church)
+        new_role_name = request.POST.get('role')
+        
+        if not new_role_name:
+            return JsonResponse({'error': 'Role is required'}, status=400)
+        
+        # Get the new role
+        new_role = get_object_or_404(Role, name=new_role_name)
+        
+        # Update user role
+        old_role = target_user.role
+        target_user.role = new_role
+        target_user.save()
+        
+        # Log the role change
+        ActivityLog.objects.create(
+            user=user,
+            action='ROLE_CHANGE',
+            description=f'Changed role from {old_role.get_name_display() if old_role else "None"} to {new_role.get_name_display()} for {target_user.full_name}',
+            related_user=target_user,
+            ip_address=request.META.get('REMOTE_ADDR'),
+            user_agent=request.META.get('HTTP_USER_AGENT', '')
+        )
+        
+        # If transitioning from new friend to regular member
+        if target_user.is_new_friend and new_role_name not in ['NEW_FRIEND']:
+            target_user.is_new_friend = False
+            target_user.transition_date = timezone.now()
+            target_user.save()
+            
+            # Create RegularMember profile
+            RegularMember.objects.get_or_create(
+                user=target_user,
+                defaults={'role_type': new_role_name}
+            )
+            
+            # Log the transition
+            ActivityLog.objects.create(
+                user=user,
+                action='STATUS_CHANGE',
+                description=f'Transitioned {target_user.full_name} from New Friend to Regular Member',
+                related_user=target_user,
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Role updated successfully to {new_role.get_name_display()}',
+            'new_role': new_role.get_name_display(),
+            'is_new_friend': target_user.is_new_friend
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def ajax_get_user_details(request, user_id):
+    """AJAX endpoint to get user details for role management"""
+    user = request.user
+    
+    # Check if user has permission
+    if not (user.is_superuser or user.role.name == 'ADMIN'):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        target_user = get_object_or_404(CustomUser, pk=user_id, church=user.church)
+        
+        # Get user's current group if any
+        group_info = None
+        if not target_user.is_new_friend:
+            try:
+                regular_profile = RegularMember.objects.get(user=target_user)
+                if regular_profile.group:
+                    group_info = {
+                        'id': regular_profile.group.id,
+                        'name': regular_profile.group.name,
+                        'type': regular_profile.group.get_group_type_display()
+                    }
+            except RegularMember.DoesNotExist:
+                pass
+        
+        # Get recent activity
+        recent_activity = target_user.activity_logs.order_by('-timestamp')[:5]
+        activity_list = []
+        for activity in recent_activity:
+            activity_list.append({
+                'action': activity.get_action_display(),
+                'description': activity.description,
+                'timestamp': activity.timestamp.strftime('%Y-%m-%d %H:%M')
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'user': {
+                'id': target_user.id,
+                'full_name': target_user.full_name,
+                'email': target_user.email,
+                'phone_number': target_user.phone_number or 'Not provided',
+                'current_role': target_user.role.get_name_display() if target_user.role else 'No role assigned',
+                'is_new_friend': target_user.is_new_friend,
+                'timer_status': target_user.timer_status if target_user.is_new_friend else None,
+                'date_joined': target_user.date_joined.strftime('%Y-%m-%d'),
+                'last_attendance': target_user.last_attendance.strftime('%Y-%m-%d %H:%M') if target_user.last_attendance else 'Never',
+                'group': group_info,
+                'recent_activity': activity_list
+            }
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def ajax_bulk_role_update(request):
+    """AJAX endpoint for bulk role updates"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+    user = request.user
+    
+    # Check if user has permission
+    if not (user.is_superuser or user.role.name == 'ADMIN'):
+        return JsonResponse({'error': 'Permission denied'}, status=403)
+    
+    try:
+        user_ids = request.POST.getlist('user_ids[]')
+        new_role_name = request.POST.get('role')
+        
+        if not user_ids or not new_role_name:
+            return JsonResponse({'error': 'User IDs and role are required'}, status=400)
+        
+        # Get the new role
+        new_role = get_object_or_404(Role, name=new_role_name)
+        
+        # Update users
+        updated_count = 0
+        for user_id in user_ids:
+            try:
+                target_user = CustomUser.objects.get(pk=user_id, church=user.church)
+                old_role = target_user.role
+                target_user.role = new_role
+                target_user.save()
+                
+                # Log the role change
+                ActivityLog.objects.create(
+                    user=user,
+                    action='ROLE_CHANGE',
+                    description=f'Bulk update: Changed role from {old_role.get_name_display() if old_role else "None"} to {new_role.get_name_display()} for {target_user.full_name}',
+                    related_user=target_user,
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                    user_agent=request.META.get('HTTP_USER_AGENT', '')
+                )
+                
+                updated_count += 1
+                
+            except CustomUser.DoesNotExist:
+                continue
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Successfully updated {updated_count} users to {new_role.get_name_display()}',
+            'updated_count': updated_count
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def new_friend_add(request):
+    """Add a new New Friend"""
+    # Check if user has permission (admin only)
+    if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
+        messages.error(request, 'You do not have permission to add new friends.')
+        return redirect('members:new_friends_list')
+    
+    if request.method == 'POST':
+        form = NewFriendForm(request.POST, church=request.user.church)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Create the user first
+                    user = CustomUser.objects.create_user(
+                        email=form.cleaned_data['email'],
+                        first_name=form.cleaned_data['first_name'],
+                        last_name=form.cleaned_data['last_name'],
+                        phone=form.cleaned_data['phone'],
+                        church=request.user.church,
+                        is_new_friend=True,
+                        is_active=True
+                    )
+                    
+                    # Create the NewFriend profile
+                    new_friend = NewFriend.objects.create(
+                        user=user,
+                        source=form.cleaned_data['source'],
+                        notes=form.cleaned_data['notes'],
+                        timer_status=form.cleaned_data['timer_status']
+                    )
+                    
+                    # Log the activity
+                    ActivityLog.objects.create(
+                        user=request.user,
+                        action='NEW_FRIEND_ADDED',
+                        description=f'Added new friend: {user.full_name}',
+                        ip_address=request.META.get('REMOTE_ADDR'),
+                        user_agent=request.META.get('HTTP_USER_AGENT', '')
+                    )
+                    
+                    messages.success(request, f'New friend "{user.full_name}" has been added successfully!')
+                    return redirect('members:new_friends_list')
+                    
+            except Exception as e:
+                messages.error(request, f'Error adding new friend: {str(e)}')
+    else:
+        form = NewFriendForm(church=request.user.church)
+    
+    context = {
+        'form': form,
+        'title': 'Add New Friend',
+        'church': request.user.church
+    }
+    return render(request, 'members/new_friend_form.html', context)
+
+@login_required
+def new_friend_edit(request, new_friend_id):
+    """Edit a New Friend"""
+    # Check if user has permission (admin only)
+    if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
+        messages.error(request, 'You do not have permission to edit new friends.')
+        return redirect('members:new_friends_list')
+    
+    new_friend = get_object_or_404(NewFriend, id=new_friend_id, user__church=request.user.church)
+    
+    if request.method == 'POST':
+        form = NewFriendForm(request.POST, instance=new_friend, church=request.user.church)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Update user details
+                    user = new_friend.user
+                    user.first_name = form.cleaned_data['first_name']
+                    user.last_name = form.cleaned_data['last_name']
+                    user.phone = form.cleaned_data['phone']
+                    user.save()
+                    
+                    # Update NewFriend profile
+                    new_friend.source = form.cleaned_data['source']
+                    new_friend.notes = form.cleaned_data['notes']
+                    new_friend.timer_status = form.cleaned_data['timer_status']
+                    new_friend.save()
+                    
+                    # Log the activity
+                    ActivityLog.objects.create(
+                        user=request.user,
+                        action='NEW_FRIEND_UPDATED',
+                        description=f'Updated new friend: {user.full_name}',
+                        ip_address=request.META.get('REMOTE_ADDR'),
+                        user_agent=request.META.get('HTTP_USER_AGENT', '')
+                    )
+                    
+                    messages.success(request, f'New friend "{user.full_name}" has been updated successfully!')
+                    return redirect('members:new_friends_list')
+                    
+            except Exception as e:
+                messages.error(request, f'Error updating new friend: {str(e)}')
+    else:
+        # Pre-populate form with current data
+        form = NewFriendForm(instance=new_friend, church=request.user.church)
+        form.fields['email'].initial = new_friend.user.email
+        form.fields['first_name'].initial = new_friend.user.first_name
+        form.fields['last_name'].initial = new_friend.user.last_name
+        form.fields['phone'].initial = new_friend.user.phone
+    
+    context = {
+        'form': form,
+        'new_friend': new_friend,
+        'title': 'Edit New Friend',
+        'church': request.user.church
+    }
+    return render(request, 'members/new_friend_form.html', context)
+
+@login_required
+@require_POST
+def new_friend_delete(request, new_friend_id):
+    """Delete a New Friend"""
+    # Check if user has permission (admin only)
+    if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
+        messages.error(request, 'You do not have permission to delete new friends.')
+        return redirect('members:new_friends_list')
+    
+    new_friend = get_object_or_404(NewFriend, id=new_friend_id, user__church=request.user.church)
+    user_name = new_friend.user.full_name
+    
+    try:
+        with transaction.atomic():
+            # Log the activity before deletion
+            ActivityLog.objects.create(
+                user=request.user,
+                action='NEW_FRIEND_DELETED',
+                description=f'Deleted new friend: {user_name}',
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+            
+            # Delete the user (this will cascade to NewFriend)
+            new_friend.user.delete()
+            
+            messages.success(request, f'New friend "{user_name}" has been deleted successfully!')
+            
+    except Exception as e:
+        messages.error(request, f'Error deleting new friend: {str(e)}')
+    
+    return redirect('members:new_friends_list')
+
+@login_required
+def new_friend_import(request):
+    """Import New Friends from CSV/Excel"""
+    # Check if user has permission (admin only)
+    if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
+        messages.error(request, 'You do not have permission to import new friends.')
+        return redirect('members:new_friends_list')
+    
+    if request.method == 'POST':
+        form = NewFriendImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                file = request.FILES['file']
+                imported_count = 0
+                errors = []
+                
+                if file.name.endswith('.csv'):
+                    # Handle CSV import
+                    decoded_file = file.read().decode('utf-8')
+                    csv_data = csv.DictReader(io.StringIO(decoded_file))
+                    
+                    for row_num, row in enumerate(csv_data, start=2):  # Start from 2 to account for header
+                        try:
+                            with transaction.atomic():
+                                # Create user
+                                user = CustomUser.objects.create_user(
+                                    email=row.get('email', '').strip(),
+                                    first_name=row.get('first_name', '').strip(),
+                                    last_name=row.get('last_name', '').strip(),
+                                    phone=row.get('phone', '').strip() or None,
+                                    church=request.user.church,
+                                    is_new_friend=True,
+                                    is_active=True
+                                )
+                                
+                                # Create NewFriend profile
+                                NewFriend.objects.create(
+                                    user=user,
+                                    source=row.get('source', '').strip() or '',
+                                    notes=row.get('notes', '').strip() or '',
+                                    timer_status=int(row.get('timer_status', 1))
+                                )
+                                
+                                imported_count += 1
+                                
+                        except Exception as e:
+                            errors.append(f"Row {row_num}: {str(e)}")
+                
+                if imported_count > 0:
+                    messages.success(request, f'Successfully imported {imported_count} new friends!')
+                    
+                    # Log the activity
+                    ActivityLog.objects.create(
+                        user=request.user,
+                        action='NEW_FRIENDS_IMPORTED',
+                        description=f'Imported {imported_count} new friends from {file.name}',
+                        ip_address=request.META.get('REMOTE_ADDR'),
+                        user_agent=request.META.get('HTTP_USER_AGENT', '')
+                    )
+                
+                if errors:
+                    for error in errors[:5]:  # Show first 5 errors
+                        messages.warning(request, error)
+                    if len(errors) > 5:
+                        messages.warning(request, f'... and {len(errors) - 5} more errors.')
+                
+                return redirect('members:new_friends_list')
+                
+            except Exception as e:
+                messages.error(request, f'Error importing file: {str(e)}')
+    else:
+        form = NewFriendImportForm()
+    
+    context = {
+        'form': form,
+        'title': 'Import New Friends',
+        'church': request.user.church
+    }
+    return render(request, 'members/new_friend_import.html', context)
+
+@login_required
+def regular_member_add(request):
+    """Add a new Regular Member"""
+    # Check if user has permission (admin only)
+    if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
+        messages.error(request, 'You do not have permission to add regular members.')
+        return redirect('members:regular_members_list')
+    
+    if request.method == 'POST':
+        form = RegularMemberForm(request.POST, church=request.user.church)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Create the user first
+                    user = CustomUser.objects.create_user(
+                        email=form.cleaned_data['email'],
+                        first_name=form.cleaned_data['first_name'],
+                        last_name=form.cleaned_data['last_name'],
+                        phone=form.cleaned_data['phone'],
+                        church=request.user.church,
+                        is_new_friend=False,
+                        is_active=True
+                    )
+                    
+                    # Assign role
+                    user.role = form.cleaned_data['role']
+                    user.save()
+                    
+                    # Create the RegularMember profile
+                    regular_member = RegularMember.objects.create(
+                        user=user,
+                        role_type=form.cleaned_data['role'],
+                        group=form.cleaned_data['group']
+                    )
+                    
+                    # Log the activity
+                    ActivityLog.objects.create(
+                        user=request.user,
+                        action='REGULAR_MEMBER_ADDED',
+                        description=f'Added regular member: {user.full_name}',
+                        ip_address=request.META.get('REMOTE_ADDR'),
+                        user_agent=request.META.get('HTTP_USER_AGENT', '')
+                    )
+                    
+                    messages.success(request, f'Regular member "{user.full_name}" has been added successfully!')
+                    return redirect('members:regular_members_list')
+                    
+            except Exception as e:
+                messages.error(request, f'Error adding regular member: {str(e)}')
+    else:
+        form = RegularMemberForm(church=request.user.church)
+    
+    context = {
+        'form': form,
+        'title': 'Add Regular Member',
+        'church': request.user.church
+    }
+    return render(request, 'members/regular_member_form.html', context)
+
+@login_required
+def regular_member_edit(request, regular_member_id):
+    """Edit a Regular Member"""
+    # Check if user has permission (admin only)
+    if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
+        messages.error(request, 'You do not have permission to edit regular members.')
+        return redirect('members:regular_members_list')
+    
+    regular_member = get_object_or_404(RegularMember, id=regular_member_id, user__church=request.user.church)
+    
+    if request.method == 'POST':
+        form = RegularMemberForm(request.POST, instance=regular_member, church=request.user.church)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # Update user details
+                    user = regular_member.user
+                    user.first_name = form.cleaned_data['first_name']
+                    user.last_name = form.cleaned_data['last_name']
+                    user.phone = form.cleaned_data['phone']
+                    user.role = form.cleaned_data['role']
+                    user.save()
+                    
+                    # Update RegularMember profile
+                    regular_member.role_type = form.cleaned_data['role']
+                    regular_member.group = form.cleaned_data['group']
+                    regular_member.save()
+                    
+                    # Log the activity
+                    ActivityLog.objects.create(
+                        user=request.user,
+                        action='REGULAR_MEMBER_UPDATED',
+                        description=f'Updated regular member: {user.full_name}',
+                        ip_address=request.META.get('REMOTE_ADDR'),
+                        user_agent=request.META.get('HTTP_USER_AGENT', '')
+                    )
+                    
+                    messages.success(request, f'Regular member "{user.full_name}" has been updated successfully!')
+                    return redirect('members:regular_members_list')
+                    
+            except Exception as e:
+                messages.error(request, f'Error updating regular member: {str(e)}')
+    else:
+        # Pre-populate form with current data
+        form = RegularMemberForm(instance=regular_member, church=request.user.church)
+        form.fields['email'].initial = regular_member.user.email
+        form.fields['first_name'].initial = regular_member.user.first_name
+        form.fields['last_name'].initial = regular_member.user.last_name
+        form.fields['phone'].initial = regular_member.user.phone
+        form.fields['role'].initial = regular_member.user.role
+    
+    context = {
+        'form': form,
+        'regular_member': regular_member,
+        'title': 'Edit Regular Member',
+        'church': request.user.church
+    }
+    return render(request, 'members/regular_member_form.html', context)
+
+@login_required
+@require_POST
+def regular_member_delete(request, regular_member_id):
+    """Delete a Regular Member"""
+    # Check if user has permission (admin only)
+    if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
+        messages.error(request, 'You do not have permission to delete regular members.')
+        return redirect('members:regular_members_list')
+    
+    regular_member = get_object_or_404(RegularMember, id=regular_member_id, user__church=request.user.church)
+    user_name = regular_member.user.full_name
+    
+    try:
+        with transaction.atomic():
+            # Log the activity before deletion
+            ActivityLog.objects.create(
+                user=request.user,
+                action='REGULAR_MEMBER_DELETED',
+                description=f'Deleted regular member: {user_name}',
+                ip_address=request.META.get('REMOTE_ADDR'),
+                user_agent=request.META.get('HTTP_USER_AGENT', '')
+            )
+            
+            # Delete the user (this will cascade to RegularMember)
+            regular_member.user.delete()
+            
+            messages.success(request, f'Regular member "{user_name}" has been deleted successfully!')
+            
+    except Exception as e:
+        messages.error(request, f'Error deleting regular member: {str(e)}')
+    
+    return redirect('members:regular_members_list')
+
+@login_required
+def regular_member_import(request):
+    """Import Regular Members from CSV/Excel"""
+    # Check if user has permission (admin only)
+    if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
+        messages.error(request, 'You do not have permission to import regular members.')
+        return redirect('members:regular_members_list')
+    
+    if request.method == 'POST':
+        form = RegularMemberImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                file = request.FILES['file']
+                imported_count = 0
+                errors = []
+                
+                if file.name.endswith('.csv'):
+                    # Handle CSV import
+                    decoded_file = file.read().decode('utf-8')
+                    csv_data = csv.DictReader(io.StringIO(decoded_file))
+                    
+                    for row_num, row in enumerate(csv_data, start=2):  # Start from 2 to account for header
+                        try:
+                            with transaction.atomic():
+                                # Get or create role
+                                role_name = row.get('role', 'CM').strip().upper()
+                                role, created = Role.objects.get_or_create(name=role_name)
+                                
+                                # Get group if specified
+                                group = None
+                                if row.get('group'):
+                                    group_name = row.get('group', '').strip()
+                                    group, created = Group.objects.get_or_create(
+                                        name=group_name,
+                                        church=request.user.church,
+                                        defaults={'is_active': True}
+                                    )
+                                
+                                # Create user
+                                user = CustomUser.objects.create_user(
+                                    email=row.get('email', '').strip(),
+                                    first_name=row.get('first_name', '').strip(),
+                                    last_name=row.get('last_name', '').strip(),
+                                    phone=row.get('phone', '').strip() or None,
+                                    church=request.user.church,
+                                    role=role,
+                                    is_new_friend=False,
+                                    is_active=True
+                                )
+                                
+                                # Create RegularMember profile
+                                RegularMember.objects.create(
+                                    user=user,
+                                    role_type=role,
+                                    group=group
+                                )
+                                
+                                imported_count += 1
+                                
+                        except Exception as e:
+                            errors.append(f"Row {row_num}: {str(e)}")
+                
+                if imported_count > 0:
+                    messages.success(request, f'Successfully imported {imported_count} regular members!')
+                    
+                    # Log the activity
+                    ActivityLog.objects.create(
+                        user=request.user,
+                        action='REGULAR_MEMBERS_IMPORTED',
+                        description=f'Imported {imported_count} regular members from {file.name}',
+                        ip_address=request.META.get('REMOTE_ADDR'),
+                        user_agent=request.META.get('HTTP_USER_AGENT', '')
+                    )
+                
+                if errors:
+                    for error in errors[:5]:  # Show first 5 errors
+                        messages.warning(request, error)
+                    if len(errors) > 5:
+                        messages.warning(request, f'... and {len(errors) - 5} more errors.')
+                
+                return redirect('members:regular_members_list')
+                
+            except Exception as e:
+                messages.error(request, f'Error importing file: {str(e)}')
+    else:
+        form = RegularMemberImportForm()
+    
+    context = {
+        'form': form,
+        'title': 'Import Regular Members',
+        'church': request.user.church
+    }
+    return render(request, 'members/regular_member_import.html', context)

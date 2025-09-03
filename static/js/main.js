@@ -16,6 +16,36 @@ $.ajaxSetup({
     }
 });
 
+// Sidebar functionality
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    if (sidebar) {
+        sidebar.classList.toggle('show');
+
+        // Update toggle button icon
+        if (sidebar.classList.contains('show')) {
+            sidebarToggle.innerHTML = '<i class="bi bi-x"></i>';
+        } else {
+            sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+        }
+    }
+}
+
+// Close sidebar when clicking outside on mobile
+document.addEventListener('click', function (event) {
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    if (sidebar && sidebar.classList.contains('show') &&
+        !sidebar.contains(event.target) &&
+        !sidebarToggle.contains(event.target)) {
+        sidebar.classList.remove('show');
+        sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+    }
+});
+
 // Global functions
 function showLoading(element) {
     if (element) {
@@ -99,6 +129,25 @@ document.addEventListener('DOMContentLoaded', function () {
     var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
         return new bootstrap.Popover(popoverTriggerEl);
     });
+
+    // Initialize sidebar on mobile
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    if (sidebar && sidebarToggle) {
+        // Hide sidebar by default on mobile
+        if (window.innerWidth < 768) {
+            sidebar.classList.remove('show');
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', function () {
+            if (window.innerWidth >= 768) {
+                sidebar.classList.remove('show');
+                sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+            }
+        });
+    }
 });
 
 // Export functions
@@ -109,7 +158,8 @@ window.JCSGOCMS = {
     showLoading: showLoading,
     showError: showError,
     showSuccess: showSuccess,
-    refreshDashboard: refreshDashboard
+    refreshDashboard: refreshDashboard,
+    toggleSidebar: toggleSidebar
 };
 
 // Direct logout
@@ -128,8 +178,6 @@ $(document).ready(function () {
 $('.alert').on('close.bs.alert', function () {
     $(this).fadeOut('slow');
 });
-
-
 
 // Church selection functionality
 function selectChurch(churchDomain) {
@@ -171,5 +219,4 @@ $(document).ready(function () {
         $('#login-email-prefix').on('input', updateLoginEmailPreview);
         updateLoginEmailPreview();
     }
-
 }); 

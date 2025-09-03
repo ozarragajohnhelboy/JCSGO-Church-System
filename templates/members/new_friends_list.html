@@ -8,6 +8,14 @@
     <h1 class="h2">New Friends</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
+            {% if user.is_superuser or user.role.name == 'ADMIN' %}
+            <a href="{% url 'members:new_friend_add' %}" class="btn btn-sm btn-primary">
+                <i class="bi bi-person-plus"></i> Add New Friend
+            </a>
+            <a href="{% url 'members:new_friend_import' %}" class="btn btn-sm btn-info">
+                <i class="bi bi-upload"></i> Import
+            </a>
+            {% endif %}
             <a href="{% url 'members:export_members' %}?format=csv&status=new_friends" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-download"></i> Export CSV
             </a>
@@ -149,11 +157,17 @@
                            data-bs-toggle="tooltip" title="View Details">
                             <i class="bi bi-eye"></i>
                         </a>
-                        <button type="button" class="btn btn-sm btn-outline-warning btn-action" 
-                                onclick="updateTimerStatus({{ new_friend.user.pk }}, {{ new_friend.user.timer_status }})"
-                                data-bs-toggle="tooltip" title="Update Timer Status">
-                            <i class="bi bi-clock"></i>
+                        {% if user.is_superuser or user.role.name == 'ADMIN' %}
+                        <a href="{% url 'members:new_friend_edit' new_friend.pk %}" class="btn btn-sm btn-outline-warning btn-action" 
+                           data-bs-toggle="tooltip" title="Edit New Friend">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-action" 
+                                onclick="deleteNewFriend({{ new_friend.pk }}, '{{ new_friend.user.full_name|escapejs }}')"
+                                data-bs-toggle="tooltip" title="Delete New Friend">
+                            <i class="bi bi-trash"></i>
                         </button>
+                        {% endif %}
                         <button type="button" class="btn btn-sm btn-outline-info btn-action" 
                                 onclick="updateFollowUp({{ new_friend.pk }})"
                                 data-bs-toggle="tooltip" title="Update Follow-up">
@@ -302,6 +316,26 @@ function recordAttendance(userId) {
                 showError('Failed to record attendance');
             }
         });
+    }
+}
+
+function deleteNewFriend(newFriendId, memberName) {
+    if (confirm(`Are you sure you want to delete "${memberName}"? This action cannot be undone.`)) {
+        // Create a form to submit the delete request
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/members/new-friends/${newFriendId}/delete/`;
+        
+        // Add CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+        form.appendChild(csrfInput);
+        
+        // Submit the form
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 </script>

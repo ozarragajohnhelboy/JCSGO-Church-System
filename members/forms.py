@@ -1,13 +1,12 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm, UserChangeForm
-from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth import authenticate, get_user_model
+from .models import CustomUser, NewFriend, RegularMember, Group, Role, Church
 from django.core.exceptions import ValidationError
-from django.utils.translation import gettext_lazy as _
-
-from .models import (
-    CustomUser, NewFriend, RegularMember, Group, 
-    Church, Role, ActivityLog
-)
+from django.utils import timezone
+from datetime import datetime
+import csv
+import io
 
 User = get_user_model()
 
@@ -44,61 +43,145 @@ class CustomUserForm(forms.ModelForm):
 
 
 class NewFriendForm(forms.ModelForm):
-    """Form for managing new friends"""
+    """Form for adding/editing New Friends"""
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter email address'
+        })
+    )
+    first_name = forms.CharField(
+        max_length=30,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter first name'
+        })
+    )
+    last_name = forms.CharField(
+        max_length=30,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter last name'
+        })
+    )
+    phone = forms.CharField(
+        max_length=15,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter phone number'
+        })
+    )
+    source = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'How did they hear about us?'
+        })
+    )
+    notes = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Additional notes about this person'
+        })
+    )
+    timer_status = forms.ChoiceField(
+        choices=[
+            (1, '1st Timer'),
+            (2, '2nd Timer'),
+            (3, '3rd Timer'),
+            (4, '4th Timer'),
+            (5, '5th Timer'),
+        ],
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        })
+    )
+    
     class Meta:
         model = NewFriend
-        fields = [
-            'source', 'notes', 'invited_by', 'follow_up_status', 
-            'follow_up_notes', 'is_active'
-        ]
-        widgets = {
-            'source': forms.TextInput(attrs={'class': 'form-control'}),
-            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'invited_by': forms.Select(attrs={'class': 'form-select'}),
-            'follow_up_status': forms.Select(attrs={'class': 'form-select'}),
-            'follow_up_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-        }
-
+        fields = ['email', 'first_name', 'last_name', 'phone', 'source', 'notes', 'timer_status']
+    
     def __init__(self, *args, **kwargs):
         self.church = kwargs.pop('church', None)
         super().__init__(*args, **kwargs)
-        
-        if self.church and 'invited_by' in self.fields:
-            self.fields['invited_by'].queryset = CustomUser.objects.filter(
-                church=self.church, 
-                is_active=True,
-                is_new_friend=False  # Only regular members can invite
-            )
+    
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if self.church:
+            # Check if email already exists in this church
+            if CustomUser.objects.filter(email=email, church=self.church).exists():
+                if not self.instance.pk:  # Only for new users
+                    raise ValidationError('A user with this email already exists in this church.')
+        return email
 
 
 class RegularMemberForm(forms.ModelForm):
-    """Form for managing regular members"""
+    """Form for adding/editing Regular Members"""
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter email address'
+        })
+    )
+    first_name = forms.CharField(
+        max_length=30,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter first name'
+        })
+    )
+    last_name = forms.CharField(
+        max_length=30,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter last name'
+        })
+    )
+    phone = forms.CharField(
+        max_length=15,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter phone number'
+        })
+    )
+    role = forms.ModelChoiceField(
+        queryset=Role.objects.filter(name__in=['VSL', 'CSL', 'CL', 'CM']),
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        })
+    )
+    group = forms.ModelChoiceField(
+        queryset=Group.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        })
+    )
+    
     class Meta:
         model = RegularMember
-        fields = [
-            'role_type', 'group', 'ministry_involvement', 'skills',
-            'baptism_date', 'membership_date', 'spiritual_gifts', 'availability'
-        ]
-        widgets = {
-            'role_type': forms.Select(attrs={'class': 'form-select'}),
-            'group': forms.Select(attrs={'class': 'form-select'}),
-            'ministry_involvement': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'skills': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'baptism_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'membership_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
-            'spiritual_gifts': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'availability': forms.Select(attrs={'class': 'form-select'}),
-        }
-
+        fields = ['email', 'first_name', 'last_name', 'phone', 'role', 'group']
+    
     def __init__(self, *args, **kwargs):
         self.church = kwargs.pop('church', None)
         super().__init__(*args, **kwargs)
-        
-        if self.church and 'group' in self.fields:
-            self.fields['group'].queryset = Group.objects.filter(
-                church=self.church, 
-                is_active=True
-            )
+        if self.church:
+            self.fields['group'].queryset = Group.objects.filter(church=self.church, is_active=True)
+    
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if self.church:
+            # Check if email already exists in this church
+            if CustomUser.objects.filter(email=email, church=self.church).exists():
+                if not self.instance.pk:  # Only for new users
+                    raise ValidationError('A user with this email already exists in this church.')
+        return email
 
 
 class GroupForm(forms.ModelForm):
@@ -419,3 +502,52 @@ class AttendanceForm(forms.Form):
         if self.church:
             members = CustomUser.objects.filter(church=self.church, is_active=True)
             self.fields['members'].choices = [(m.id, m.full_name) for m in members] 
+
+
+class NewFriendImportForm(forms.Form):
+    """Form for importing New Friends from CSV/Excel"""
+    file = forms.FileField(
+        label='Upload File',
+        help_text='Upload CSV or Excel file with New Friends data',
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.csv,.xlsx,.xls'
+        })
+    )
+    
+    def clean_file(self):
+        file = self.cleaned_data['file']
+        if file:
+            # Check file size (max 5MB)
+            if file.size > 5 * 1024 * 1024:
+                raise ValidationError('File size must be under 5MB.')
+            
+            # Check file extension
+            ext = file.name.split('.')[-1].lower()
+            if ext not in ['csv', 'xlsx', 'xls']:
+                raise ValidationError('Please upload a CSV or Excel file.')
+        return file
+
+class RegularMemberImportForm(forms.Form):
+    """Form for importing Regular Members from CSV/Excel"""
+    file = forms.FileField(
+        label='Upload File',
+        help_text='Upload CSV or Excel file with Regular Members data',
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.csv,.xlsx,.xls'
+        })
+    )
+    
+    def clean_file(self):
+        file = self.cleaned_data['file']
+        if file:
+            # Check file size (max 5MB)
+            if file.size > 5 * 1024 * 1024:
+                raise ValidationError('File size must be under 5MB.')
+            
+            # Check file extension
+            ext = file.name.split('.')[-1].lower()
+            if ext not in ['csv', 'xlsx', 'xls']:
+                raise ValidationError('Please upload a CSV or Excel file.')
+        return file 

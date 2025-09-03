@@ -93,8 +93,13 @@
   </style>
 {% endblock %}
 
-{% block content %}
-  <div class="container-fluid">
+<!-- This template extends base.html but doesn't override the content block -->
+<!-- The base template will handle the sidebar logic based on user role -->
+<!-- For ADMIN users, the sidebar will be shown -->
+
+<!-- Dashboard content will be displayed in the main content area -->
+{% block admin_content %}
+<div class="container-fluid">
     <!-- Header -->
     <div class="row mb-4">
       <div class="col-12">
