@@ -185,9 +185,19 @@
     </table>
 </div>
 
+<!-- Pagination Info -->
+<div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+    <div class="text-muted">
+        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} members
+    </div>
+    <div class="text-muted">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </div>
+</div>
+
 <!-- Pagination -->
 {% if page_obj.has_other_pages %}
-<nav aria-label="Members pagination" class="mt-4">
+<nav aria-label="Members pagination" class="mt-2">
     <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
         <li class="page-item">

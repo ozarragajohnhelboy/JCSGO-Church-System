@@ -137,7 +137,7 @@
 {% block admin_content %}
   <div class="container-fluid">
     <!-- Header -->
-    <div class="row mb-4">
+    <div class="row mb-4 mt-3">
       <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
           <div>
@@ -346,6 +346,16 @@
             {% endfor %}
           </tbody>
         </table>
+      </div>
+
+      <!-- Pagination Info -->
+      <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+        <div class="text-muted">
+          Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} users
+        </div>
+        <div class="text-muted">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </div>
       </div>
 
       <!-- Pagination -->

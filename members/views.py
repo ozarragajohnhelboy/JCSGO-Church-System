@@ -65,12 +65,14 @@ def member_list(request):
     members = members.order_by('first_name', 'last_name')
     
     # Pagination
-    paginator = Paginator(members, 20)
+    paginator = Paginator(members, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get available roles for filter
-    roles = Role.objects.filter(users__church=church).distinct()
+    # Get available roles for filter (exclude system roles)
+    roles = Role.objects.filter(
+        name__in=['VSL', 'CSL', 'CL', 'CM']
+    ).order_by('name')
     
     context = {
         'page_obj': page_obj,
@@ -192,7 +194,7 @@ def new_friends_list(request):
     new_friends.sort(key=lambda x: x.registration_date, reverse=True)
     
     # Pagination
-    paginator = Paginator(new_friends, 15)
+    paginator = Paginator(new_friends, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -264,7 +266,7 @@ def regular_members_list(request):
     regular_members.sort(key=lambda x: (x.user.first_name, x.user.last_name))
     
     # Pagination
-    paginator = Paginator(regular_members, 20)
+    paginator = Paginator(regular_members, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -401,7 +403,7 @@ def activity_logs(request):
         activities = activities.filter(timestamp__date__lte=date_to)
     
     # Pagination
-    paginator = Paginator(activities, 50)
+    paginator = Paginator(activities, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
@@ -702,7 +704,7 @@ def role_management(request):
     users = users.order_by('role__name', 'first_name', 'last_name')
     
     # Pagination
-    paginator = Paginator(users, 25)
+    paginator = Paginator(users, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     

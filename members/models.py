@@ -239,7 +239,7 @@ class CustomUser(AbstractUser):
                 user=self,
                 defaults={'role_type': self.role.name if self.role else 'CM'}
             )
-            
+
             # Remove the NewFriend profile since user is no longer a new friend
             try:
                 if hasattr(self, 'new_friend_profile'):

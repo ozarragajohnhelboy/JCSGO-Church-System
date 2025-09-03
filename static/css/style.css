@@ -9,6 +9,10 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f8f9fa;
+    margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        /* Prevent horizontal scroll */
 }
 
 .navbar-brand {
@@ -16,6 +20,16 @@ body {
     color: var(--primary-color) !important;
 }
 
+/* Make navbar sticky */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    background: white !important;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
 .card {
     border: none;
     border-radius: 15px;
@@ -99,6 +113,12 @@ body {
     color: white;
     padding: 2rem 0;
     margin-top: auto;
+    position: relative;
+        bottom: 0;
+        left: 16.666667%;
+        /* Account for sidebar width */
+        width: calc(100% - 16.666667%);
+        z-index: 1050;
 }
 
 /* Enhanced dropdown styling */
@@ -163,10 +183,15 @@ body {
 }
 /* Sidebar Styles */
 .sidebar {
-    min-height: calc(100vh - 76px);
-    /* Adjust based on navbar height */
+    position: fixed;
+        top: 76px;
+        left: 0;
+        width: 16.666667%;
+        height: calc(100vh - 76px);
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+    overflow-y: auto;
+        z-index: 1000;
 }
 
 .sidebar .nav-link {
@@ -226,25 +251,81 @@ body {
     }
 }
 
+/* Ensure sidebar stays in place on larger screens */
+@media (min-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 76px;
+        left: 0;
+        width: 16.666667%;
+        height: calc(100vh - 76px);
+        overflow-y: auto;
+        z-index: 1000;
+    }
+
+    /* Ensure main content connects properly */
+    .col-md-9.col-lg-10.ms-sm-auto.px-md-4 {
+        margin-left: 16.666667%;
+        padding-top: 0;
+    }
+}
 /* Main content area adjustment */
 .main-content {
     margin-left: 0;
     transition: margin-left 0.3s ease;
 }
 
-@media (min-width: 768px) {
-    .main-content {
-        margin-left: 16.666667%;
-        /* col-md-2 */
+/* Ensure main content area works with fixed sidebar */
+.col-md-9.col-lg-10.ms-sm-auto.px-md-4 {
+    min-height: calc(100vh - 76px);
+    margin-left: 16.666667%;
+    /* Account for fixed sidebar width */
+        padding-top: 0.5rem !important;
+        padding-bottom: 2rem;
+        /* Add bottom padding to prevent footer overlap */
     }
+    
+    /* Ensure proper container structure */
+    .container-fluid {
+        margin-top: 0;
+        padding-top: 0;
+    }
+    
+    /* Ensure no gaps in the main layout */
+    .row {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+    
+    /* Ensure sidebar container has no gaps */
+    .col-md-3.col-lg-2 {
+        padding: 0;
+        margin: 0;
+    }
+    
+    /* Ensure row structure connects properly */
+    .row {
+        margin-top: 0;
+    }
+    
+    /* Add top spacing for forms and content */
+    .container-fluid {
+        padding-top: 0.5rem;
+    }
+/* Ensure proper spacing for dashboard and form content */
+.container-fluid .row:first-child {
+    margin-top: 0.5rem;
 }
 
-@media (min-width: 992px) {
-    .main-content {
-        margin-left: 16.666667%;
-        /* col-lg-2 */
-    }
+/* Add spacing for form containers */
+.form-container {
+    padding-top: 0.5rem;
 }
+/* Add spacing for role management and other content */
+.content-section {
+    padding-top: 0.5rem;
+}
+/* Remove duplicate main-content rules since we're using sticky positioning */
 
 /* Sidebar toggle button for mobile */
 .sidebar-toggle {

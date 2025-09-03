@@ -90,18 +90,56 @@
       padding: 1.5rem;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
+    
+    .scrollable-container {
+      max-height: 300px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #c1c1c1 #f1f1f1;
+    }
+    
+    .scrollable-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .scrollable-container::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    .scrollable-container::-webkit-scrollbar-thumb {
+      background: #c1c1c1;
+      border-radius: 3px;
+    }
+    
+    .scrollable-container::-webkit-scrollbar-thumb:hover {
+      background: #a8a8a8;
+    }
+    
+    .date-filter-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .date-filter-container .form-control-sm {
+      font-size: 0.85rem;
+      padding: 0.25rem 0.5rem;
+    }
+    
+    .clear-filter-btn {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+    }
   </style>
 {% endblock %}
 
-<!-- This template extends base.html but doesn't override the content block -->
-<!-- The base template will handle the sidebar logic based on user role -->
-<!-- For ADMIN users, the sidebar will be shown -->
-
-<!-- Dashboard content will be displayed in the main content area -->
 {% block admin_content %}
-<div class="container-fluid">
+<form method="get" id="dashboardForm">
+  <div class="container-fluid">
     <!-- Header -->
-    <div class="row mb-4">
+    <div class="row mb-4 mt-3">
       <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
           <div>
@@ -344,42 +382,65 @@
       <div class="col-lg-6 mb-4">
         <div class="group-capacity-card">
           <h5 class="card-title mb-3"><i class="bi bi-collection-fill"></i> Group Capacity Overview</h5>
-          {% for group in group_capacity_data %}
-            <div class="mb-3">
-              <div class="d-flex justify-content-between mb-2">
-                <span>{{ group.name }}</span>
-                <span class="fw-bold">{{ group.current }}/{{ group.max }}</span>
+          <div class="scrollable-container">
+            {% for group in group_capacity_data %}
+              <div class="mb-3">
+                <div class="d-flex justify-content-between mb-2">
+                  <span>{{ group.name }}</span>
+                  <span class="fw-bold">{{ group.current }}/{{ group.max }}</span>
+                </div>
+                <div class="progress progress-bar-custom">
+                  <div class="progress-bar {% if group.percentage >= 80 %}bg-danger{% elif group.percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                       style="width: {{ group.percentage }}%"></div>
+                </div>
+                <small class="text-muted">{{ group.percentage }}% capacity</small>
               </div>
-              <div class="progress progress-bar-custom">
-                <div class="progress-bar {% if group.percentage >= 80 %}bg-danger{% elif group.percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
-                     style="width: {{ group.percentage }}%"></div>
-              </div>
-              <small class="text-muted">{{ group.percentage }}% capacity</small>
-            </div>
-          {% empty %}
-            <p class="text-muted">No groups data available</p>
-          {% endfor %}
+            {% empty %}
+              <p class="text-muted">No groups data available</p>
+            {% endfor %}
+          </div>
         </div>
       </div>
 
       <!-- Recent Activity -->
-      <div class="col-lg-6 mb-4">
+      <div class="col-lg-6 mb-4" id="recent-activity-section">
         <div class="activity-feed">
-          <h5 class="card-title mb-3"><i class="bi bi-activity"></i> Recent Activity</h5>
-          {% for activity in recent_activity %}
-            <div class="activity-item">
-              <div class="d-flex justify-content-between">
-                <div>
-                  <strong>{{ activity.user.full_name }}</strong>
-                  <span class="text-muted">{{ activity.get_action_display }}</span>
-                </div>
-                <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
-              </div>
-              <small class="text-muted">{{ activity.description }}</small>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0"><i class="bi bi-activity"></i> Recent Activity</h5>
+            <div class="date-filter-container">
+              <label for="activity_date" class="form-label me-2 mb-0" style="font-size: 0.9rem;">Date:</label>
+              <input type="date" 
+                     class="form-control form-control-sm" 
+                     id="activity_date" 
+                     name="activity_date" 
+                     value="{{ activity_date_filter|default:'' }}"
+                     style="width: auto;">
+              <button type="submit" class="btn btn-primary btn-sm ms-2">
+                <i class="bi bi-funnel"></i> Filter
+              </button>
+              {% if activity_date_filter %}
+                <button type="button" class="btn btn-outline-secondary btn-sm clear-filter-btn ms-2" onclick="clearDateFilter()">
+                  <i class="bi bi-x"></i> Clear
+                </button>
+              {% endif %}
             </div>
-          {% empty %}
-            <p class="text-muted">No recent activity</p>
-          {% endfor %}
+          </div>
+          <div class="scrollable-container">
+            {% for activity in recent_activity %}
+              <div class="activity-item">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <strong>{{ activity.user.full_name }}</strong>
+                    <span class="text-muted">{{ activity.get_action_display }}</span>
+                  </div>
+                  <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                </div>
+                <small class="text-muted">{{ activity.description }}</small>
+              </div>
+            {% empty %}
+              <p class="text-muted">No recent activity</p>
+            {% endfor %}
+          </div>
         </div>
       </div>
     </div>
@@ -398,6 +459,7 @@
       </div>
     </div>
   </div>
+</form>
 {% endblock %}
 
 {% block extra_js %}
@@ -561,5 +623,49 @@
          }
        }
      });
+
+     // Handle form submission to maintain scroll position
+     const dashboardForm = document.getElementById('dashboardForm');
+     const recentActivitySection = document.getElementById('recent-activity-section');
+     
+     // Function to clear date filter
+     window.clearDateFilter = function() {
+       // Store current scroll position
+       const rect = recentActivitySection.getBoundingClientRect();
+       const scrollOffset = window.pageYOffset + rect.top;
+       sessionStorage.setItem('scrollToRecentActivity', scrollOffset.toString());
+       
+       // Clear the date input
+       document.getElementById('activity_date').value = '';
+       
+       // Submit the form to clear the filter
+       dashboardForm.submit();
+     };
+     
+     if (dashboardForm && recentActivitySection) {
+       dashboardForm.addEventListener('submit', function(e) {
+         // Store the current scroll position relative to the recent activity section
+         const rect = recentActivitySection.getBoundingClientRect();
+         const scrollOffset = window.pageYOffset + rect.top;
+         
+         // Store in sessionStorage for after page reload
+         sessionStorage.setItem('scrollToRecentActivity', scrollOffset.toString());
+       });
+
+       // Check if we need to scroll to recent activity section after page load
+       const scrollOffset = sessionStorage.getItem('scrollToRecentActivity');
+       if (scrollOffset) {
+         // Clear the stored offset
+         sessionStorage.removeItem('scrollToRecentActivity');
+         
+         // Scroll to the position after a short delay to ensure page is fully loaded
+         setTimeout(() => {
+           window.scrollTo({
+             top: parseInt(scrollOffset),
+             behavior: 'smooth'
+           });
+         }, 100);
+       }
+     }
    </script>
 {% endblock %}

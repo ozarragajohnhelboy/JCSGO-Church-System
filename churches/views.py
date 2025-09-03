@@ -156,15 +156,36 @@ def dashboard(request):
     
     total_members = new_friends_count + regulars_count
     
-    # Get recent activity
-    recent_activity = ActivityLog.objects.filter(
-        user__church=user.church
-    ).select_related('user')[:10]
-    
     # Get monthly growth data for charts
     from datetime import datetime, timedelta
     from django.db.models import Count
     from django.utils import timezone
+    
+    # Get date filter for recent activity
+    activity_date_filter = request.GET.get('activity_date', '')
+    
+    # Get recent activity with date filter
+    recent_activity_query = ActivityLog.objects.filter(user__church=user.church)
+    
+    if activity_date_filter:
+        try:
+            # Parse the date filter
+            filter_date = datetime.strptime(activity_date_filter, '%Y-%m-%d').date()
+            # Filter activities for the specific date
+            recent_activity_query = recent_activity_query.filter(
+                timestamp__date=filter_date
+            )
+        except ValueError:
+            # If date parsing fails, use default (last 7 days)
+            pass
+    
+    # If no date filter or invalid date, show last 7 days by default
+    if not activity_date_filter:
+        week_ago = timezone.now() - timedelta(days=7)
+        recent_activity_query = recent_activity_query.filter(timestamp__gte=week_ago)
+    
+    # Limit to 5 items and order by timestamp
+    recent_activity = recent_activity_query.select_related('user').order_by('-timestamp')[:5]
     
     # Get last 6 months of data
     months = []
@@ -247,6 +268,7 @@ def dashboard(request):
         'regulars_count': regulars_count,
         'total_members': total_members,
         'recent_activity': recent_activity,
+        'activity_date_filter': activity_date_filter,
         'months': months,
         'new_friends_monthly': new_friends_monthly,
         'regulars_monthly': regulars_monthly,
@@ -350,8 +372,8 @@ def dashboard(request):
             church=church, is_active=True
         ).count()
         
-        # Get group capacity data
-        groups = Group.objects.filter(church=church, is_active=True)
+        # Get group capacity data (limit to 5)
+        groups = Group.objects.filter(church=church, is_active=True)[:5]
         group_capacity_data = []
         for group in groups:
             group_capacity_data.append({
