@@ -239,6 +239,13 @@ class CustomUser(AbstractUser):
                 user=self,
                 defaults={'role_type': self.role.name if self.role else 'CM'}
             )
+            
+            # Remove the NewFriend profile since user is no longer a new friend
+            try:
+                if hasattr(self, 'new_friend_profile'):
+                    self.new_friend_profile.delete()
+            except NewFriend.DoesNotExist:
+                pass
 
     def update_timer_status(self, new_status):
         """Update timer status for New Friends"""

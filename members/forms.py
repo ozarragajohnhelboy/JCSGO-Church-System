@@ -72,14 +72,29 @@ class NewFriendForm(forms.ModelForm):
             'placeholder': 'Enter phone number'
         })
     )
-    source = forms.CharField(
-        max_length=100,
+    invited_by = forms.ModelChoiceField(
+        queryset=CustomUser.objects.none(),
         required=False,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control',
-            'placeholder': 'How did they hear about us?'
+        empty_label="Select who invited this person",
+        widget=forms.Select(attrs={
+            'class': 'form-select'
         })
     )
+    
+    def __init__(self, *args, **kwargs):
+        self.church = kwargs.pop('church', None)
+        super().__init__(*args, **kwargs)
+        
+        # Populate invited_by field with regular members from the same church
+        if self.church:
+            self.fields['invited_by'].queryset = CustomUser.objects.filter(
+                church=self.church,
+                is_active=True,
+                is_new_friend=False  # Only regular members can invite
+            ).order_by('first_name', 'last_name')
+            
+            # Custom label to show only names, not emails
+            self.fields['invited_by'].label_from_instance = lambda obj: obj.full_name
     notes = forms.CharField(
         max_length=500,
         required=False,
@@ -104,11 +119,7 @@ class NewFriendForm(forms.ModelForm):
     
     class Meta:
         model = NewFriend
-        fields = ['email', 'first_name', 'last_name', 'phone', 'source', 'notes', 'timer_status']
-    
-    def __init__(self, *args, **kwargs):
-        self.church = kwargs.pop('church', None)
-        super().__init__(*args, **kwargs)
+        fields = ['email', 'first_name', 'last_name', 'phone', 'invited_by', 'notes', 'timer_status']
     
     def clean_email(self):
         email = self.cleaned_data['email']

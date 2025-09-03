@@ -57,7 +57,7 @@
         <div class="col-md-4">
             <label for="search" class="form-label">Search</label>
             <input type="text" class="form-control" id="search" name="search" 
-                   value="{{ search }}" placeholder="Search by name, email, or source...">
+                   value="{{ search }}" placeholder="Search by name, email, or invited by...">
         </div>
         <div class="col-md-3">
             <label for="follow_up_status" class="form-label">Follow-up Status</label>
@@ -101,7 +101,7 @@
                 <th>Email</th>
                 <th>Timer Status</th>
                 <th>Follow-up Status</th>
-                <th>Source</th>
+                <th>Invited By</th>
                 <th>Registration</th>
                 <th>Actions</th>
             </tr>
@@ -140,8 +140,8 @@
                     </span>
                 </td>
                 <td>
-                    {% if new_friend.source %}
-                    {{ new_friend.source }}
+                    {% if new_friend.invited_by %}
+                    {{ new_friend.invited_by.full_name }}
                     {% else %}
                     <span class="text-muted">-</span>
                     {% endif %}

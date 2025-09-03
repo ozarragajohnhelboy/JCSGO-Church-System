@@ -157,9 +157,9 @@
                 <div class="row">
                     <div class="col-md-6">
                         <p><strong>Registration Date:</strong> {{ new_friend_profile.registration_date|date:"M d, Y" }}</p>
-                        <p><strong>Source:</strong> 
-                            {% if new_friend_profile.source %}
-                            {{ new_friend_profile.source }}
+                        <p><strong>Invited By:</strong> 
+                            {% if new_friend_profile.invited_by %}
+                            {{ new_friend_profile.invited_by.full_name }}
                             {% else %}
                             <span class="text-muted">Not specified</span>
                             {% endif %}

@@ -97,9 +97,22 @@ def member_detail(request, pk):
         messages.error(request, 'You do not have permission to view this member.')
         return redirect('members:member_list')
     
-    # Get related data
-    new_friend_profile = getattr(member, 'new_friend_profile', None)
-    regular_member_profile = getattr(member, 'regular_member_profile', None)
+    # Get related data based on user type
+    new_friend_profile = None
+    regular_member_profile = None
+    
+    if member.is_new_friend:
+        # User is a new friend, only get NewFriend profile
+        try:
+            new_friend_profile = member.new_friend_profile
+        except NewFriend.DoesNotExist:
+            pass
+    else:
+        # User is a regular member, only get RegularMember profile
+        try:
+            regular_member_profile = member.regular_member_profile
+        except RegularMember.DoesNotExist:
+            pass
     
     # Get recent activity
     recent_activity = member.activity_logs.order_by('-timestamp')[:10]
@@ -144,7 +157,9 @@ def new_friends_list(request):
         new_friends_users = new_friends_users.filter(
             Q(first_name__icontains=search) |
             Q(last_name__icontains=search) |
-            Q(email__icontains=search)
+            Q(email__icontains=search) |
+            Q(new_friend_profile__invited_by__first_name__icontains=search) |
+            Q(new_friend_profile__invited_by__last_name__icontains=search)
         )
     
     if timer_status:
@@ -163,7 +178,7 @@ def new_friends_list(request):
             # Create a default NewFriend profile if it doesn't exist
             new_friend_profile = NewFriend.objects.create(
                 user=user_obj,
-                source='',
+                invited_by=None,
                 notes='',
                 is_active=True
             )
@@ -617,26 +632,38 @@ def export_members(request):
     # Get export format
     export_format = request.GET.get('format', 'csv')
     
-    # Get filtered data
-    members = CustomUser.objects.filter(church=church, is_active=True)
+    # Get status filter
+    status = request.GET.get('status', '')
+    
+    # Get filtered data based on status
+    if status == 'new_friends':
+        members = CustomUser.objects.filter(church=church, is_active=True, is_new_friend=True)
+        filename_prefix = "new_friends"
+    elif status == 'regular_members':
+        members = CustomUser.objects.filter(church=church, is_active=True, is_new_friend=False)
+        filename_prefix = "regular_members"
+    else:
+        # Default: export all members
+        members = CustomUser.objects.filter(church=church, is_active=True)
+        filename_prefix = "members"
     
     # Create response
     from django.http import HttpResponse
-    from import_export import resources
     from import_export.formats import base_formats
+    from .admin import CustomUserResource
     
-    resource = resources.CustomUserResource()
+    resource = CustomUserResource()
     dataset = resource.export(members)
     
     if export_format == 'csv':
         response = HttpResponse(dataset.csv, content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="members_{church.domain}_{timezone.now().strftime("%Y%m%d")}.csv"'
+        response['Content-Disposition'] = f'attachment; filename="{filename_prefix}_{church.domain}_{timezone.now().strftime("%Y%m%d")}.csv"'
     elif export_format == 'xlsx':
         response = HttpResponse(dataset.xlsx, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f'attachment; filename="members_{church.domain}_{timezone.now().strftime("%Y%m%d")}.xlsx"'
+        response['Content-Disposition'] = f'attachment; filename="{filename_prefix}_{church.domain}_{timezone.now().strftime("%Y%m%d")}.xlsx"'
     else:
         response = HttpResponse(dataset.json, content_type='application/json')
-        response['Content-Disposition'] = f'attachment; filename="members_{church.domain}_{timezone.now().strftime("%Y%m%d")}.json"'
+        response['Content-Disposition'] = f'attachment; filename="{filename_prefix}_{church.domain}_{timezone.now().strftime("%Y%m%d")}.json"'
     
     return response
 
@@ -908,18 +935,28 @@ def new_friend_add(request):
                         email=form.cleaned_data['email'],
                         first_name=form.cleaned_data['first_name'],
                         last_name=form.cleaned_data['last_name'],
-                        phone=form.cleaned_data['phone'],
+                        phone_number=form.cleaned_data['phone'],
                         church=request.user.church,
                         is_new_friend=True,
                         is_active=True
                     )
                     
+                    # Remove any existing RegularMember profile if it exists
+                    try:
+                        if hasattr(user, 'regular_member_profile'):
+                            user.regular_member_profile.delete()
+                    except RegularMember.DoesNotExist:
+                        pass
+                    
+                    # Set timer status on the user
+                    user.timer_status = form.cleaned_data['timer_status']
+                    user.save()
+                    
                     # Create the NewFriend profile
                     new_friend = NewFriend.objects.create(
                         user=user,
-                        source=form.cleaned_data['source'],
-                        notes=form.cleaned_data['notes'],
-                        timer_status=form.cleaned_data['timer_status']
+                        invited_by=form.cleaned_data['invited_by'],
+                        notes=form.cleaned_data['notes']
                     )
                     
                     # Log the activity
@@ -965,13 +1002,13 @@ def new_friend_edit(request, new_friend_id):
                     user = new_friend.user
                     user.first_name = form.cleaned_data['first_name']
                     user.last_name = form.cleaned_data['last_name']
-                    user.phone = form.cleaned_data['phone']
+                    user.phone_number = form.cleaned_data['phone']
+                    user.timer_status = form.cleaned_data['timer_status']
                     user.save()
                     
                     # Update NewFriend profile
-                    new_friend.source = form.cleaned_data['source']
+                    new_friend.invited_by = form.cleaned_data['invited_by']
                     new_friend.notes = form.cleaned_data['notes']
-                    new_friend.timer_status = form.cleaned_data['timer_status']
                     new_friend.save()
                     
                     # Log the activity
@@ -994,7 +1031,9 @@ def new_friend_edit(request, new_friend_id):
         form.fields['email'].initial = new_friend.user.email
         form.fields['first_name'].initial = new_friend.user.first_name
         form.fields['last_name'].initial = new_friend.user.last_name
-        form.fields['phone'].initial = new_friend.user.phone
+        form.fields['phone'].initial = new_friend.user.phone_number
+        form.fields['invited_by'].initial = new_friend.invited_by
+        form.fields['timer_status'].initial = new_friend.user.timer_status
     
     context = {
         'form': form,
@@ -1066,18 +1105,28 @@ def new_friend_import(request):
                                     email=row.get('email', '').strip(),
                                     first_name=row.get('first_name', '').strip(),
                                     last_name=row.get('last_name', '').strip(),
-                                    phone=row.get('phone', '').strip() or None,
+                                    phone_number=row.get('phone', '').strip() or None,
                                     church=request.user.church,
                                     is_new_friend=True,
                                     is_active=True
                                 )
                                 
+                                # Remove any existing RegularMember profile if it exists
+                                try:
+                                    if hasattr(user, 'regular_member_profile'):
+                                        user.regular_member_profile.delete()
+                                except RegularMember.DoesNotExist:
+                                    pass
+                                
+                                # Set timer status on the user
+                                user.timer_status = int(row.get('timer_status', 1))
+                                user.save()
+                                
                                 # Create NewFriend profile
                                 NewFriend.objects.create(
                                     user=user,
-                                    source=row.get('source', '').strip() or '',
-                                    notes=row.get('notes', '').strip() or '',
-                                    timer_status=int(row.get('timer_status', 1))
+                                    invited_by=None,  # CSV import doesn't have invited_by info
+                                    notes=row.get('notes', '').strip() or ''
                                 )
                                 
                                 imported_count += 1
@@ -1135,7 +1184,7 @@ def regular_member_add(request):
                         email=form.cleaned_data['email'],
                         first_name=form.cleaned_data['first_name'],
                         last_name=form.cleaned_data['last_name'],
-                        phone=form.cleaned_data['phone'],
+                        phone_number=form.cleaned_data['phone'],
                         church=request.user.church,
                         is_new_friend=False,
                         is_active=True
@@ -1144,6 +1193,13 @@ def regular_member_add(request):
                     # Assign role
                     user.role = form.cleaned_data['role']
                     user.save()
+                    
+                    # Remove any existing NewFriend profile if it exists
+                    try:
+                        if hasattr(user, 'new_friend_profile'):
+                            user.new_friend_profile.delete()
+                    except NewFriend.DoesNotExist:
+                        pass
                     
                     # Create the RegularMember profile
                     regular_member = RegularMember.objects.create(
@@ -1195,7 +1251,7 @@ def regular_member_edit(request, regular_member_id):
                     user = regular_member.user
                     user.first_name = form.cleaned_data['first_name']
                     user.last_name = form.cleaned_data['last_name']
-                    user.phone = form.cleaned_data['phone']
+                    user.phone_number = form.cleaned_data['phone']
                     user.role = form.cleaned_data['role']
                     user.save()
                     
@@ -1224,7 +1280,7 @@ def regular_member_edit(request, regular_member_id):
         form.fields['email'].initial = regular_member.user.email
         form.fields['first_name'].initial = regular_member.user.first_name
         form.fields['last_name'].initial = regular_member.user.last_name
-        form.fields['phone'].initial = regular_member.user.phone
+        form.fields['phone'].initial = regular_member.user.phone_number
         form.fields['role'].initial = regular_member.user.role
     
     context = {
@@ -1311,12 +1367,19 @@ def regular_member_import(request):
                                     email=row.get('email', '').strip(),
                                     first_name=row.get('first_name', '').strip(),
                                     last_name=row.get('last_name', '').strip(),
-                                    phone=row.get('phone', '').strip() or None,
+                                    phone_number=row.get('phone', '').strip() or None,
                                     church=request.user.church,
                                     role=role,
                                     is_new_friend=False,
                                     is_active=True
                                 )
+                                
+                                # Remove any existing NewFriend profile if it exists
+                                try:
+                                    if hasattr(user, 'new_friend_profile'):
+                                        user.new_friend_profile.delete()
+                                except NewFriend.DoesNotExist:
+                                    pass
                                 
                                 # Create RegularMember profile
                                 RegularMember.objects.create(

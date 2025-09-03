@@ -51,7 +51,7 @@ class NewFriendResource(resources.ModelResource):
     class Meta:
         model = NewFriend
         import_id_fields = ('user',)
-        fields = ('id', 'user', 'registration_date', 'source', 'notes', 'is_active')
+        fields = ('id', 'user', 'registration_date', 'invited_by', 'notes', 'is_active')
         export_order = fields
 
 

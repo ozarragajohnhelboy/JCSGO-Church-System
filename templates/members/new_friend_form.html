@@ -112,13 +112,13 @@
                   {% endif %}
                 </div>
 
-                <!-- Source -->
+                <!-- Invited By -->
                 <div class="col-md-6 mb-3">
-                  <label for="{{ form.source.id_for_label }}" class="form-label"><i class="bi bi-info-circle me-2"></i>How did they hear about us?</label>
-                  {{ form.source }}
-                  {% if form.source.errors %}
+                  <label for="{{ form.invited_by.id_for_label }}" class="form-label"><i class="bi bi-person-plus me-2"></i>Invited by</label>
+                  {{ form.invited_by }}
+                  {% if form.invited_by.errors %}
                     <div class="invalid-feedback d-block">
-                      {% for error in form.source.errors %}
+                      {% for error in form.invited_by.errors %}
                         {{ error }}
                       {% endfor %}
                     </div>
