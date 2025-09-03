@@ -631,10 +631,98 @@ def ajax_church_dashboard(request, church_domain):
         # Calculate transition rate percentage
         transition_rate = round((current_month_transitions / new_friends_count * 100) if new_friends_count > 0 else 0, 1)
         
-        # Get recent activity
-        recent_activity = ActivityLog.objects.filter(
-            user__church=church
-        ).select_related('user')[:5]
+        # Get monthly member growth data (new friends and regulars)
+        months = []
+        new_friends_monthly = []
+        regulars_monthly = []
+        
+        for i in range(6):
+            date = timezone.now() - timedelta(days=30*i)
+            month_start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            month_end = month_start + timedelta(days=32)
+            month_end = month_end.replace(day=1) - timedelta(seconds=1)
+            
+            months.append(month_start.strftime('%b %Y'))
+            
+            # Count new friends for this month
+            month_new_friends = CustomUser.objects.filter(
+                church=church,
+                is_new_friend=True,
+                date_joined__gte=month_start,
+                date_joined__lte=month_end,
+                is_active=True
+            ).count()
+            new_friends_monthly.append(month_new_friends)
+            
+            # Count regular members for this month
+            month_regulars = CustomUser.objects.filter(
+                church=church,
+                is_new_friend=False,
+                date_joined__gte=month_start,
+                date_joined__lte=month_end,
+                is_active=True
+            ).count()
+            regulars_monthly.append(month_regulars)
+        
+        # Reverse to show oldest to newest
+        months.reverse()
+        new_friends_monthly.reverse()
+        regulars_monthly.reverse()
+        
+        # Get role distribution data
+        role_distribution = []
+        roles = Role.objects.filter(name__in=['VSL', 'CSL', 'CL', 'CM'])
+        for role in roles:
+            count = CustomUser.objects.filter(
+                church=church,
+                role=role,
+                is_new_friend=False,
+                is_active=True
+            ).count()
+            if count > 0:
+                role_distribution.append({
+                    'role': role.get_name_display(),
+                    'count': count,
+                    'percentage': round((count / regulars_count * 100) if regulars_count > 0 else 0, 1)
+                })
+        
+        # Get date filter for recent activity
+        activity_date_filter = request.GET.get('activity_date', '')
+        
+        # Get recent activity with date filter
+        recent_activity_query = ActivityLog.objects.filter(user__church=church)
+        
+        if activity_date_filter:
+            try:
+                # Parse the date filter
+                filter_date = datetime.strptime(activity_date_filter, '%Y-%m-%d').date()
+                # Filter activities for the specific date
+                recent_activity_query = recent_activity_query.filter(
+                    timestamp__date=filter_date
+                )
+            except ValueError:
+                # If date parsing fails, use default (last 7 days)
+                pass
+        
+        # If no date filter or invalid date, show last 7 days by default
+        if not activity_date_filter:
+            week_ago = timezone.now() - timedelta(days=7)
+            recent_activity_query = recent_activity_query.filter(timestamp__gte=week_ago)
+        
+        # Limit to 5 items and order by timestamp
+        recent_activity = recent_activity_query.select_related('user').order_by('-timestamp')[:5]
+        
+        # Get group capacity data (limit to 5)
+        from members.models import Group
+        groups = Group.objects.filter(church=church, is_active=True)[:5]
+        group_capacity_data = []
+        for group in groups:
+            group_capacity_data.append({
+                'name': group.name,
+                'current': group.member_count,
+                'max': group.max_members,
+                'percentage': group.capacity_percentage
+            })
         
         context = {
             'church': church,
@@ -650,6 +738,12 @@ def ajax_church_dashboard(request, church_domain):
             'cl_percentage': cl_percentage,
             'cm_percentage': cm_percentage,
             'recent_activity': recent_activity,
+            'activity_date_filter': activity_date_filter,
+            'group_capacity_data': group_capacity_data,
+            'months': months,
+            'new_friends_monthly': new_friends_monthly,
+            'regulars_monthly': regulars_monthly,
+            'role_distribution': role_distribution,
             'transition_months': transition_months,
             'transition_counts': transition_counts,
             'current_month_transitions': current_month_transitions,

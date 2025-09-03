@@ -137,7 +137,7 @@
 
 {% block admin_content %}
 <form method="get" id="dashboardForm">
-  <div class="container-fluid">
+<div class="container-fluid">
     <!-- Header -->
     <div class="row mb-4 mt-3">
       <div class="col-12">
@@ -383,21 +383,21 @@
         <div class="group-capacity-card">
           <h5 class="card-title mb-3"><i class="bi bi-collection-fill"></i> Group Capacity Overview</h5>
           <div class="scrollable-container">
-            {% for group in group_capacity_data %}
-              <div class="mb-3">
-                <div class="d-flex justify-content-between mb-2">
-                  <span>{{ group.name }}</span>
-                  <span class="fw-bold">{{ group.current }}/{{ group.max }}</span>
-                </div>
-                <div class="progress progress-bar-custom">
-                  <div class="progress-bar {% if group.percentage >= 80 %}bg-danger{% elif group.percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
-                       style="width: {{ group.percentage }}%"></div>
-                </div>
-                <small class="text-muted">{{ group.percentage }}% capacity</small>
+          {% for group in group_capacity_data %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between mb-2">
+                <span>{{ group.name }}</span>
+                <span class="fw-bold">{{ group.current }}/{{ group.max }}</span>
               </div>
-            {% empty %}
-              <p class="text-muted">No groups data available</p>
-            {% endfor %}
+              <div class="progress progress-bar-custom">
+                <div class="progress-bar {% if group.percentage >= 80 %}bg-danger{% elif group.percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                     style="width: {{ group.percentage }}%"></div>
+              </div>
+              <small class="text-muted">{{ group.percentage }}% capacity</small>
+            </div>
+          {% empty %}
+            <p class="text-muted">No groups data available</p>
+          {% endfor %}
           </div>
         </div>
       </div>
@@ -426,20 +426,20 @@
             </div>
           </div>
           <div class="scrollable-container">
-            {% for activity in recent_activity %}
-              <div class="activity-item">
-                <div class="d-flex justify-content-between">
-                  <div>
-                    <strong>{{ activity.user.full_name }}</strong>
-                    <span class="text-muted">{{ activity.get_action_display }}</span>
-                  </div>
-                  <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+          {% for activity in recent_activity %}
+            <div class="activity-item">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <strong>{{ activity.user.full_name }}</strong>
+                  <span class="text-muted">{{ activity.get_action_display }}</span>
                 </div>
-                <small class="text-muted">{{ activity.description }}</small>
+                <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
               </div>
-            {% empty %}
-              <p class="text-muted">No recent activity</p>
-            {% endfor %}
+              <small class="text-muted">{{ activity.description }}</small>
+            </div>
+          {% empty %}
+            <p class="text-muted">No recent activity</p>
+          {% endfor %}
           </div>
         </div>
       </div>
