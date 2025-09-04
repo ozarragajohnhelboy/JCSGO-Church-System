@@ -95,6 +95,10 @@ class NewFriendForm(forms.ModelForm):
             
             # Custom label to show only names, not emails
             self.fields['invited_by'].label_from_instance = lambda obj: obj.full_name
+        
+        # Limit regular_role choices to VSL, CSL, CL, CM (exclude admin, super, new_friend)
+        role_choices = Role.ROLE_CHOICES[2:-1]
+        self.fields['regular_role'].choices = role_choices
     notes = forms.CharField(
         max_length=500,
         required=False,
@@ -116,10 +120,18 @@ class NewFriendForm(forms.ModelForm):
             'class': 'form-select'
         })
     )
+    convert_to_regular = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    regular_role = forms.ChoiceField(
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
     
     class Meta:
         model = NewFriend
-        fields = ['email', 'first_name', 'last_name', 'phone', 'invited_by', 'notes', 'timer_status']
+        fields = ['email', 'first_name', 'last_name', 'phone', 'invited_by', 'notes', 'timer_status', 'convert_to_regular', 'regular_role']
     
     def clean_email(self):
         email = self.cleaned_data['email']
@@ -129,6 +141,14 @@ class NewFriendForm(forms.ModelForm):
                 if not self.instance.pk:  # Only for new users
                     raise ValidationError('A user with this email already exists in this church.')
         return email
+
+    def clean(self):
+        cleaned = super().clean()
+        convert = cleaned.get('convert_to_regular')
+        role = cleaned.get('regular_role')
+        if convert and not role:
+            raise ValidationError('Please select a role for the regular member.')
+        return cleaned
 
 
 class RegularMemberForm(forms.ModelForm):

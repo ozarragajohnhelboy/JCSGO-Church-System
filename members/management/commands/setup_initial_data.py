@@ -49,8 +49,8 @@ class Command(BaseCommand):
                 'domain': 'sanjose',
             },
             {
-                'name': 'JCSGO Christin Ville',
-                'location': 'Christin Ville, Rodriguez (Montalban), Rizal',
+                'name': 'JCSGO Christine Ville',
+                'location': 'Christine Ville, Rodriguez (Montalban), Rizal',
                 'domain': 'christinville',
             },
             {
@@ -60,12 +60,12 @@ class Command(BaseCommand):
             },
             # Central Region (Cubao, Quezon City, Metro Manila)
             {
-                'name': 'JCSGO 10am Family',
+                'name': 'JCSGO 10 am Family',
                 'location': 'Cubao, Quezon City, Metro Manila',
                 'domain': '10amfamily',
             },
             {
-                'name': 'JCSGO 3pm Family',
+                'name': 'JCSGO 3 pm Family',
                 'location': 'Cubao, Quezon City, Metro Manila',
                 'domain': '3pmfamily',
             },

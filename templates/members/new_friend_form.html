@@ -139,6 +139,34 @@
                 {% endif %}
               </div>
 
+              <!-- Convert to Regular -->
+              <div class="mb-3 form-check">
+                {{ form.convert_to_regular }}
+                <label class="form-check-label" for="{{ form.convert_to_regular.id_for_label }}">
+                  Convert to Regular Member
+                </label>
+                {% if form.convert_to_regular.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.convert_to_regular.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="mb-4" id="regularRoleWrapper" style="display: none;">
+                <label for="{{ form.regular_role.id_for_label }}" class="form-label"><i class="bi bi-person-badge me-2"></i>Select Role</label>
+                {{ form.regular_role }}
+                <div class="form-text">Choosing a role will move this member to Regular Members.</div>
+                {% if form.regular_role.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.regular_role.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
               <!-- Form Actions -->
               <div class="d-flex justify-content-between">
                 <a href="{% url 'members:new_friends_list' %}" class="btn btn-outline-secondary">
@@ -160,4 +188,24 @@
       </div>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+(function() {
+  const checkbox = document.getElementById('{{ form.convert_to_regular.id_for_label }}');
+  const wrapper = document.getElementById('regularRoleWrapper');
+  function sync() {
+    if (checkbox && wrapper) {
+      wrapper.style.display = checkbox.checked ? '' : 'none';
+    }
+  }
+  if (checkbox) {
+    checkbox.addEventListener('change', sync);
+    // Initial state
+    sync();
+  }
+})();
+</script>
 {% endblock %}

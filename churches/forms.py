@@ -117,10 +117,10 @@ class ChurchRegistrationForm(UserCreationForm):
     role = forms.ChoiceField(
         choices=[
             ('NEW_FRIEND', 'New Friend (1st-5th timer)'),
-            ('CM', 'Cell Member (CM)'),
-            ('CL', 'Cell Leader (CL)'),
-            ('CSL', 'Cell Servant Leader (CSL)'),
-            ('VSL', 'Vision Servant Leader (VSL)'),
+            ('CM', 'Care Member (CM)'),
+            ('CL', 'Care Leader (CL)'),
+            ('CSL', 'Cluster Servant Leader (CSL)'),
+            ('VSL', 'Vine Servant Leader (VSL)'),
         ],
         widget=forms.Select(attrs={
             'class': 'form-select',

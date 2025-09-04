@@ -1058,7 +1058,41 @@ def new_friend_edit(request, new_friend_id):
                     new_friend.notes = form.cleaned_data['notes']
                     new_friend.save()
                     
-                    # Log the activity
+                    # Handle conversion to regular member if selected
+                    if form.cleaned_data.get('convert_to_regular') and form.cleaned_data.get('regular_role'):
+                        selected_role_name = form.cleaned_data['regular_role']
+                        # Set user as regular
+                        user.is_new_friend = False
+                        user.transition_date = timezone.now()
+                        # Assign Role on user
+                        role = get_object_or_404(Role, name=selected_role_name)
+                        user.role = role
+                        user.save()
+                        
+                        # Create RegularMember profile
+                        RegularMember.objects.get_or_create(
+                            user=user,
+                            defaults={'role_type': selected_role_name}
+                        )
+                        
+                        # Remove NewFriend profile
+                        try:
+                            if hasattr(user, 'new_friend_profile'):
+                                user.new_friend_profile.delete()
+                        except NewFriend.DoesNotExist:
+                            pass
+                        
+                        # Log the transition
+                        ActivityLog.objects.create(
+                            user=request.user,
+                            action='STATUS_CHANGE',
+                            description=f'Transitioned {user.full_name} from New Friend to Regular Member',
+                            related_user=user,
+                            ip_address=request.META.get('REMOTE_ADDR'),
+                            user_agent=request.META.get('HTTP_USER_AGENT', '')
+                        )
+                    
+                    # Log the update
                     ActivityLog.objects.create(
                         user=request.user,
                         action='NEW_FRIEND_UPDATED',
