@@ -30,9 +30,11 @@
       margin-bottom: 2rem;
     }
     
-    .church-logo i {
-      font-size: 4rem;
-      color: #667eea;
+    .church-logo .logo-image {
+      width: 200px;
+      height: auto;
+      display: block;
+      margin: 0 auto;
     }
     
     .sector-dropdown {
@@ -51,7 +53,9 @@
     
     .sector-dropdown select:focus {
       outline: none;
-      border-color: #667eea;
+      border-height: auto;
+      display: block;
+      margin: 0 auto;
       box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
     
@@ -150,7 +154,7 @@
     <div class="selection-card">
       <!-- Church Logo -->
       <div class="church-logo">
-        <i class="bi bi-church"></i>
+        <img src="{% static 'image/JCSGO_logo.png' %}" alt="JCSGO Logo" class="logo-image">
       </div>
       
       <!-- Welcome Text -->

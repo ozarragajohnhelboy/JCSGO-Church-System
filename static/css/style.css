@@ -67,6 +67,7 @@ body {
 .church-logo {
     max-width: 150px;
     height: auto;
+    margin-left: 150px;
 }
 
 .stats-card {
