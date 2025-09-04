@@ -459,11 +459,12 @@ def dashboard(request):
     
     # Church leader dashboard (VSL, CSL, CL)
     elif user.role.name in ['VSL', 'CSL', 'CL']:
-        # Get groups led by this user
+        # Get care groups led by this user
         from members.models import Group
         led_groups = Group.objects.filter(
             leader=user,
             church=user.church,
+            group_type='CARE',
             is_active=True
         )
         

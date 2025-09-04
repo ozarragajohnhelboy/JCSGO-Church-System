@@ -258,6 +258,74 @@ class ProfileUpdateForm(forms.ModelForm):
             field.required = True
 
 
+class CareGroupForm(forms.ModelForm):
+    """Form for creating/editing care groups - specifically for VSL, CSL, CL roles"""
+    class Meta:
+        model = Group
+        fields = [
+            'name', 'description', 'meeting_schedule', 'meeting_location', 
+            'max_members', 'meeting_day', 'meeting_time', 'is_active'
+        ]
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter care group name'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Describe the care group purpose and goals'}),
+            'meeting_schedule': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Weekly Bible Study'}),
+            'meeting_location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Church Hall or Member\'s Home'}),
+            'max_members': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 50, 'value': 12}),
+            'meeting_day': forms.Select(attrs={'class': 'form-select'}),
+            'meeting_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.church = kwargs.pop('church', None)
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+    def save(self, commit=True):
+        care_group = super().save(commit=False)
+        care_group.group_type = 'CARE'  # Force care group type
+        care_group.leader = self.user
+        care_group.church = self.church
+        if commit:
+            care_group.save()
+        return care_group
+
+    def clean_max_members(self):
+        max_members = self.cleaned_data.get('max_members')
+        if max_members and max_members < 1:
+            raise ValidationError('Maximum members must be at least 1.')
+        if max_members and max_members > 50:
+            raise ValidationError('Maximum members cannot exceed 50 for care groups.')
+        return max_members
+
+
+class CareGroupMemberForm(forms.Form):
+    """Form for adding members to care groups"""
+    member = forms.ModelChoiceField(
+        queryset=CustomUser.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Select a regular member to add to this care group"
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.church = kwargs.pop('church', None)
+        self.group = kwargs.pop('group', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.church:
+            # Get available regular members who are not in any care group yet
+            available_members = CustomUser.objects.filter(
+                church=self.church,
+                is_active=True,
+                is_new_friend=False,
+                role__name__in=['VSL', 'CSL', 'CL', 'CM']
+            ).exclude(
+                regular_member_profile__group__isnull=False
+            ).order_by('first_name', 'last_name')
+            
+            self.fields['member'].queryset = available_members
+
+
 class MemberSearchForm(forms.Form):
     """Form for searching members"""
     search = forms.CharField(

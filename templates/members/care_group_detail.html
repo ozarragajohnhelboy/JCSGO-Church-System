@@ -1,0 +1,375 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ group.name }} - Care Group - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-collection me-2"></i>
+        {{ group.name }}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'members:care_group_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Care Groups
+            </a>
+            {% if is_leader %}
+            <a href="{% url 'members:care_group_edit' group.pk %}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil"></i> Edit Group
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Group Information -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Care Group Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Group Name</h6>
+                        <p class="fw-bold">{{ group.name }}</p>
+                        
+                        <h6 class="text-muted">Leader</h6>
+                        <div class="d-flex align-items-center mb-3">
+                            {% if group.leader.profile_picture %}
+                            <img src="{{ group.leader.profile_picture.url }}" alt="Leader" class="rounded-circle me-2" width="40" height="40">
+                            {% else %}
+                            <div class="bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <span class="text-white fw-bold">{{ group.leader.first_name|first }}{{ group.leader.last_name|first }}</span>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <div class="fw-bold">{{ group.leader.full_name }}</div>
+                                <small class="text-muted">{{ group.leader.get_role_display }}</small>
+                            </div>
+                        </div>
+                        
+                        {% if group.description %}
+                        <h6 class="text-muted">Description</h6>
+                        <p>{{ group.description }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Capacity</h6>
+                        <div class="progress mb-2" style="height: 25px;">
+                            <div class="progress-bar {% if capacity_percentage >= 80 %}bg-danger{% elif capacity_percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                 role="progressbar" style="width: {{ capacity_percentage }}%">
+                                {{ capacity_percentage }}%
+                            </div>
+                        </div>
+                        <p class="small text-muted">{{ group.member_count }} of {{ group.max_members }} members</p>
+                        
+                        {% if group.meeting_day or group.meeting_time %}
+                        <h6 class="text-muted">Meeting Schedule</h6>
+                        <p>
+                            {% if group.meeting_day %}{{ group.get_meeting_day_display }}{% endif %}
+                            {% if group.meeting_time %} at {{ group.meeting_time|time:"g:i A" }}{% endif %}
+                        </p>
+                        {% endif %}
+                        
+                        {% if group.meeting_location %}
+                        <h6 class="text-muted">Meeting Location</h6>
+                        <p><i class="bi bi-geo-alt me-1"></i>{{ group.meeting_location }}</p>
+                        {% endif %}
+                        
+                        {% if group.meeting_schedule %}
+                        <h6 class="text-muted">Schedule Details</h6>
+                        <p><i class="bi bi-calendar-event me-1"></i>{{ group.meeting_schedule }}</p>
+                        {% endif %}
+                        
+                        <h6 class="text-muted">Status</h6>
+                        <p>
+                            {% if group.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                            {% if is_full %}
+                            <span class="badge bg-warning ms-2">Full</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        {% if is_leader %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>
+                    Group Management
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if not is_full %}
+                <button class="btn btn-success btn-sm mb-2 w-100" onclick="showAddMemberModal()">
+                    <i class="bi bi-person-plus me-1"></i>
+                    Add Member
+                </button>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    Group is at full capacity
+                </div>
+                {% endif %}
+                
+                <a href="{% url 'members:care_group_edit' group.pk %}" class="btn btn-outline-primary btn-sm w-100">
+                    <i class="bi bi-pencil me-1"></i>
+                    Edit Group Details
+                </a>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-bar-chart me-2"></i>
+                    Group Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="row">
+                        <div class="col-6">
+                            <h3 class="text-primary">{{ group.member_count }}</h3>
+                            <small class="text-muted">Members</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-success">{{ capacity_percentage }}%</h3>
+                            <small class="text-muted">Capacity</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Group Members -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-people me-2"></i>
+            Group Members ({{ members.count }})
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if members %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Role</th>
+                        <th>Contact</th>
+                        <th>Joined</th>
+                        {% if is_leader %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for member in members %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if member.user.profile_picture %}
+                                <img src="{{ member.user.profile_picture.url }}" alt="Member" class="rounded-circle me-2" width="32" height="32">
+                                {% else %}
+                                <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                    <span class="text-white small">{{ member.user.first_name|first }}{{ member.user.last_name|first }}</span>
+                                </div>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-bold">{{ member.user.full_name }}</div>
+                                    {% if member.user.age %}
+                                    <small class="text-muted">{{ member.user.age }} years old</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ member.user.get_role_display }}</span>
+                        </td>
+                        <td>
+                            <div>
+                                <small class="text-muted">{{ member.user.email }}</small>
+                                {% if member.user.phone_number %}
+                                <br><small class="text-muted">{{ member.user.phone_number }}</small>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <small>{{ member.user.date_joined|date:"M d, Y" }}</small>
+                        </td>
+                        {% if is_leader %}
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" 
+                                    onclick="removeMember({{ member.user.pk }}, '{{ member.user.full_name }}')"
+                                    data-bs-toggle="tooltip" title="Remove from group">
+                                <i class="bi bi-person-dash"></i>
+                            </button>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="bi bi-people display-4 text-muted"></i>
+            <h5 class="text-muted mt-3">No Members Yet</h5>
+            <p class="text-muted">This care group doesn't have any members yet.</p>
+            {% if is_leader %}
+            <button class="btn btn-primary" onclick="showAddMemberModal()">
+                <i class="bi bi-person-plus me-1"></i>
+                Add First Member
+            </button>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="bi bi-activity me-2"></i>
+            Recent Group Activity
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if recent_activity %}
+        {% for activity in recent_activity %}
+        <div class="activity-item">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <strong>{{ activity.user.full_name }}</strong>
+                    <span class="text-muted">{{ activity.get_action_display }}</span>
+                    {% if activity.description %}
+                    <br><small class="text-muted">{{ activity.description }}</small>
+                    {% endif %}
+                </div>
+                <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="text-center py-3">
+            <i class="bi bi-activity fs-1 text-muted"></i>
+            <p class="text-muted">No recent activity</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Add Member Modal -->
+{% if is_leader %}
+<div class="modal fade" id="addMemberModal" tabindex="-1" aria-labelledby="addMemberModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMemberModalLabel">Add Member to {{ group.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'members:care_group_add_member' group.pk %}">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="member_select" class="form-label">Select Member</label>
+                        <select class="form-select" id="member_select" name="member_id" required>
+                            <option value="">Choose a member...</option>
+                            {% for member in available_members %}
+                            <option value="{{ member.pk }}">{{ member.full_name }} ({{ member.get_role_display }})</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">Only members not in any care group are shown</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Member</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: none;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0 !important;
+        border-bottom: none;
+    }
+    
+    .activity-item {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f1f3f4;
+    }
+    
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+    
+    .progress {
+        border-radius: 10px;
+    }
+    
+    .btn {
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showAddMemberModal() {
+    {% if available_members %}
+    new bootstrap.Modal(document.getElementById('addMemberModal')).show();
+    {% else %}
+    alert('No available members to add. All members are already in care groups.');
+    {% endif %}
+}
+
+function removeMember(memberId, memberName) {
+    if (confirm(`Are you sure you want to remove ${memberName} from this care group?`)) {
+        window.location.href = `{% url 'members:care_group_remove_member' group.pk 0 %}`.replace('0', memberId);
+    }
+}
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %} 

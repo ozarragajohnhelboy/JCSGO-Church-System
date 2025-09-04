@@ -266,17 +266,17 @@
       Quick Actions
     </h5>
     <div class="d-flex flex-wrap">
-      <a href="{% url 'members:group_list' %}" class="action-button">
+      <a href="{% url 'members:care_group_list' %}" class="action-button">
         <i class="bi bi-collection me-2"></i>
-        Manage Groups
+        Manage Care Groups
       </a>
       <a href="{% url 'members:member_list' %}" class="action-button">
         <i class="bi bi-people me-2"></i>
         View Members
       </a>
-      <a href="#" class="action-button" onclick="alert('Create Group functionality coming soon!')">
+      <a href="{% url 'members:care_group_create' %}" class="action-button">
         <i class="bi bi-plus-circle me-2"></i>
-        Create Group
+        Create Care Group
       </a>
       <a href="#" class="action-button" onclick="alert('Schedule Meeting functionality coming soon!')">
         <i class="bi bi-calendar-event me-2"></i>
@@ -292,7 +292,7 @@
         <div class="card-header">
           <h5 class="mb-0">
             <i class="bi bi-collection me-2"></i>
-            Your Groups
+            Your Care Groups
           </h5>
         </div>
         <div class="card-body">
@@ -329,11 +329,11 @@
           {% else %}
             <div class="empty-state">
               <i class="bi bi-collection"></i>
-              <h5>No Groups Yet</h5>
-              <p class="mb-3">You haven't been assigned to lead any groups yet.</p>
-              <button class="btn btn-primary" onclick="alert('Create Group functionality coming soon!')">
-                Create Your First Group
-              </button>
+              <h5>No Care Groups Yet</h5>
+              <p class="mb-3">You haven't created any care groups yet.</p>
+              <a href="{% url 'members:care_group_create' %}" class="btn btn-primary">
+                Create Your First Care Group
+              </a>
             </div>
           {% endif %}
         </div>

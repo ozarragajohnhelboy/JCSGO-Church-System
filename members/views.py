@@ -26,7 +26,8 @@ from .models import (
 )
 from .forms import (
     CustomUserForm, NewFriendForm, RegularMemberForm, 
-    GroupForm, ProfileUpdateForm, NewFriendImportForm, RegularMemberImportForm
+    GroupForm, ProfileUpdateForm, NewFriendImportForm, RegularMemberImportForm,
+    CareGroupForm, CareGroupMemberForm
 )
 
 
@@ -483,6 +484,50 @@ def church_statistics(request):
 
 
 # AJAX Views for dynamic functionality
+@csrf_exempt
+@login_required
+def ajax_get_available_members(request, group_id):
+    """AJAX endpoint to get available members for a care group"""
+    if request.method == 'GET':
+        try:
+            care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
+            
+            # Check if user can manage this care group
+            if care_group.leader != request.user:
+                return JsonResponse({'error': 'Permission denied'}, status=403)
+            
+            # Get available members
+            available_members = CustomUser.objects.filter(
+                church=care_group.church,
+                is_active=True,
+                is_new_friend=False,
+                role__name__in=['VSL', 'CSL', 'CL', 'CM']
+            ).exclude(
+                regular_member_profile__group__isnull=False
+            ).order_by('first_name', 'last_name')
+            
+            members_data = []
+            for member in available_members:
+                members_data.append({
+                    'id': member.pk,
+                    'full_name': member.full_name,
+                    'role': member.get_role_display(),
+                    'email': member.email
+                })
+            
+            return JsonResponse({
+                'success': True,
+                'members': members_data
+            })
+            
+        except Group.DoesNotExist:
+            return JsonResponse({'error': 'Care group not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
 @csrf_exempt
 @login_required
 def ajax_update_timer_status(request, user_id):
@@ -1424,5 +1469,292 @@ def regular_member_import(request):
         'form': form,
         'title': 'Import Regular Members',
         'church': request.user.church
-    }
+        }
     return render(request, 'members/regular_member_import.html', context)
+
+
+# Care Group Views for VSL, CSL, CL roles
+@login_required
+def care_group_list(request):
+    """List care groups for leadership roles (VSL, CSL, CL)"""
+    user = request.user
+    
+    # Check if user has permission to access care groups
+    if user.role.name not in ['VSL', 'CSL', 'CL']:
+        messages.error(request, 'You do not have permission to access care groups.')
+        return redirect('churches:dashboard')
+    
+    church = user.church
+    
+    # Get search and filter parameters
+    search = request.GET.get('search', '')
+    
+    # Base queryset - only care groups
+    care_groups = Group.objects.filter(
+        church=church,
+        group_type='CARE',
+        is_active=True
+    ).select_related('leader').prefetch_related('members')
+    
+    # For VSL, show all care groups in their church
+    # For CSL and CL, show only groups they lead or are members of
+    if user.role.name in ['CSL', 'CL']:
+        care_groups = care_groups.filter(
+            Q(leader=user) | Q(members__user=user)
+        ).distinct()
+    
+    # Apply search filter
+    if search:
+        care_groups = care_groups.filter(
+            Q(name__icontains=search) |
+            Q(description__icontains=search) |
+            Q(leader__first_name__icontains=search) |
+            Q(leader__last_name__icontains=search)
+        )
+    
+    # Order by name
+    care_groups = care_groups.order_by('name')
+    
+    # Pagination
+    paginator = Paginator(care_groups, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get groups led by current user
+    led_groups = Group.objects.filter(
+        church=church,
+        group_type='CARE',
+        leader=user,
+        is_active=True
+    )
+    
+    context = {
+        'page_obj': page_obj,
+        'search': search,
+        'total_care_groups': care_groups.count(),
+        'led_groups_count': led_groups.count(),
+        'can_create_group': user.role.name in ['VSL', 'CSL', 'CL'],
+        'user_role': user.role.name,
+    }
+    
+    return render(request, 'members/care_group_list.html', context)
+
+
+@login_required
+def care_group_create(request):
+    """Create a new care group - for VSL, CSL, CL roles"""
+    user = request.user
+    
+    # Check if user has permission to create care groups
+    if user.role.name not in ['VSL', 'CSL', 'CL']:
+        messages.error(request, 'You do not have permission to create care groups.')
+        return redirect('members:care_group_list')
+    
+    if request.method == 'POST':
+        form = CareGroupForm(request.POST, church=user.church, user=user)
+        if form.is_valid():
+            care_group = form.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=user,
+                church=user.church,
+                action='GROUP_CREATED',
+                description=f'Created care group: {care_group.name}'
+            )
+            
+            messages.success(request, f'Care group "{care_group.name}" created successfully!')
+            return redirect('members:care_group_detail', group_id=care_group.pk)
+    else:
+        form = CareGroupForm(church=user.church, user=user)
+    
+    context = {
+        'form': form,
+        'user_role': user.role.name,
+    }
+    
+    return render(request, 'members/care_group_create.html', context)
+
+
+@login_required
+def care_group_detail(request, group_id):
+    """Detailed view of a care group"""
+    user = request.user
+    care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
+    
+    # Check if user can view this care group
+    if not user.can_access_church_data(care_group.church):
+        messages.error(request, 'You do not have permission to view this care group.')
+        return redirect('members:care_group_list')
+    
+    # Additional permission check for CSL and CL
+    if user.role.name in ['CSL', 'CL'] and care_group.leader != user:
+        # Check if user is a member of this group
+        try:
+            user_member_profile = RegularMember.objects.get(user=user)
+            if user_member_profile.group != care_group:
+                messages.error(request, 'You can only view care groups you lead or are a member of.')
+                return redirect('members:care_group_list')
+        except RegularMember.DoesNotExist:
+            messages.error(request, 'You can only view care groups you lead or are a member of.')
+            return redirect('members:care_group_list')
+    
+    # Get care group members
+    members = care_group.members.select_related('user').order_by('user__first_name')
+    
+    # Get recent activity for the care group
+    recent_activity = ActivityLog.objects.filter(
+        user__regular_member_profile__group=care_group
+    ).select_related('user').order_by('-timestamp')[:10]
+    
+    # Get available members to add (if user is the leader)
+    available_members = None
+    if care_group.leader == user:
+        available_members = CustomUser.objects.filter(
+            church=care_group.church,
+            is_active=True,
+            is_new_friend=False,
+            role__name__in=['VSL', 'CSL', 'CL', 'CM']
+        ).exclude(
+            regular_member_profile__group__isnull=False
+        ).order_by('first_name', 'last_name')
+    
+    context = {
+        'group': care_group,
+        'members': members,
+        'recent_activity': recent_activity,
+        'capacity_percentage': care_group.capacity_percentage,
+        'is_full': care_group.is_full,
+        'is_leader': care_group.leader == user,
+        'available_members': available_members,
+        'user_role': user.role.name,
+    }
+    
+    return render(request, 'members/care_group_detail.html', context)
+
+
+@login_required
+def care_group_edit(request, group_id):
+    """Edit a care group - only the leader can edit"""
+    user = request.user
+    care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
+    
+    # Check if user is the leader of this care group
+    if care_group.leader != user:
+        messages.error(request, 'Only the group leader can edit this care group.')
+        return redirect('members:care_group_detail', group_id=group_id)
+    
+    if request.method == 'POST':
+        form = CareGroupForm(request.POST, instance=care_group, church=user.church, user=user)
+        if form.is_valid():
+            updated_group = form.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=user,
+                church=user.church,
+                action='GROUP_UPDATED',
+                description=f'Updated care group: {updated_group.name}'
+            )
+            
+            messages.success(request, f'Care group "{updated_group.name}" updated successfully!')
+            return redirect('members:care_group_detail', group_id=group_id)
+    else:
+        form = CareGroupForm(instance=care_group, church=user.church, user=user)
+    
+    context = {
+        'form': form,
+        'group': care_group,
+        'user_role': user.role.name,
+    }
+    
+    return render(request, 'members/care_group_edit.html', context)
+
+
+@login_required
+def care_group_add_member(request, group_id):
+    """Add a member to a care group"""
+    user = request.user
+    care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
+    
+    # Check if user is the leader of this care group
+    if care_group.leader != user:
+        messages.error(request, 'Only the group leader can add members to this care group.')
+        return redirect('members:care_group_detail', group_id=group_id)
+    
+    if care_group.is_full:
+        messages.error(request, 'This care group is already at full capacity.')
+        return redirect('members:care_group_detail', group_id=group_id)
+    
+    if request.method == 'POST':
+        member_id = request.POST.get('member_id')
+        try:
+            member_user = CustomUser.objects.get(pk=member_id, church=care_group.church)
+            
+            # Get or create RegularMember profile
+            regular_member, created = RegularMember.objects.get_or_create(
+                user=member_user,
+                defaults={'role_type': member_user.role.name}
+            )
+            
+            # Check if member is already in a care group
+            if regular_member.group:
+                messages.error(request, f'{member_user.full_name} is already in a care group.')
+                return redirect('members:care_group_detail', group_id=group_id)
+            
+            # Add member to care group
+            regular_member.group = care_group
+            regular_member.save()
+            
+            # Log the activity
+            ActivityLog.objects.create(
+                user=user,
+                church=user.church,
+                action='MEMBER_ADDED_TO_GROUP',
+                description=f'Added {member_user.full_name} to care group: {care_group.name}',
+                related_user=member_user
+            )
+            
+            messages.success(request, f'{member_user.full_name} has been added to the care group!')
+            
+        except CustomUser.DoesNotExist:
+            messages.error(request, 'Selected member not found.')
+    
+    return redirect('members:care_group_detail', group_id=group_id)
+
+
+@login_required
+def care_group_remove_member(request, group_id, member_id):
+    """Remove a member from a care group"""
+    user = request.user
+    care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
+    
+    # Check if user is the leader of this care group
+    if care_group.leader != user:
+        messages.error(request, 'Only the group leader can remove members from this care group.')
+        return redirect('members:care_group_detail', group_id=group_id)
+    
+    try:
+        member_user = CustomUser.objects.get(pk=member_id)
+        regular_member = RegularMember.objects.get(user=member_user, group=care_group)
+        
+        # Remove member from care group
+        regular_member.group = None
+        regular_member.save()
+        
+        # Log the activity
+        ActivityLog.objects.create(
+            user=user,
+            church=user.church,
+            action='MEMBER_REMOVED_FROM_GROUP',
+            description=f'Removed {member_user.full_name} from care group: {care_group.name}',
+            related_user=member_user
+        )
+        
+        messages.success(request, f'{member_user.full_name} has been removed from the care group.')
+        
+    except (CustomUser.DoesNotExist, RegularMember.DoesNotExist):
+        messages.error(request, 'Member not found in this care group.')
+    
+    return redirect('members:care_group_detail', group_id=group_id)
+

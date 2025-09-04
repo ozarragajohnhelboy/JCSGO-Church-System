@@ -22,15 +22,24 @@ urlpatterns = [
     path('regular-members/<int:regular_member_id>/delete/', views.regular_member_delete, name='regular_member_delete'),
     path('regular-members/import/', views.regular_member_import, name='regular_member_import'),
     
-    # Groups
+    # Groups (Admin access)
     path('groups/', views.group_list, name='group_list'),
     path('groups/<int:group_id>/', views.group_detail, name='group_detail'),
+    
+    # Care Groups (Leadership access - VSL, CSL, CL)
+    path('care-groups/', views.care_group_list, name='care_group_list'),
+    path('care-groups/create/', views.care_group_create, name='care_group_create'),
+    path('care-groups/<int:group_id>/', views.care_group_detail, name='care_group_detail'),
+    path('care-groups/<int:group_id>/edit/', views.care_group_edit, name='care_group_edit'),
+    path('care-groups/<int:group_id>/add-member/', views.care_group_add_member, name='care_group_add_member'),
+    path('care-groups/<int:group_id>/remove-member/<int:member_id>/', views.care_group_remove_member, name='care_group_remove_member'),
     
     # Role Management
     path('role-management/', views.role_management, name='role_management'),
     path('ajax/update-user-role/<int:user_id>/', views.ajax_update_user_role, name='ajax_update_user_role'),
     path('ajax/get-user-details/<int:user_id>/', views.ajax_get_user_details, name='ajax_get_user_details'),
     path('ajax/bulk-role-update/', views.ajax_bulk_role_update, name='ajax_bulk_role_update'),
+    path('ajax/get-available-members/<int:group_id>/', views.ajax_get_available_members, name='ajax_get_available_members'),
     
     # Activity Logs
     path('activity-logs/', views.activity_logs, name='activity_logs'),

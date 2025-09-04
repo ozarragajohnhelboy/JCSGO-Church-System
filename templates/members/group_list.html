@@ -1,15 +1,15 @@
-{% extends 'members/base_members.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Groups - {{ block.super }}{% endblock %}
+{% block title %}Care Groups - {{ block.super }}{% endblock %}
 
-{% block members_content %}
+{% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Groups</h1>
+    <h1 class="h2">Care Groups</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
             <a href="{% url 'admin:members_group_add' %}" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-plus-circle"></i> Create Group
+                <i class="bi bi-plus-circle"></i> Create Care Group
             </a>
         </div>
     </div>
@@ -166,7 +166,7 @@
                 <td colspan="8" class="text-center py-4">
                     <div class="text-muted">
                         <i class="bi bi-collection display-4"></i>
-                        <p class="mt-2">No groups found matching your criteria.</p>
+                        <p class="mt-2">No care groups found matching your criteria.</p>
                         <p>Try adjusting your search or filters.</p>
                     </div>
                 </td>
@@ -179,7 +179,7 @@
 <!-- Pagination Info -->
 <div class="d-flex justify-content-between align-items-center mt-4 mb-2">
     <div class="text-muted">
-        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} groups
+        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} care groups
     </div>
     <div class="text-muted">
         Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
@@ -188,7 +188,7 @@
 
 <!-- Pagination -->
 {% if page_obj.has_other_pages %}
-<nav aria-label="Groups pagination" class="mt-2">
+<nav aria-label="Care groups pagination" class="mt-2">
     <ul class="pagination justify-content-center">
         {% if page_obj.has_previous %}
         <li class="page-item">
@@ -230,6 +230,46 @@
     </ul>
 </nav>
 {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stats-card h3 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    
+    .stats-card p {
+        margin: 0;
+        opacity: 0.9;
+    }
+    
+    .search-form {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+    }
+    
+    .table-responsive {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    
+    .btn-action {
+        margin: 0 0.25rem;
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}
