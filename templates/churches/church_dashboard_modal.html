@@ -1,5 +1,21 @@
 <!-- Church Dashboard Modal Content -->
 <div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="mb-0">{{ church.name }} Dashboard</h3>
+          <p class="text-muted mb-0">Church Overview</p>
+        </div>
+        <div class="text-end">
+          <span class="badge bg-primary fs-6">Admin View</span>
+          <span class="badge bg-info ms-2 fs-6">{{ church.name }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Statistics Cards -->
   <div class="row mb-3">
     <div class="col-xl-3 col-md-6 mb-3">
@@ -58,7 +74,7 @@
           <div class="d-flex justify-content-between">
             <div>
               <h6 class="card-title text-white mb-1">Active Groups</h6>
-              <h3 class="text-white mb-0">0</h3>
+              <h3 class="text-white mb-0">{{ active_groups_count|default:"0" }}</h3>
             </div>
             <div class="align-self-center">
               <i class="bi bi-collection fs-2 text-white-50"></i>
@@ -72,92 +88,112 @@
   <!-- Charts Row -->
   <div class="row mb-3">
     <!-- Monthly Member Growth -->
-    <div class="col-lg-6 mb-3">
+    <div class="col-lg-8 mb-3">
       <div class="card">
         <div class="card-header py-2">
           <h6 class="card-title mb-0"><i class="bi bi-graph-up"></i> Monthly Member Growth</h6>
         </div>
         <div class="card-body py-2">
-          <canvas id="modalMemberGrowthChart" width="400" height="150"></canvas>
+          <canvas id="modalMemberGrowthChart" width="400" height="200"></canvas>
         </div>
       </div>
     </div>
 
-    <!-- New Friends to Regular Conversion -->
-    <div class="col-lg-6 mb-3">
+    <!-- Role Distribution Chart -->
+    <div class="col-lg-4 mb-3">
       <div class="card">
         <div class="card-header py-2">
-          <h6 class="card-title mb-0"><i class="bi bi-arrow-up-circle"></i> New Friends to Regular Conversion</h6>
+          <h6 class="card-title mb-0"><i class="bi bi-pie-chart"></i> Role Distribution</h6>
         </div>
         <div class="card-body py-2">
-          <canvas id="modalConversionChart" width="400" height="150"></canvas>
+          <canvas id="modalRoleDistributionChart" width="400" height="200"></canvas>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Regular Members Breakdown -->
+  <!-- Detailed Statistics Row -->
   <div class="row mb-3">
-    <div class="col-12">
+    <!-- Role Distribution Details -->
+    <div class="col-lg-6 mb-3">
       <div class="card">
         <div class="card-header py-2">
-          <h6 class="card-title mb-0"><i class="bi bi-pie-chart"></i> Regular Members by Role</h6>
+          <h6 class="card-title mb-0"><i class="bi bi-people-fill"></i> Role Breakdown</h6>
         </div>
         <div class="card-body py-2">
-          <div class="row">
-            <div class="col-md-5">
-              <canvas id="modalRegularRolesChart" width="300" height="200"></canvas>
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Vine Servant Leader (VSL)</span>
+              <span class="fw-bold">{{ vsl_count }} ({{ vsl_percentage }}%)</span>
             </div>
-            <div class="col-md-7">
-              <div class="table-responsive">
-                <table class="table table-sm table-borderless">
-                  <thead>
-                    <tr>
-                      <th>Role</th>
-                      <th>Count</th>
-                      <th>Percentage</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>
-                        <strong>VSL</strong> (Vine Servant Leader)
-                      </td>
-                      <td>{{ vsl_count }}</td>
-                      <td>{{ vsl_percentage }}%</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>CSL</strong> (Cluster Servant Leader)
-                      </td>
-                      <td>{{ csl_count }}</td>
-                      <td>{{ csl_percentage }}%</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>CL</strong> (Care Leader)
-                      </td>
-                      <td>{{ cl_count }}</td>
-                      <td>{{ cl_percentage }}%</td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <strong>CM</strong> (Care Member)
-                      </td>
-                      <td>{{ cm_count }}</td>
-                      <td>{{ cm_percentage }}%</td>
-                    </tr>
-                  </tbody>
-                </table>
+            <div class="progress" style="height: 20px;">
+              <div class="progress-bar bg-primary" style="width: {{ vsl_percentage }}%"></div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Cluster Servant Leader (CSL)</span>
+              <span class="fw-bold">{{ csl_count }} ({{ csl_percentage }}%)</span>
+            </div>
+            <div class="progress" style="height: 20px;">
+              <div class="progress-bar bg-success" style="width: {{ csl_percentage }}%"></div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Care Leader (CL)</span>
+              <span class="fw-bold">{{ cl_count }} ({{ cl_percentage }}%)</span>
+            </div>
+            <div class="progress" style="height: 20px;">
+              <div class="progress-bar bg-warning" style="width: {{ cl_percentage }}%"></div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Care Member (CM)</span>
+              <span class="fw-bold">{{ cm_count }} ({{ cm_percentage }}%)</span>
+            </div>
+            <div class="progress" style="height: 20px;">
+              <div class="progress-bar bg-info" style="width: {{ cm_percentage }}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group Capacity Overview -->
+    <div class="col-lg-6 mb-3">
+      <div class="card">
+        <div class="card-header py-2">
+          <h6 class="card-title mb-0"><i class="bi bi-collection-fill"></i> Group Capacity Overview</h6>
+        </div>
+        <div class="card-body py-2">
+          <div class="scrollable-container" style="max-height: 200px; overflow-y: auto;">
+          {% for group in group_capacity_data %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between mb-2">
+                <span>{{ group.name }}</span>
+                <span class="fw-bold">{{ group.current }}/{{ group.max }}</span>
               </div>
+              <div class="progress" style="height: 15px;">
+                <div class="progress-bar {% if group.percentage >= 80 %}bg-danger{% elif group.percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                     style="width: {{ group.percentage }}%"></div>
+              </div>
+              <small class="text-muted">{{ group.percentage }}% capacity</small>
             </div>
+          {% empty %}
+            <p class="text-muted text-center mb-0">No groups data available</p>
+          {% endfor %}
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Transition Statistics -->
+  <!-- Transition Statistics Row -->
   <div class="row mb-3">
     <!-- Monthly Transitions Chart -->
     <div class="col-lg-8 mb-3">
@@ -166,7 +202,7 @@
           <h6 class="card-title mb-0"><i class="bi bi-arrow-up-circle"></i> Monthly Transitions (New Friends → Regular Members)</h6>
         </div>
         <div class="card-body py-2">
-          <canvas id="modalTransitionsChart" width="400" height="150"></canvas>
+          <canvas id="modalMonthlyTransitionsChart" width="400" height="200"></canvas>
         </div>
       </div>
     </div>
@@ -188,7 +224,7 @@
               <span>Transition Rate</span>
               <span class="fw-bold">{{ transition_rate }}%</span>
             </div>
-            <div class="progress" style="height: 20px;">
+            <div class="progress" style="height: 15px;">
               <div class="progress-bar bg-success" style="width: {{ transition_rate }}%"></div>
             </div>
             <small class="text-muted">% of new friends who became regular members</small>
@@ -211,10 +247,9 @@
     </div>
   </div>
 
-  <!-- Recent Activity and Group Capacity Row -->
-  <div class="row">
-    <!-- Recent Activity -->
-    <div class="col-lg-6 mb-3">
+  <!-- Recent Activity -->
+  <div class="row mb-3">
+    <div class="col-12">
       <div class="card">
         <div class="card-header py-2">
           <div class="d-flex justify-content-between align-items-center">
@@ -249,196 +284,37 @@
         </div>
       </div>
     </div>
-
-    <!-- Group Capacity Overview -->
-    <div class="col-lg-6 mb-3">
-      <div class="card">
-        <div class="card-header py-2">
-          <h6 class="card-title mb-0"><i class="bi bi-collection"></i> Group Capacity Overview</h6>
-        </div>
-        <div class="card-body py-2">
-          <div class="scrollable-container" style="max-height: 200px; overflow-y: auto;">
-            {% if group_capacity_data %}
-              <div class="list-group list-group-flush">
-                {% for group in group_capacity_data %}
-                  <div class="list-group-item py-2">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                      <strong>{{ group.name }}</strong>
-                      <span class="badge {% if group.percentage >= 80 %}bg-danger{% elif group.percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}">
-                        {{ group.current }}/{{ group.max }}
-                      </span>
-                    </div>
-                    <div class="progress mb-1" style="height: 8px;">
-                      <div class="progress-bar {% if group.percentage >= 80 %}bg-danger{% elif group.percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
-                           style="width: {{ group.percentage }}%"></div>
-                    </div>
-                    <small class="text-muted">{{ group.percentage }}% capacity</small>
-                  </div>
-                {% endfor %}
-              </div>
-            {% else %}
-              <p class="text-muted text-center mb-0">No active groups</p>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
+<!-- Hidden data for chart initialization -->
+<div id="modalChartData" style="display: none;">
+  <div data-months='[{% for month in months %}"{{ month }}"{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
+  <div data-new-friends='[{% for count in new_friends_monthly %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
+  <div data-regulars='[{% for count in regulars_monthly %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
+  <div data-transition-months='[{% for month in transition_months %}"{{ month }}"{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
+  <div data-transition-counts='[{% for count in transition_counts %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
+  <div data-vsl='{{ vsl_count }}'></div>
+  <div data-csl='{{ csl_count }}'></div>
+  <div data-cl='{{ cl_count }}'></div>
+  <div data-cm='{{ cm_count }}'></div>
+</div>
+
 <script>
-// Modal Charts
-document.addEventListener('DOMContentLoaded', function() {
-    // Monthly Member Growth Chart
-    const modalMemberGrowthCtx = document.getElementById('modalMemberGrowthChart').getContext('2d');
-    new Chart(modalMemberGrowthCtx, {
-        type: 'line',
-        data: {
-            labels: [{% for month in months %}'{{ month }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
-            datasets: [{
-                label: 'New Friends',
-                data: [{% for count in new_friends_monthly %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                borderColor: 'rgb(75, 192, 192)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                tension: 0.1
-            }, {
-                label: 'Regular Members',
-                data: [{% for count in regulars_monthly %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                borderColor: 'rgb(255, 99, 132)',
-                backgroundColor: 'rgba(255, 99, 132, 0.2)',
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: 'Monthly Member Growth'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
-            }
-        }
-    });
-
-    // Conversion Chart
-    const modalConversionCtx = document.getElementById('modalConversionChart').getContext('2d');
-    new Chart(modalConversionCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['New Friends (1st-5th)', 'Regular Members'],
-            datasets: [{
-                data: [{{ new_friends_count }}, {{ regulars_count }}],
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.8)',
-                    'rgba(54, 162, 235, 0.8)'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                }
-            }
-        }
-    });
-
-    // Regular Members by Role Chart
-    const modalRegularRolesCtx = document.getElementById('modalRegularRolesChart').getContext('2d');
-    new Chart(modalRegularRolesCtx, {
-        type: 'pie',
-        data: {
-            labels: ['VSL', 'CSL', 'CL', 'CM'],
-            datasets: [{
-                data: [{{ vsl_count }}, {{ csl_count }}, {{ cl_count }}, {{ cm_count }}],
-                backgroundColor: [
-                    'rgba(255, 99, 132, 0.8)',
-                    'rgba(54, 162, 235, 0.8)',
-                    'rgba(255, 205, 86, 0.8)',
-                    'rgba(75, 192, 192, 0.8)'
-                ]
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                }
-            }
-        }
-    });
-
-    // Monthly Transitions Chart
-    const modalTransitionsCtx = document.getElementById('modalTransitionsChart').getContext('2d');
-    new Chart(modalTransitionsCtx, {
-        type: 'line',
-        data: {
-            labels: [{% for month in transition_months %}'{{ month }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
-            datasets: [{
-                label: 'Transitions',
-                data: [{% for count in transition_counts %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                borderColor: '#28a745',
-                backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                tension: 0.4,
-                fill: true,
-                pointBackgroundColor: '#28a745',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: 'Monthly Transitions (New Friends → Regular Members)'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
-            }
-        }
-    });
-});
-
 // Modal Activity Filtering Functions
 function filterModalActivity() {
     const dateFilter = document.getElementById('modal_activity_date').value;
     const churchDomain = '{{ church.domain }}';
     
     // Reload modal content with date filter
-    fetch(`/churches/ajax/church-dashboard/${churchDomain}/?activity_date=${dateFilter}`)
+    fetch(`/ajax/church-dashboard/${churchDomain}/?activity_date=${dateFilter}`)
         .then(response => response.text())
         .then(html => {
             document.getElementById('churchDetailsContent').innerHTML = html;
-            // Reinitialize charts after content update
-            initializeModalCharts();
+            // Trigger chart initialization from parent
+            if (window.initializeModalCharts) {
+                window.initializeModalCharts();
+            }
         })
         .catch(error => {
             console.error('Error filtering modal activity:', error);
@@ -448,13 +324,5 @@ function filterModalActivity() {
 function clearModalDateFilter() {
     document.getElementById('modal_activity_date').value = '';
     filterModalActivity();
-}
-
-function initializeModalCharts() {
-    // Reinitialize all modal charts after content update
-    // This function will be called after filtering to ensure charts work properly
-    if (typeof Chart !== 'undefined') {
-        // Charts will be automatically reinitialized by the existing script
-    }
 }
 </script>

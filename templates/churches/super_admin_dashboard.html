@@ -478,11 +478,199 @@
         .then(response => response.text())
         .then(html => {
           document.getElementById('churchDetailsContent').innerHTML = html;
-          new bootstrap.Modal(document.getElementById('churchDetailsModal')).show();
+          
+          // Show the modal
+          const modal = new bootstrap.Modal(document.getElementById('churchDetailsModal'));
+          modal.show();
+          
+          // Wait for modal to be fully shown before initializing charts
+          document.getElementById('churchDetailsModal').addEventListener('shown.bs.modal', function() {
+            setTimeout(() => {
+              initializeModalCharts();
+            }, 300);
+          }, { once: true });
         })
         .catch(error => {
           console.error('Error loading church details:', error);
         });
+    }
+
+    // Initialize modal charts function
+    function initializeModalCharts() {
+      console.log('Initializing modal charts...');
+      
+      // Destroy existing charts first if they exist and have destroy method
+      if (window.modalMemberGrowthChart && typeof window.modalMemberGrowthChart.destroy === 'function') {
+          window.modalMemberGrowthChart.destroy();
+      }
+      if (window.modalRoleDistributionChart && typeof window.modalRoleDistributionChart.destroy === 'function') {
+          window.modalRoleDistributionChart.destroy();
+      }
+      if (window.modalMonthlyTransitionsChart && typeof window.modalMonthlyTransitionsChart.destroy === 'function') {
+          window.modalMonthlyTransitionsChart.destroy();
+      }
+      
+      // Get chart data from hidden elements
+      const chartDataContainer = document.getElementById('modalChartData');
+      if (!chartDataContainer) {
+        console.error('Chart data container not found');
+        return;
+      }
+      
+      try {
+        const monthsData = JSON.parse(chartDataContainer.querySelector('[data-months]').getAttribute('data-months'));
+        const newFriendsData = JSON.parse(chartDataContainer.querySelector('[data-new-friends]').getAttribute('data-new-friends'));
+        const regularsData = JSON.parse(chartDataContainer.querySelector('[data-regulars]').getAttribute('data-regulars'));
+        const transitionMonthsData = JSON.parse(chartDataContainer.querySelector('[data-transition-months]').getAttribute('data-transition-months'));
+        const transitionCountsData = JSON.parse(chartDataContainer.querySelector('[data-transition-counts]').getAttribute('data-transition-counts'));
+        const vslCount = parseInt(chartDataContainer.querySelector('[data-vsl]').getAttribute('data-vsl'));
+        const cslCount = parseInt(chartDataContainer.querySelector('[data-csl]').getAttribute('data-csl'));
+        const clCount = parseInt(chartDataContainer.querySelector('[data-cl]').getAttribute('data-cl'));
+        const cmCount = parseInt(chartDataContainer.querySelector('[data-cm]').getAttribute('data-cm'));
+        
+        console.log('Chart data loaded:', { monthsData, newFriendsData, regularsData, vslCount, cslCount, clCount, cmCount });
+        
+        // Monthly Growth Chart
+        const modalMemberGrowthElement = document.getElementById('modalMemberGrowthChart');
+        if (modalMemberGrowthElement) {
+            const modalMemberGrowthCtx = modalMemberGrowthElement.getContext('2d');
+            window.modalMemberGrowthChart = new Chart(modalMemberGrowthCtx, {
+                type: 'line',
+                data: {
+                    labels: monthsData,
+                    datasets: [{
+                        label: 'New Friends',
+                        data: newFriendsData,
+                        borderColor: '#f093fb',
+                        backgroundColor: 'rgba(240, 147, 251, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Regular Members',
+                        data: regularsData,
+                        borderColor: '#4facfe',
+                        backgroundColor: 'rgba(79, 172, 254, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Monthly Member Growth'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+            console.log('Monthly Growth Chart initialized successfully');
+        } else {
+            console.error('modalMemberGrowthChart element not found');
+        }
+
+        // Role Distribution Chart
+        const modalRoleDistributionElement = document.getElementById('modalRoleDistributionChart');
+        if (modalRoleDistributionElement) {
+            const modalRoleDistributionCtx = modalRoleDistributionElement.getContext('2d');
+            window.modalRoleDistributionChart = new Chart(modalRoleDistributionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['VSL', 'CSL', 'CL', 'CM'],
+                    datasets: [{
+                        data: [vslCount, cslCount, clCount, cmCount],
+                        backgroundColor: [
+                            '#007bff',
+                            '#28a745',
+                            '#ffc107',
+                            '#17a2b8'
+                        ],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Role Distribution'
+                        }
+                    }
+                }
+            });
+            console.log('Role Distribution Chart initialized successfully');
+        } else {
+            console.error('modalRoleDistributionChart element not found');
+        }
+
+        // Monthly Transitions Chart
+        const modalMonthlyTransitionsElement = document.getElementById('modalMonthlyTransitionsChart');
+        if (modalMonthlyTransitionsElement) {
+            const modalMonthlyTransitionsCtx = modalMonthlyTransitionsElement.getContext('2d');
+            window.modalMonthlyTransitionsChart = new Chart(modalMonthlyTransitionsCtx, {
+                type: 'line',
+                data: {
+                    labels: transitionMonthsData,
+                    datasets: [{
+                        label: 'Transitions',
+                        data: transitionCountsData,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#28a745',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Monthly Transitions (New Friends → Regular Members)'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+            console.log('Monthly Transitions Chart initialized successfully');
+        } else {
+            console.error('modalMonthlyTransitionsChart element not found');
+        }
+        
+      } catch (error) {
+        console.error('Error parsing chart data:', error);
+      }
     }
 
     function editChurch(churchDomain) {

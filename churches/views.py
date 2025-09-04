@@ -712,8 +712,13 @@ def ajax_church_dashboard(request, church_domain):
         # Limit to 5 items and order by timestamp
         recent_activity = recent_activity_query.select_related('user').order_by('-timestamp')[:5]
         
-        # Get group capacity data (limit to 5)
+        # Get active groups count
         from members.models import Group
+        active_groups_count = Group.objects.filter(
+            church=church, is_active=True
+        ).count()
+        
+        # Get group capacity data (limit to 5)
         groups = Group.objects.filter(church=church, is_active=True)[:5]
         group_capacity_data = []
         for group in groups:
@@ -748,6 +753,7 @@ def ajax_church_dashboard(request, church_domain):
             'transition_counts': transition_counts,
             'current_month_transitions': current_month_transitions,
             'transition_rate': transition_rate,
+            'active_groups_count': active_groups_count,
         }
         
         return render(request, 'churches/church_dashboard_modal.html', context)
