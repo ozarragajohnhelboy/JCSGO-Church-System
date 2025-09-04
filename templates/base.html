@@ -229,18 +229,6 @@
                           Care Groups
                         </a>
                       </li>
-                      <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'member_list' %}active{% endif %}" href="{% url 'members:member_list' %}">
-                          <i class="bi bi-people me-2"></i>
-                          Members
-                        </a>
-                      </li>
-                      <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'activity_logs' %}active{% endif %}" href="{% url 'members:activity_logs' %}">
-                          <i class="bi bi-activity me-2"></i>
-                          Activity Logs
-                        </a>
-                      </li>
                     {% elif user.role.name == 'CM' %}
                       <!-- CM Sidebar (blank for now) -->
                       <li class="nav-item">
