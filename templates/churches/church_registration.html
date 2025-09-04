@@ -19,7 +19,7 @@
             <form method="post" enctype="multipart/form-data">
               {% csrf_token %}
 
-              <div class="row">
+              <div class="row mt-3">
                 <!-- Personal Information -->
                 <div class="col-12 col-md-6 px-4">
                   <h5 class="text-primary mb-1 px-4"><i class="bi bi-person"></i> Personal Information</h5>
@@ -161,19 +161,19 @@
                 </div>
               </div>
 
-              <div class="d-grid gap-2 mt-2 px-4">
-                <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-person-plus"></i> Create Account</button>
+              <div class="d-grid gap-2 mt-3 px-4 w-100 justify-content-center">
+                <button type="submit" class="btn btn-primary btn-lg px-4"><i class="bi bi-person-plus"></i> Create Account</button>
               </div>
             </form>
 
-            <div class="text-center mt-2">
+            <div class="text-center mt-3">
               <p class="text-muted mb-1">Already have an account?</p>
               <a href="{% url 'churches:church_login' church.domain %}" class="btn btn-outline-primary"><i class="bi bi-box-arrow-in-right"></i> Sign In Here</a>
             </div>
 
             <hr class="my-2" />
 
-            <div class="text-center">
+            <div class="text-center mt-3">
               <a href="{% url 'churches:church_selection' %}" class="text-muted text-decoration-none"><i class="bi bi-arrow-left"></i> Back to Church Selection</a>
             </div>
           </div>
