@@ -1469,7 +1469,7 @@ def regular_member_import(request):
         'form': form,
         'title': 'Import Regular Members',
         'church': request.user.church
-        }
+    }
     return render(request, 'members/regular_member_import.html', context)
 
 
