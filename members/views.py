@@ -22,12 +22,13 @@ from datetime import datetime, timedelta
 
 from .models import (
     CustomUser, NewFriend, RegularMember, Group, Role, 
-    ActivityLog
+    ActivityLog, Attendance
 )
 from .forms import (
     CustomUserForm, NewFriendForm, RegularMemberForm, 
     GroupForm, ProfileUpdateForm, NewFriendImportForm, RegularMemberImportForm,
-    CareGroupForm, CareGroupMemberForm
+    CareGroupForm, CareGroupMemberForm, UserProfileForm, QRCodeScanForm,
+    AttendanceFilterForm, AttendanceExportForm, ProfileExportForm, ProfileImportForm
 )
 
 
@@ -1931,4 +1932,434 @@ def role_new_friends_list(request):
     }
     
     return render(request, 'members/role_new_friends_list.html', context)
+
+
+# ==================== PROFILE AND ATTENDANCE VIEWS ====================
+
+@login_required
+def user_profile(request):
+    """Display and edit user profile with QR code"""
+    user = request.user
+    
+    # Generate QR code if it doesn't exist
+    if not user.qr_code_image:
+        user.generate_qr_code()
+    
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, request.FILES, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('members:user_profile')
+    else:
+        form = UserProfileForm(instance=user)
+    
+    # Get attendance summary
+    attendance_summary = Attendance.get_user_attendance_summary(user, days=30)
+    
+    context = {
+        'form': form,
+        'user': user,
+        'attendance_summary': attendance_summary,
+    }
+    
+    return render(request, 'members/user_profile.html', context)
+
+
+@login_required
+def generate_qr_code(request, user_id):
+    """Generate QR code for a user"""
+    user = get_object_or_404(CustomUser, id=user_id)
+    
+    # Check permissions
+    if not (request.user.is_superuser or 
+            request.user.role.name in ['ADMIN', 'VSL', 'CSL', 'CL'] or 
+            request.user == user):
+        raise PermissionDenied("You don't have permission to generate QR codes for this user.")
+    
+    try:
+        qr_image = user.generate_qr_code()
+        messages.success(request, f'QR code generated successfully for {user.full_name}')
+    except Exception as e:
+        messages.error(request, f'Error generating QR code: {str(e)}')
+    
+    return redirect('members:user_profile' if request.user == user else 'members:member_detail', pk=user_id)
+
+
+@login_required
+def qr_scanner(request):
+    """QR code scanner for attendance"""
+    user = request.user
+    church = user.church
+    
+    if request.method == 'POST':
+        form = QRCodeScanForm(request.POST)
+        if form.is_valid():
+            qr_data = form.cleaned_data['qr_data']
+            attendance_type = form.cleaned_data['attendance_type']
+            notes = form.cleaned_data['notes']
+            
+            try:
+                # Parse QR code data
+                if qr_data.startswith('CHURCH_ATTENDANCE:'):
+                    parts = qr_data.split(':')
+                    if len(parts) >= 3:
+                        qr_code_id = parts[1]
+                        email = parts[2]
+                        
+                        # Find user by QR code ID
+                        try:
+                            attendee = CustomUser.objects.get(qr_code_id=qr_code_id, church=church)
+                            
+                            # Check if already attended today
+                            today = timezone.now().date()
+                            existing_attendance = Attendance.objects.filter(
+                                user=attendee,
+                                date=today,
+                                attendance_type=attendance_type
+                            ).first()
+                            
+                            if existing_attendance:
+                                messages.warning(request, f'{attendee.full_name} has already been marked present for {attendance_type} today.')
+                            else:
+                                # Create attendance record
+                                attendance = Attendance.objects.create(
+                                    user=attendee,
+                                    church=church,
+                                    attendance_type=attendance_type,
+                                    date=today,
+                                    time_in=timezone.now().time(),
+                                    notes=notes,
+                                    scanned_by=user,
+                                    ip_address=request.META.get('REMOTE_ADDR'),
+                                    user_agent=request.META.get('HTTP_USER_AGENT', '')
+                                )
+                                
+                                # Update user's last attendance
+                                attendee.record_attendance()
+                                
+                                messages.success(request, f'Attendance recorded for {attendee.full_name}')
+                                
+                                return JsonResponse({
+                                    'success': True,
+                                    'message': f'Attendance recorded for {attendee.full_name}',
+                                    'user': {
+                                        'name': attendee.full_name,
+                                        'role': attendee.role.get_name_display() if attendee.role else 'No Role',
+                                        'time': attendance.time_in.strftime('%I:%M %p')
+                                    }
+                                })
+                        except CustomUser.DoesNotExist:
+                            messages.error(request, 'User not found or QR code is invalid.')
+                            return JsonResponse({
+                                'success': False,
+                                'message': 'User not found or QR code is invalid.'
+                            })
+                    else:
+                        messages.error(request, 'Invalid QR code format.')
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'Invalid QR code format.'
+                        })
+                else:
+                    messages.error(request, 'Invalid QR code. Please scan a valid church attendance QR code.')
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Invalid QR code. Please scan a valid church attendance QR code.'
+                    })
+            except Exception as e:
+                messages.error(request, f'Error processing QR code: {str(e)}')
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Error processing QR code: {str(e)}'
+                })
+    else:
+        form = QRCodeScanForm()
+    
+    # Get recent attendances
+    recent_attendances = Attendance.objects.filter(
+        church=church,
+        date=timezone.now().date()
+    ).select_related('user').order_by('-time_in')[:10]
+    
+    context = {
+        'form': form,
+        'recent_attendances': recent_attendances,
+    }
+    
+    return render(request, 'members/qr_scanner.html', context)
+
+
+@login_required
+def attendance_list(request):
+    """List attendance records with filtering"""
+    user = request.user
+    church = user.church
+    
+    # Get filter parameters
+    form = AttendanceFilterForm(request.GET, church=church)
+    attendances = Attendance.objects.filter(church=church).select_related('user', 'scanned_by')
+    
+    if form.is_valid():
+        date_from = form.cleaned_data.get('date_from')
+        date_to = form.cleaned_data.get('date_to')
+        attendance_type = form.cleaned_data.get('attendance_type')
+        user_filter = form.cleaned_data.get('user')
+        
+        if date_from:
+            attendances = attendances.filter(date__gte=date_from)
+        if date_to:
+            attendances = attendances.filter(date__lte=date_to)
+        if attendance_type:
+            attendances = attendances.filter(attendance_type=attendance_type)
+        if user_filter:
+            attendances = attendances.filter(user=user_filter)
+    
+    # Pagination
+    paginator = Paginator(attendances, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get summary statistics
+    today = timezone.now().date()
+    today_attendances = Attendance.objects.filter(church=church, date=today).count()
+    this_week = Attendance.objects.filter(
+        church=church, 
+        date__gte=today - timedelta(days=7)
+    ).count()
+    
+    context = {
+        'page_obj': page_obj,
+        'form': form,
+        'today_attendances': today_attendances,
+        'this_week_attendances': this_week,
+    }
+    
+    return render(request, 'members/attendance_list.html', context)
+
+
+@login_required
+def attendance_export(request):
+    """Export attendance data"""
+    user = request.user
+    church = user.church
+    
+    if request.method == 'POST':
+        form = AttendanceExportForm(request.POST)
+        if form.is_valid():
+            export_format = form.cleaned_data['format']
+            date_from = form.cleaned_data.get('date_from')
+            date_to = form.cleaned_data.get('date_to')
+            attendance_type = form.cleaned_data.get('attendance_type')
+            include_qr_codes = form.cleaned_data.get('include_qr_codes', False)
+            
+            # Filter attendances
+            attendances = Attendance.objects.filter(church=church).select_related('user', 'scanned_by')
+            
+            if date_from:
+                attendances = attendances.filter(date__gte=date_from)
+            if date_to:
+                attendances = attendances.filter(date__lte=date_to)
+            if attendance_type:
+                attendances = attendances.filter(attendance_type=attendance_type)
+            
+            # Create response based on format
+            if export_format == 'csv':
+                response = HttpResponse(content_type='text/csv')
+                response['Content-Disposition'] = f'attachment; filename="attendance_{church.domain}_{timezone.now().strftime("%Y%m%d")}.csv"'
+                
+                writer = csv.writer(response)
+                headers = ['Date', 'Time In', 'Time Out', 'Name', 'Email', 'Role', 'Attendance Type', 'Notes', 'Scanned By']
+                if include_qr_codes:
+                    headers.append('QR Code ID')
+                writer.writerow(headers)
+                
+                for attendance in attendances:
+                    row = [
+                        attendance.date.strftime('%Y-%m-%d'),
+                        attendance.time_in.strftime('%I:%M %p'),
+                        attendance.time_out.strftime('%I:%M %p') if attendance.time_out else '',
+                        attendance.user.full_name,
+                        attendance.user.email,
+                        attendance.user.role.get_name_display() if attendance.user.role else '',
+                        attendance.get_attendance_type_display(),
+                        attendance.notes,
+                        attendance.scanned_by.full_name if attendance.scanned_by else ''
+                    ]
+                    if include_qr_codes:
+                        row.append(str(attendance.user.qr_code_id))
+                    writer.writerow(row)
+                
+                return response
+            
+            elif export_format == 'excel':
+                # Excel export would require openpyxl
+                messages.info(request, 'Excel export feature will be implemented soon.')
+                return redirect('members:attendance_export')
+            
+            elif export_format == 'pdf':
+                # PDF export would require reportlab
+                messages.info(request, 'PDF export feature will be implemented soon.')
+                return redirect('members:attendance_export')
+    else:
+        form = AttendanceExportForm()
+    
+    context = {
+        'form': form,
+    }
+    
+    return render(request, 'members/attendance_export.html', context)
+
+
+@login_required
+def profile_export(request):
+    """Export user profiles with QR codes"""
+    user = request.user
+    church = user.church
+    
+    if request.method == 'POST':
+        form = ProfileExportForm(request.POST)
+        if form.is_valid():
+            export_format = form.cleaned_data['format']
+            include_qr_codes = form.cleaned_data.get('include_qr_codes', False)
+            include_profile_pictures = form.cleaned_data.get('include_profile_pictures', False)
+            member_type = form.cleaned_data.get('member_type', '')
+            
+            # Filter users
+            users = CustomUser.objects.filter(church=church, is_active=True)
+            
+            if member_type == 'new_friends':
+                users = users.filter(is_new_friend=True)
+            elif member_type == 'regular_members':
+                users = users.filter(is_new_friend=False)
+            
+            # Create response based on format
+            if export_format == 'csv':
+                response = HttpResponse(content_type='text/csv')
+                response['Content-Disposition'] = f'attachment; filename="profiles_{church.domain}_{timezone.now().strftime("%Y%m%d")}.csv"'
+                
+                writer = csv.writer(response)
+                headers = ['Name', 'Email', 'Phone', 'Address', 'Birth Date', 'Role', 'Member Type', 'Date Joined']
+                if include_qr_codes:
+                    headers.append('QR Code ID')
+                writer.writerow(headers)
+                
+                for user_obj in users:
+                    row = [
+                        user_obj.full_name,
+                        user_obj.email,
+                        user_obj.phone_number,
+                        user_obj.address,
+                        user_obj.birth_date.strftime('%Y-%m-%d') if user_obj.birth_date else '',
+                        user_obj.role.get_name_display() if user_obj.role else '',
+                        'New Friend' if user_obj.is_new_friend else 'Regular Member',
+                        user_obj.date_joined.strftime('%Y-%m-%d')
+                    ]
+                    if include_qr_codes:
+                        row.append(str(user_obj.qr_code_id))
+                    writer.writerow(row)
+                
+                return response
+            
+            elif export_format == 'excel':
+                messages.info(request, 'Excel export feature will be implemented soon.')
+                return redirect('members:profile_export')
+            
+            elif export_format == 'pdf':
+                messages.info(request, 'PDF export feature will be implemented soon.')
+                return redirect('members:profile_export')
+    else:
+        form = ProfileExportForm()
+    
+    context = {
+        'form': form,
+    }
+    
+    return render(request, 'members/profile_export.html', context)
+
+
+@login_required
+def profile_import(request):
+    """Import user profiles"""
+    user = request.user
+    church = user.church
+    
+    if request.method == 'POST':
+        form = ProfileImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            file = form.cleaned_data['file']
+            update_existing = form.cleaned_data.get('update_existing', False)
+            generate_qr_codes = form.cleaned_data.get('generate_qr_codes', True)
+            
+            try:
+                # Process the file
+                if file.name.endswith('.csv'):
+                    # CSV processing
+                    decoded_file = file.read().decode('utf-8')
+                    csv_data = csv.DictReader(io.StringIO(decoded_file))
+                    
+                    imported_count = 0
+                    updated_count = 0
+                    
+                    for row in csv_data:
+                        email = row.get('email', '').strip()
+                        if not email:
+                            continue
+                        
+                        # Check if user exists
+                        try:
+                            existing_user = CustomUser.objects.get(email=email, church=church)
+                            if update_existing:
+                                # Update existing user
+                                existing_user.first_name = row.get('first_name', existing_user.first_name)
+                                existing_user.last_name = row.get('last_name', existing_user.last_name)
+                                existing_user.phone_number = row.get('phone_number', existing_user.phone_number)
+                                existing_user.address = row.get('address', existing_user.address)
+                                if row.get('birth_date'):
+                                    try:
+                                        existing_user.birth_date = datetime.strptime(row['birth_date'], '%Y-%m-%d').date()
+                                    except ValueError:
+                                        pass
+                                existing_user.save()
+                                updated_count += 1
+                        except CustomUser.DoesNotExist:
+                            # Create new user
+                            new_user = CustomUser.objects.create(
+                                email=email,
+                                first_name=row.get('first_name', ''),
+                                last_name=row.get('last_name', ''),
+                                phone_number=row.get('phone_number', ''),
+                                address=row.get('address', ''),
+                                church=church,
+                                is_new_friend=True,  # Default to new friend
+                                is_active=True
+                            )
+                            
+                            if row.get('birth_date'):
+                                try:
+                                    new_user.birth_date = datetime.strptime(row['birth_date'], '%Y-%m-%d').date()
+                                    new_user.save()
+                                except ValueError:
+                                    pass
+                            
+                            # Generate QR code if requested
+                            if generate_qr_codes:
+                                new_user.generate_qr_code()
+                            
+                            imported_count += 1
+                    
+                    messages.success(request, f'Import completed: {imported_count} new users imported, {updated_count} users updated.')
+                else:
+                    messages.info(request, 'Excel import feature will be implemented soon.')
+                
+            except Exception as e:
+                messages.error(request, f'Error importing file: {str(e)}')
+    else:
+        form = ProfileImportForm()
+    
+    context = {
+        'form': form,
+    }
+    
+    return render(request, 'members/profile_import.html', context)
 

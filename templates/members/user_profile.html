@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  My Profile
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2><i class="fas fa-user"></i> My Profile</h2>
+          <div>
+            <a href="{% url 'members:generate_qr_code' user.id %}" class="btn btn-outline-primary"><i class="fas fa-qrcode"></i> Generate QR Code</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Profile Information -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="fas fa-edit"></i> Profile Information</h5>
+          </div>
+          <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                      <div class="text-danger">{{ form.first_name.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                      <div class="text-danger">{{ form.last_name.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                    {{ form.email }}
+                    <div class="form-text">{{ form.email.help_text }}</div>
+                    {% if form.email.errors %}
+                      <div class="text-danger">{{ form.email.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.phone_number.id_for_label }}" class="form-label">Phone Number</label>
+                    {{ form.phone_number }}
+                    {% if form.phone_number.errors %}
+                      <div class="text-danger">{{ form.phone_number.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <label for="{{ form.address.id_for_label }}" class="form-label">Address</label>
+                {{ form.address }}
+                {% if form.address.errors %}
+                  <div class="text-danger">{{ form.address.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.birth_date.id_for_label }}" class="form-label">Birth Date</label>
+                    {{ form.birth_date }}
+                    {% if form.birth_date.errors %}
+                      <div class="text-danger">{{ form.birth_date.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.profile_picture.id_for_label }}" class="form-label">Profile Picture</label>
+                    {{ form.profile_picture }}
+                    {% if form.profile_picture.errors %}
+                      <div class="text-danger">{{ form.profile_picture.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Profile</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- QR Code and Profile Picture -->
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="fas fa-qrcode"></i> QR Code</h5>
+          </div>
+          <div class="card-body text-center">
+            {% if user.qr_code_image %}
+              <img src="{{ user.qr_code_image.url }}" alt="QR Code" class="img-fluid mb-3" style="max-width: 200px;" />
+              <p class="text-muted small">Scan this QR code for attendance</p>
+              <a href="{{ user.qr_code_image.url }}" download class="btn btn-outline-primary btn-sm"><i class="fas fa-download"></i> Download QR Code</a>
+            {% else %}
+              <div class="text-center py-4">
+                <i class="fas fa-qrcode fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No QR code generated yet</p>
+                <a href="{% url 'members:generate_qr_code' user.id %}" class="btn btn-primary"><i class="fas fa-qrcode"></i> Generate QR Code</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="fas fa-image"></i> Profile Picture</h5>
+          </div>
+          <div class="card-body text-center">
+            {% if user.profile_picture %}
+              <img src="{{ user.profile_picture.url }}" alt="Profile Picture" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;" />
+            {% else %}
+              <div class="text-center py-4">
+                <i class="fas fa-user-circle fa-5x text-muted mb-3"></i>
+                <p class="text-muted">No profile picture uploaded</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Summary -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="fas fa-calendar-check"></i> Attendance Summary (Last 30 Days)</h5>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3">
+                <div class="text-center">
+                  <h3 class="text-primary">{{ attendance_summary.total_attendances }}</h3>
+                  <p class="text-muted">Total Attendances</p>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="text-center">
+                  <h3 class="text-success">{{ attendance_summary.attendance_rate }}%</h3>
+                  <p class="text-muted">Attendance Rate</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="text-center">
+                  <h5 class="text-info">Recent Attendances</h5>
+                  {% if attendance_summary.recent_attendances %}
+                    <div class="list-group list-group-flush">
+                      {% for attendance in attendance_summary.recent_attendances|slice:':5' %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                          <span>{{ attendance.get_attendance_type_display }}</span>
+                          <small class="text-muted">{{ attendance.date|date:'M d' }}</small>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <p class="text-muted">No recent attendances</p>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

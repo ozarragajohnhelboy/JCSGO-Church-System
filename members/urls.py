@@ -57,4 +57,17 @@ urlpatterns = [
     
     # Church Statistics
     path('statistics/', views.church_statistics, name='church_statistics'),
+    
+    # Profile and QR Code
+    path('profile/', views.user_profile, name='user_profile'),
+    path('generate-qr/<int:user_id>/', views.generate_qr_code, name='generate_qr_code'),
+    
+    # Attendance System
+    path('attendance/scanner/', views.qr_scanner, name='qr_scanner'),
+    path('attendance/', views.attendance_list, name='attendance_list'),
+    path('attendance/export/', views.attendance_export, name='attendance_export'),
+    
+    # Profile Import/Export
+    path('profiles/export/', views.profile_export, name='profile_export'),
+    path('profiles/import/', views.profile_import, name='profile_import'),
 ] 

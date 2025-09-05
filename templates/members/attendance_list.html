@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Attendance List
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2><i class="fas fa-calendar-check"></i> Attendance Records</h2>
+          <div>
+            <a href="{% url 'members:qr_scanner' %}" class="btn btn-primary me-2"><i class="fas fa-qrcode"></i> QR Scanner</a>
+            <a href="{% url 'members:attendance_export' %}" class="btn btn-outline-primary"><i class="fas fa-download"></i> Export</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+      <div class="col-md-4">
+        <div class="card bg-primary text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4>{{ today_attendances }}</h4>
+                <p class="mb-0">Today's Attendances</p>
+              </div>
+              <div class="align-self-center">
+                <i class="fas fa-calendar-day fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card bg-success text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4>{{ this_week_attendances }}</h4>
+                <p class="mb-0">This Week</p>
+              </div>
+              <div class="align-self-center">
+                <i class="fas fa-calendar-week fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card bg-info text-white">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div>
+                <h4>{{ page_obj.paginator.count }}</h4>
+                <p class="mb-0">Total Records</p>
+              </div>
+              <div class="align-self-center">
+                <i class="fas fa-list fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fas fa-filter"></i> Filters</h5>
+      </div>
+      <div class="card-body">
+        <form method="get" class="row g-3">
+          <div class="col-md-3">
+            <label for="{{ form.date_from.id_for_label }}" class="form-label">From Date</label>
+            {{ form.date_from }}
+          </div>
+          <div class="col-md-3">
+            <label for="{{ form.date_to.id_for_label }}" class="form-label">To Date</label>
+            {{ form.date_to }}
+          </div>
+          <div class="col-md-3">
+            <label for="{{ form.attendance_type.id_for_label }}" class="form-label">Type</label>
+            {{ form.attendance_type }}
+          </div>
+          <div class="col-md-3">
+            <label for="{{ form.user.id_for_label }}" class="form-label">Member</label>
+            {{ form.user }}
+          </div>
+          <div class="col-12">
+            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Apply Filters</button>
+            <a href="{% url 'members:attendance_list' %}" class="btn btn-outline-secondary"><i class="fas fa-times"></i> Clear Filters</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Attendance List -->
+    <div class="card">
+      <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fas fa-list"></i> Attendance Records</h5>
+      </div>
+      <div class="card-body">
+        {% if page_obj %}
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Member</th>
+                  <th>Role</th>
+                  <th>Type</th>
+                  <th>Scanned By</th>
+                  <th>Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for attendance in page_obj %}
+                  <tr>
+                    <td>
+                      <span class="badge bg-secondary">{{ attendance.date|date:'M d, Y' }}</span>
+                      <br /><small class="text-muted">{{ attendance.day_of_week }}</small>
+                    </td>
+                    <td>
+                      <strong>{{ attendance.time_in|time:'g:i A' }}</strong>
+                      {% if attendance.time_out %}
+                        <br /><small class="text-muted">Out: {{ attendance.time_out|time:'g:i A' }}</small>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <div class="d-flex align-items-center">
+                        {% if attendance.user.profile_picture %}
+                          <img src="{{ attendance.user.profile_picture.url }}" alt="{{ attendance.user.full_name }}" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;" />
+                        {% else %}
+                          <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                            <i class="fas fa-user text-white"></i>
+                          </div>
+                        {% endif %}
+                        <div>
+                          <strong>{{ attendance.user.full_name }}</strong>
+                          <br /><small class="text-muted">{{ attendance.user.email }}</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      {% if attendance.user.role %}
+                        <span class="badge bg-info">{{ attendance.user.role.get_name_display }}</span>
+                      {% else %}
+                        <span class="text-muted">No Role</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <span class="badge bg-primary">{{ attendance.get_attendance_type_display }}</span>
+                    </td>
+                    <td>
+                      {% if attendance.scanned_by %}
+                        <small>{{ attendance.scanned_by.full_name }}</small>
+                      {% else %}
+                        <span class="text-muted">System</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      {% if attendance.notes %}
+                        <span class="text-truncate d-inline-block" style="max-width: 150px;" title="{{ attendance.notes }}">{{ attendance.notes }}</span>
+                      {% else %}
+                        <span class="text-muted">-</span>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#attendanceModal{{ attendance.id }}"><i class="fas fa-eye"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+
+                  <!-- Attendance Detail Modal -->
+                  <div class="modal fade" id="attendanceModal{{ attendance.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title">Attendance Details</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                          <div class="row">
+                            <div class="col-6">
+                              <strong>Member:</strong><br />
+                              {{ attendance.user.full_name }}<br />
+                              <small class="text-muted">{{ attendance.user.email }}</small>
+                            </div>
+                            <div class="col-6">
+                              <strong>Date & Time:</strong><br />
+                              {{ attendance.date|date:'M d, Y' }}<br />
+                              <small class="text-muted">{{ attendance.time_in|time:'g:i A' }}</small>
+                            </div>
+                          </div>
+                          <hr />
+                          <div class="row">
+                            <div class="col-6">
+                              <strong>Type:</strong><br />
+                              {{ attendance.get_attendance_type_display }}
+                            </div>
+                            <div class="col-6">
+                              <strong>Scanned By:</strong><br />
+                              {% if attendance.scanned_by %}
+                                {{ attendance.scanned_by.full_name }}
+                              {% else %}
+                                System
+                              {% endif %}
+                            </div>
+                          </div>
+                          {% if attendance.notes %}
+                            <hr />
+                            <strong>Notes:</strong><br />
+                            {{ attendance.notes }}
+                          {% endif %}
+                          {% if attendance.duration %}
+                            <hr />
+                            <strong>Duration:</strong><br />
+                            {{ attendance.duration }}
+                          {% endif %}
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          {% if page_obj.has_other_pages %}
+            <nav aria-label="Attendance pagination">
+              <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                  <li class="page-item">
+                    <a class="page-link"
+                      href="?page=1{% if request.GET.date_from %}
+                        &date_from={{ request.GET.date_from }}
+                      {% endif %}{% if request.GET.date_to %}
+                        &date_to={{ request.GET.date_to }}
+                      {% endif %}{% if request.GET.attendance_type %}
+                        &attendance_type={{ request.GET.attendance_type }}
+                      {% endif %}{% if request.GET.user %}
+                        &user={{ request.GET.user }}
+                      {% endif %}">
+                      First
+                    </a>
+                  </li>
+                  <li class="page-item">
+                    <a class="page-link"
+                      href="?page={{ page_obj.previous_page_number }}{% if request.GET.date_from %}
+                        &date_from={{ request.GET.date_from }}
+                      {% endif %}{% if request.GET.date_to %}
+                        &date_to={{ request.GET.date_to }}
+                      {% endif %}{% if request.GET.attendance_type %}
+                        &attendance_type={{ request.GET.attendance_type }}
+                      {% endif %}{% if request.GET.user %}
+                        &user={{ request.GET.user }}
+                      {% endif %}">
+                      Previous
+                    </a>
+                  </li>
+                {% endif %}
+
+                <li class="page-item active">
+                  <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                </li>
+
+                {% if page_obj.has_next %}
+                  <li class="page-item">
+                    <a class="page-link"
+                      href="?page={{ page_obj.next_page_number }}{% if request.GET.date_from %}
+                        &date_from={{ request.GET.date_from }}
+                      {% endif %}{% if request.GET.date_to %}
+                        &date_to={{ request.GET.date_to }}
+                      {% endif %}{% if request.GET.attendance_type %}
+                        &attendance_type={{ request.GET.attendance_type }}
+                      {% endif %}{% if request.GET.user %}
+                        &user={{ request.GET.user }}
+                      {% endif %}">
+                      Next
+                    </a>
+                  </li>
+                  <li class="page-item">
+                    <a class="page-link"
+                      href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.date_from %}
+                        &date_from={{ request.GET.date_from }}
+                      {% endif %}{% if request.GET.date_to %}
+                        &date_to={{ request.GET.date_to }}
+                      {% endif %}{% if request.GET.attendance_type %}
+                        &attendance_type={{ request.GET.attendance_type }}
+                      {% endif %}{% if request.GET.user %}
+                        &user={{ request.GET.user }}
+                      {% endif %}">
+                      Last
+                    </a>
+                  </li>
+                {% endif %}
+              </ul>
+            </nav>
+          {% endif %}
+        {% else %}
+          <div class="text-center py-5">
+            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No attendance records found</h5>
+            <p class="text-muted">Try adjusting your filters or start recording attendance using the QR scanner.</p>
+            <a href="{% url 'members:qr_scanner' %}" class="btn btn-primary"><i class="fas fa-qrcode"></i> Start Scanning</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

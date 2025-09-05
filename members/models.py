@@ -4,6 +4,10 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.urls import reverse
+import uuid
+import qrcode
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 
 class CustomUserManager(BaseUserManager):
@@ -170,6 +174,10 @@ class CustomUser(AbstractUser):
     address = models.TextField(blank=True)
     birth_date = models.DateField(null=True, blank=True)
     
+    # QR Code fields
+    qr_code_id = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    qr_code_image = models.ImageField(upload_to='qr_codes/', null=True, blank=True)
+    
     # Member status fields
     is_new_friend = models.BooleanField(default=True)
     timer_status = models.IntegerField(
@@ -254,6 +262,37 @@ class CustomUser(AbstractUser):
             if new_status == 5:
                 self.transition_to_regular()
             self.save()
+
+    def generate_qr_code(self):
+        """Generate QR code for the user"""
+        if not self.qr_code_image:
+            # Create QR code data
+            qr_data = f"CHURCH_ATTENDANCE:{self.qr_code_id}:{self.email}"
+            
+            # Generate QR code
+            qr = qrcode.QRCode(
+                version=1,
+                error_correction=qrcode.constants.ERROR_CORRECT_L,
+                box_size=10,
+                border=4,
+            )
+            qr.add_data(qr_data)
+            qr.make(fit=True)
+            
+            # Create image
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Save to BytesIO
+            buffer = BytesIO()
+            img.save(buffer, format='PNG')
+            buffer.seek(0)
+            
+            # Save to model
+            filename = f'qr_code_{self.qr_code_id}.png'
+            self.qr_code_image.save(filename, ContentFile(buffer.getvalue()), save=False)
+            self.save()
+        
+        return self.qr_code_image
 
     def record_attendance(self):
         """Record user attendance"""
@@ -572,4 +611,106 @@ class ActivityLog(models.Model):
             'unique_users': activities.values('user').distinct().count(),
             'by_action': activities.values('action').annotate(count=Count('id')),
             'recent_activities': activities.select_related('user')[:10]
+        }
+
+
+class Attendance(models.Model):
+    """Attendance tracking model"""
+    ATTENDANCE_TYPES = [
+        ('SERVICE', 'Church Service'),
+        ('CARE_GROUP', 'Care Group'),
+        ('MINISTRY', 'Ministry Meeting'),
+        ('EVENT', 'Special Event'),
+        ('OTHER', 'Other'),
+    ]
+    
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='attendances')
+    church = models.ForeignKey(Church, on_delete=models.CASCADE, related_name='attendances')
+    attendance_type = models.CharField(max_length=20, choices=ATTENDANCE_TYPES, default='SERVICE')
+    
+    # Date and time fields
+    date = models.DateField()
+    time_in = models.TimeField()
+    time_out = models.TimeField(null=True, blank=True)
+    
+    # Additional information
+    notes = models.TextField(blank=True)
+    scanned_by = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='scanned_attendances',
+        help_text="User who scanned the QR code"
+    )
+    
+    # Metadata
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Attendance"
+        verbose_name_plural = "Attendances"
+        ordering = ['-date', '-time_in']
+        unique_together = ['user', 'date', 'attendance_type']
+
+    def __str__(self):
+        return f"{self.user.full_name} - {self.date} ({self.get_attendance_type_display()})"
+
+    @property
+    def duration(self):
+        """Calculate attendance duration if time_out is provided"""
+        if self.time_out:
+            from datetime import datetime, date
+            time_in_dt = datetime.combine(date.today(), self.time_in)
+            time_out_dt = datetime.combine(date.today(), self.time_out)
+            duration = time_out_dt - time_in_dt
+            return duration
+        return None
+
+    @property
+    def day_of_week(self):
+        """Get day of the week"""
+        return self.date.strftime('%A')
+
+    @classmethod
+    def get_church_attendance_summary(cls, church, start_date=None, end_date=None):
+        """Get attendance summary for a church"""
+        if not start_date:
+            from datetime import timedelta
+            start_date = timezone.now().date() - timedelta(days=30)
+        if not end_date:
+            end_date = timezone.now().date()
+        
+        attendances = cls.objects.filter(
+            church=church,
+            date__range=[start_date, end_date]
+        )
+        
+        return {
+            'total_attendances': attendances.count(),
+            'unique_attendees': attendances.values('user').distinct().count(),
+            'by_type': attendances.values('attendance_type').annotate(count=Count('id')),
+            'by_date': attendances.values('date').annotate(count=Count('id')).order_by('date'),
+            'recent_attendances': attendances.select_related('user')[:10]
+        }
+
+    @classmethod
+    def get_user_attendance_summary(cls, user, days=30):
+        """Get attendance summary for a user"""
+        from datetime import timedelta
+        start_date = timezone.now().date() - timedelta(days=days)
+        
+        attendances = cls.objects.filter(
+            user=user,
+            date__gte=start_date
+        )
+        
+        return {
+            'total_attendances': attendances.count(),
+            'by_type': attendances.values('attendance_type').annotate(count=Count('id')),
+            'recent_attendances': attendances.order_by('-date', '-time_in')[:10],
+            'attendance_rate': round((attendances.count() / days) * 100, 2) if days > 0 else 0
         }

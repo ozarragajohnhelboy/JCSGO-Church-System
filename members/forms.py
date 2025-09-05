@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import authenticate, get_user_model
-from .models import CustomUser, NewFriend, RegularMember, Group, Role, Church
+from .models import CustomUser, NewFriend, RegularMember, Group, Role, Church, Attendance
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from datetime import datetime
@@ -706,4 +706,204 @@ class RegularMemberImportForm(forms.Form):
             ext = file.name.split('.')[-1].lower()
             if ext not in ['csv', 'xlsx', 'xls']:
                 raise ValidationError('Please upload a CSV or Excel file.')
-        return file 
+        return file
+
+
+class UserProfileForm(forms.ModelForm):
+    """Enhanced form for user profile editing with QR code display"""
+    class Meta:
+        model = CustomUser
+        fields = [
+            'first_name', 'last_name', 'email', 'phone_number', 'address', 
+            'birth_date', 'profile_picture'
+        ]
+        widgets = {
+            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'readonly': True}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make email readonly for security
+        self.fields['email'].widget.attrs['readonly'] = True
+        self.fields['email'].help_text = "Email cannot be changed for security reasons"
+
+
+class QRCodeScanForm(forms.Form):
+    """Form for QR code scanning"""
+    qr_data = forms.CharField(
+        max_length=500,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Scan QR code or enter QR data manually',
+            'id': 'qr-scanner-input'
+        })
+    )
+    attendance_type = forms.ChoiceField(
+        choices=Attendance.ATTENDANCE_TYPES,
+        initial='SERVICE',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Optional notes...'
+        })
+    )
+
+
+class AttendanceFilterForm(forms.Form):
+    """Form for filtering attendance records"""
+    date_from = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    date_to = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    attendance_type = forms.ChoiceField(
+        choices=[('', 'All Types')] + list(Attendance.ATTENDANCE_TYPES),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    user = forms.ModelChoiceField(
+        queryset=CustomUser.objects.none(),
+        required=False,
+        empty_label="All Users",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.church = kwargs.pop('church', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.church:
+            self.fields['user'].queryset = CustomUser.objects.filter(
+                church=self.church, 
+                is_active=True
+            ).order_by('first_name', 'last_name')
+
+
+class AttendanceExportForm(forms.Form):
+    """Form for exporting attendance data"""
+    EXPORT_FORMATS = [
+        ('csv', 'CSV'),
+        ('excel', 'Excel'),
+        ('pdf', 'PDF'),
+    ]
+    
+    format = forms.ChoiceField(
+        choices=EXPORT_FORMATS,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    date_from = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    date_to = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    attendance_type = forms.ChoiceField(
+        choices=[('', 'All Types')] + list(Attendance.ATTENDANCE_TYPES),
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    include_qr_codes = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        help_text="Include QR codes in the export"
+    )
+
+
+class ProfileExportForm(forms.Form):
+    """Form for exporting user profiles with QR codes"""
+    EXPORT_FORMATS = [
+        ('csv', 'CSV'),
+        ('excel', 'Excel'),
+        ('pdf', 'PDF'),
+    ]
+    
+    format = forms.ChoiceField(
+        choices=EXPORT_FORMATS,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    include_qr_codes = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        help_text="Include QR codes in the export"
+    )
+    include_profile_pictures = forms.BooleanField(
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        help_text="Include profile pictures in the export"
+    )
+    member_type = forms.ChoiceField(
+        choices=[
+            ('', 'All Members'),
+            ('new_friends', 'New Friends Only'),
+            ('regular_members', 'Regular Members Only'),
+        ],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+
+
+class ProfileImportForm(forms.Form):
+    """Form for importing user profiles"""
+    file = forms.FileField(
+        label='Upload File',
+        help_text='Upload CSV or Excel file with user profile data',
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.csv,.xlsx,.xls'
+        })
+    )
+    update_existing = forms.BooleanField(
+        required=False,
+        initial=False,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        help_text="Update existing users if found"
+    )
+    generate_qr_codes = forms.BooleanField(
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        help_text="Generate QR codes for imported users"
+    )
+    
+    def clean_file(self):
+        file = self.cleaned_data['file']
+        if file:
+            # Check file size (max 10MB for profile imports)
+            if file.size > 10 * 1024 * 1024:
+                raise ValidationError('File size must be under 10MB.')
+            
+            # Check file extension
+            ext = file.name.split('.')[-1].lower()
+            if ext not in ['csv', 'xlsx', 'xls']:
+                raise ValidationError('Please upload a CSV or Excel file.')
+        return file
