@@ -2024,13 +2024,13 @@ def qr_scanner(request):
                     if existing_attendance:
                         messages.warning(request, f'{attendee.full_name} has already been marked present for {service_type} on {date}.')
                     else:
-                        # Create attendance record
+                        # Create attendance record using form data
                         attendance = Attendance.objects.create(
                             user=attendee,
                             church=church,
                             attendance_type=service_type,
                             date=date,
-                            time_in=time,
+                            time_in=time,  # Use form time
                             notes=notes,
                             scanned_by=user,
                             ip_address=request.META.get('REMOTE_ADDR'),
@@ -2065,6 +2065,25 @@ def qr_scanner(request):
                 attendance_type = form.cleaned_data['attendance_type']
                 notes = form.cleaned_data['notes']
                 
+                # Get client-side date and time from the request
+                client_date_str = request.POST.get('client_date')
+                client_time_str = request.POST.get('client_time')
+                
+                # Parse client date and time, fallback to server time if not provided
+                if client_date_str and client_time_str:
+                    try:
+                        from datetime import datetime
+                        client_date = datetime.strptime(client_date_str, '%Y-%m-%d').date()
+                        client_time = datetime.strptime(client_time_str, '%H:%M:%S').time()
+                    except ValueError:
+                        # If parsing fails, use server time
+                        client_date = timezone.now().date()
+                        client_time = timezone.now().time()
+                else:
+                    # Fallback to server time
+                    client_date = timezone.now().date()
+                    client_time = timezone.now().time()
+                
                 try:
                     # Parse QR code data
                     if qr_data.startswith('CHURCH_ATTENDANCE:'):
@@ -2077,11 +2096,10 @@ def qr_scanner(request):
                             try:
                                 attendee = CustomUser.objects.get(qr_code_id=qr_code_id, church=church)
                                 
-                                # Check if already attended today
-                                today = timezone.now().date()
+                                # Check if already attended on client date for this attendance type
                                 existing_attendance = Attendance.objects.filter(
                                     user=attendee,
-                                    date=today,
+                                    date=client_date,
                                     attendance_type=attendance_type
                                 ).first()
                                 
@@ -2092,13 +2110,13 @@ def qr_scanner(request):
                                         'message': 'qr is already scanned'
                                     })
                                 else:
-                                    # Create attendance record (record in the church where scanning happens)
+                                    # Create attendance record using client date and time
                                     attendance = Attendance.objects.create(
                                         user=attendee,
-                                        church=church,  # Use scanner's church (where the scanning is happening)
+                                        church=church,
                                         attendance_type=attendance_type,
-                                        date=today,
-                                        time_in=timezone.now().time(),
+                                        date=client_date,      # Use client date
+                                        time_in=client_time,   # Use client time
                                         notes=notes,
                                         scanned_by=user,
                                         ip_address=request.META.get('REMOTE_ADDR'),

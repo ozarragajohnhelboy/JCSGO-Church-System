@@ -656,9 +656,9 @@ class Attendance(models.Model):
     church = models.ForeignKey(Church, on_delete=models.CASCADE, related_name='attendances')
     attendance_type = models.CharField(max_length=20, choices=ATTENDANCE_TYPES, default='SERVICE')
     
-    # Date and time fields
+    # Date and time fields - REMOVED auto_now_add=True from time_in
     date = models.DateField()
-    time_in = models.TimeField()
+    time_in = models.TimeField()  # CHANGED: Removed auto_now_add=True
     time_out = models.TimeField(null=True, blank=True)
     
     # Additional information
@@ -686,6 +686,12 @@ class Attendance(models.Model):
 
     def __str__(self):
         return f"{self.user.full_name} - {self.date} ({self.get_attendance_type_display()})"
+
+    def save(self, *args, **kwargs):
+        """Override save to set default time_in if not provided"""
+        if not self.time_in:
+            self.time_in = timezone.now().time()
+        super().save(*args, **kwargs)
 
     @property
     def duration(self):

@@ -297,78 +297,95 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle QR form submission with AJAX (for automatic submission)
     form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        if (isProcessing) return; // Prevent multiple submissions
-        isProcessing = true;
-        
-        const formData = new FormData(form);
-        
-        fetch('{% url "members:qr_scanner" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showMessage('success', data.message);
-                updateScannerStatus('Attendance recorded! Scanning for next QR code...', 'success');
-                // Reload page to show updated attendance list
-                setTimeout(() => {
-                    location.reload();
-                }, 2000);
+    e.preventDefault();
+    if (isProcessing) return; // Prevent multiple submissions
+    isProcessing = true;
+    
+    // Get current client date and time
+    const now = new Date();
+    const clientDate = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const clientTime = now.toTimeString().split(' ')[0]; // Format: HH:MM:SS
+    
+    const formData = new FormData(form);
+    
+    // Add client date and time to the form data
+    formData.append('client_date', clientDate);
+    formData.append('client_time', clientTime);
+    
+    fetch('{% url "members:qr_scanner" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message);
+            updateScannerStatus('Attendance recorded! Scanning for next QR code...', 'success');
+            // Reload page to show updated attendance list
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            if (data.message && data.message.toLowerCase() === 'qr is already scanned') {
+                showMessage('error', 'qr is already scanned');
+                updateScannerStatus('qr is already scanned', 'error');
             } else {
-                if (data.message && data.message.toLowerCase() === 'qr is already scanned') {
-                    showMessage('error', 'qr is already scanned');
-                    updateScannerStatus('qr is already scanned', 'error');
-                } else {
-                    showMessage('error', data.message);
-                    updateScannerStatus('Error: ' + data.message, 'error');
-                }
+                showMessage('error', data.message);
+                updateScannerStatus('Error: ' + data.message, 'error');
             }
-        })
-        .catch(error => {
-            showMessage('error', 'An error occurred while processing the QR code.');
-            updateScannerStatus('Error processing QR code', 'error');
-        })
-        .finally(() => {
-            isProcessing = false;
-        });
+        }
+    })
+    .catch(error => {
+        showMessage('error', 'An error occurred while processing the QR code.');
+        updateScannerStatus('Error processing QR code', 'error');
+    })
+    .finally(() => {
+        isProcessing = false;
     });
+});
     
     // Handle manual attendance form submission with AJAX
     manualForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(manualForm);
-        
-        fetch('{% url "members:qr_scanner" %}', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showMessage('success', data.message);
-                manualForm.reset();
-                // Reload page to show updated attendance list
-                setTimeout(() => {
-                    location.reload();
-                }, 2000);
-            } else {
-                showMessage('error', data.message);
-            }
-        })
-        .catch(error => {
-            showMessage('error', 'An error occurred while recording manual attendance.');
-        });
+    e.preventDefault();
+    
+    // Get current client date and time
+    const now = new Date();
+    const clientDate = now.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const clientTime = now.toTimeString().split(' ')[0]; // Format: HH:MM:SS
+    
+    const formData = new FormData(manualForm);
+    
+    // Add client date and time to the form data (as fallback)
+    formData.append('client_date', clientDate);
+    formData.append('client_time', clientTime);
+    
+    fetch('{% url "members:qr_scanner" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage('success', data.message);
+            manualForm.reset();
+            // Reload page to show updated attendance list
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            showMessage('error', data.message);
+        }
+    })
+    .catch(error => {
+        showMessage('error', 'An error occurred while recording manual attendance.');
     });
+});
     
     // Show success/error messages
     function showMessage(type, message) {
