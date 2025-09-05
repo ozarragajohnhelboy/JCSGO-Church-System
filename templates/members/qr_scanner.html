@@ -66,9 +66,10 @@
     <div class="row">
         <!-- QR Scanner -->
         <div class="col-lg-8">
-            <div class="scanner-container">
+            <!-- QR Code Scanner Section -->
+            <div class="scanner-container mb-4">
                 <div class="text-center mb-4">
-                    <h3><i class="fas fa-camera"></i> Scan QR Code</h3>
+                    <h3><i class="fas fa-camera"></i> QR Code Scanner</h3>
                     <p class="mb-4">Point your camera at a member's QR code or enter the code manually</p>
                 </div>
 
@@ -110,13 +111,111 @@
                     </div>
                 </form>
 
-                <!-- Camera Access (for mobile) -->
+                <!-- Camera Access -->
                 <div class="text-center mt-4">
-                    <button id="start-camera" class="btn btn-outline-light">
-                        <i class="fas fa-camera"></i> Use Camera
+                    <button id="start-camera" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-camera"></i> Start Camera Scanner
                     </button>
-                    <video id="video" style="display: none; width: 100%; max-width: 400px; border-radius: 10px;"></video>
-                    <canvas id="canvas" style="display: none;"></canvas>
+                    <button id="stop-camera" class="btn btn-outline-warning btn-lg" style="display: none;">
+                        <i class="fas fa-stop"></i> Stop Camera
+                    </button>
+                    <div class="mt-3">
+                        <video id="video" style="display: none; width: 100%; max-width: 400px; border-radius: 10px; border: 3px solid #fff;"></video>
+                        <canvas id="canvas" style="display: none;"></canvas>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-white-50">
+                            <i class="fas fa-info-circle"></i> 
+                            Camera will automatically detect and record attendance when QR code is scanned
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manual Attendance Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit"></i> Manual Attendance Entry
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="manual-attendance-form" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="manual_attendance" value="1">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.date.id_for_label }}" class="form-label">Date</label>
+                                    {{ manual_form.date }}
+                                    {% if manual_form.date.errors %}
+                                        <div class="text-danger">{{ manual_form.date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.time.id_for_label }}" class="form-label">Time</label>
+                                    {{ manual_form.time }}
+                                    {% if manual_form.time.errors %}
+                                        <div class="text-danger">{{ manual_form.time.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.member.id_for_label }}" class="form-label">Member Name</label>
+                                    {{ manual_form.member }}
+                                    {% if manual_form.member.errors %}
+                                        <div class="text-danger">{{ manual_form.member.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">{{ manual_form.member.help_text }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.role_status.id_for_label }}" class="form-label">Role/Status</label>
+                                    {{ manual_form.role_status }}
+                                    {% if manual_form.role_status.errors %}
+                                        <div class="text-danger">{{ manual_form.role_status.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">{{ manual_form.role_status.help_text }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.service_type.id_for_label }}" class="form-label">Service Type</label>
+                                    {{ manual_form.service_type }}
+                                    {% if manual_form.service_type.errors %}
+                                        <div class="text-danger">{{ manual_form.service_type.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">{{ manual_form.service_type.help_text }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.notes.id_for_label }}" class="form-label">Notes (Optional)</label>
+                                    {{ manual_form.notes }}
+                                    {% if manual_form.notes.errors %}
+                                        <div class="text-danger">{{ manual_form.notes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-plus"></i> Record Manual Attendance
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -164,17 +263,29 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('qr-scan-form');
+    const manualForm = document.getElementById('manual-attendance-form');
     const qrInput = document.getElementById('qr-scanner-input');
     const messageContainer = document.getElementById('message-container');
+    const startCameraBtn = document.getElementById('start-camera');
+    const stopCameraBtn = document.getElementById('stop-camera');
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const context = canvas.getContext('2d');
+    
+    let stream = null;
+    let isScanning = false;
+    let scanInterval = null;
     
     // Auto-focus on QR input
-    qrInput.focus();
+    if (qrInput) {
+        qrInput.focus();
+    }
     
-    // Handle form submission with AJAX
+    // Handle QR form submission with AJAX
     form.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -192,7 +303,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success) {
                 showMessage('success', data.message);
                 form.reset();
-                qrInput.focus();
+                if (qrInput) qrInput.focus();
                 // Reload page to show updated attendance list
                 setTimeout(() => {
                     location.reload();
@@ -203,6 +314,37 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             showMessage('error', 'An error occurred while processing the QR code.');
+        });
+    });
+    
+    // Handle manual attendance form submission with AJAX
+    manualForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(manualForm);
+        
+        fetch('{% url "members:qr_scanner" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showMessage('success', data.message);
+                manualForm.reset();
+                // Reload page to show updated attendance list
+                setTimeout(() => {
+                    location.reload();
+                }, 2000);
+            } else {
+                showMessage('error', data.message);
+            }
+        })
+        .catch(error => {
+            showMessage('error', 'An error occurred while recording manual attendance.');
         });
     });
     
@@ -228,36 +370,149 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
     
-    // Camera functionality (basic implementation)
-    const startCameraBtn = document.getElementById('start-camera');
-    const video = document.getElementById('video');
-    
-    startCameraBtn.addEventListener('click', function() {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                .then(function(stream) {
-                    video.srcObject = stream;
-                    video.style.display = 'block';
-                    startCameraBtn.style.display = 'none';
-                    video.play();
-                })
-                .catch(function(err) {
-                    showMessage('error', 'Camera access denied or not available.');
-                });
-        } else {
-            showMessage('error', 'Camera not supported on this device.');
+    // Start camera and automatic QR scanning
+    startCameraBtn.addEventListener('click', async function() {
+        try {
+            // Check if jsQR is available
+            if (typeof jsQR === 'undefined') {
+                showMessage('error', 'QR code library not loaded. Please refresh the page.');
+                return;
+            }
+            
+            // Request camera access
+            const constraints = {
+                video: { 
+                    facingMode: 'environment',
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                } 
+            };
+            
+            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            
+            video.srcObject = stream;
+            video.style.display = 'block';
+            startCameraBtn.style.display = 'none';
+            stopCameraBtn.style.display = 'inline-block';
+            
+            // Wait for video to be ready
+            video.onloadedmetadata = function() {
+                video.play();
+                isScanning = true;
+                startQRScanning();
+                showMessage('success', 'Camera started! Point at a QR code to scan automatically.');
+            };
+            
+        } catch (err) {
+            console.error('Camera error:', err);
+            let errorMessage = 'Camera access denied or not available.';
+            
+            if (err.name === 'NotAllowedError') {
+                errorMessage = 'Camera access denied. Please allow camera access and try again.';
+            } else if (err.name === 'NotFoundError') {
+                errorMessage = 'No camera found on this device.';
+            } else if (err.name === 'NotSupportedError') {
+                errorMessage = 'Camera not supported on this device.';
+            }
+            
+            showMessage('error', errorMessage);
         }
     });
     
-    // Auto-submit when QR code is detected (simplified)
-    qrInput.addEventListener('input', function() {
-        const value = this.value.trim();
-        if (value.startsWith('CHURCH_ATTENDANCE:') && value.split(':').length >= 3) {
-            // Auto-submit if it looks like a valid QR code
-            setTimeout(() => {
-                form.dispatchEvent(new Event('submit'));
-            }, 500);
+    // Stop camera button
+    stopCameraBtn.addEventListener('click', function() {
+        stopScanning();
+        showMessage('success', 'Camera stopped.');
+    });
+    
+    // Start automatic QR code scanning
+    function startQRScanning() {
+        if (!isScanning) return;
+        
+        scanInterval = setInterval(() => {
+            if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0 && video.videoHeight > 0) {
+                try {
+                    // Set canvas size to match video
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    
+                    // Draw video frame to canvas
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // Get image data
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // Scan for QR code using jsQR
+                    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert"
+                    });
+                    
+                    if (code && code.data) {
+                        console.log('QR Code detected:', code.data);
+                        
+                        // Check if it's a valid church attendance QR code
+                        if (code.data.startsWith('CHURCH_ATTENDANCE:')) {
+                            stopScanning();
+                            fillQRInput(code.data);
+                            showMessage('success', 'QR Code detected! Recording attendance...');
+                            
+                            // Auto-submit the form
+                            setTimeout(() => {
+                                form.dispatchEvent(new Event('submit'));
+                            }, 1000);
+                        } else {
+                            console.log('Invalid QR code format:', code.data);
+                            showMessage('error', 'Invalid QR code. Please scan a church attendance QR code.');
+                        }
+                    }
+                } catch (error) {
+                    console.error('QR scanning error:', error);
+                }
+            }
+        }, 200); // Scan every 200ms for better performance
+    }
+    
+    // Stop scanning
+    function stopScanning() {
+        isScanning = false;
+        if (scanInterval) {
+            clearInterval(scanInterval);
+            scanInterval = null;
         }
+        
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+        
+        video.style.display = 'none';
+        startCameraBtn.style.display = 'inline-block';
+        stopCameraBtn.style.display = 'none';
+    }
+    
+    // Fill QR input field
+    function fillQRInput(qrData) {
+        if (qrInput) {
+            qrInput.value = qrData;
+        }
+    }
+    
+    // Auto-submit when QR code is manually entered
+    if (qrInput) {
+        qrInput.addEventListener('input', function() {
+            const value = this.value.trim();
+            if (value.startsWith('CHURCH_ATTENDANCE:') && value.split(':').length >= 3) {
+                // Auto-submit if it looks like a valid QR code
+                setTimeout(() => {
+                    form.dispatchEvent(new Event('submit'));
+                }, 500);
+            }
+        });
+    }
+    
+    // Stop scanning when page is unloaded
+    window.addEventListener('beforeunload', function() {
+        stopScanning();
     });
 });
 </script>

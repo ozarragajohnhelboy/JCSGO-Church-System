@@ -28,7 +28,7 @@ from .forms import (
     CustomUserForm, NewFriendForm, RegularMemberForm, 
     GroupForm, ProfileUpdateForm, NewFriendImportForm, RegularMemberImportForm,
     CareGroupForm, CareGroupMemberForm, UserProfileForm, QRCodeScanForm,
-    AttendanceFilterForm, AttendanceExportForm, ProfileExportForm, ProfileImportForm
+    ManualAttendanceForm, AttendanceFilterForm, AttendanceExportForm, ProfileExportForm, ProfileImportForm
 )
 
 
@@ -1993,88 +1993,145 @@ def qr_scanner(request):
     church = user.church
     
     if request.method == 'POST':
-        form = QRCodeScanForm(request.POST)
-        if form.is_valid():
-            qr_data = form.cleaned_data['qr_data']
-            attendance_type = form.cleaned_data['attendance_type']
-            notes = form.cleaned_data['notes']
-            
-            try:
-                # Parse QR code data
-                if qr_data.startswith('CHURCH_ATTENDANCE:'):
-                    parts = qr_data.split(':')
-                    if len(parts) >= 3:
-                        qr_code_id = parts[1]
-                        email = parts[2]
-                        
-                        # Find user by QR code ID
-                        try:
-                            attendee = CustomUser.objects.get(qr_code_id=qr_code_id, church=church)
-                            
-                            # Check if already attended today
-                            today = timezone.now().date()
-                            existing_attendance = Attendance.objects.filter(
-                                user=attendee,
-                                date=today,
-                                attendance_type=attendance_type
-                            ).first()
-                            
-                            if existing_attendance:
-                                messages.warning(request, f'{attendee.full_name} has already been marked present for {attendance_type} today.')
-                            else:
-                                # Create attendance record
-                                attendance = Attendance.objects.create(
-                                    user=attendee,
-                                    church=church,
-                                    attendance_type=attendance_type,
-                                    date=today,
-                                    time_in=timezone.now().time(),
-                                    notes=notes,
-                                    scanned_by=user,
-                                    ip_address=request.META.get('REMOTE_ADDR'),
-                                    user_agent=request.META.get('HTTP_USER_AGENT', '')
-                                )
-                                
-                                # Update user's last attendance
-                                attendee.record_attendance()
-                                
-                                messages.success(request, f'Attendance recorded for {attendee.full_name}')
-                                
-                                return JsonResponse({
-                                    'success': True,
-                                    'message': f'Attendance recorded for {attendee.full_name}',
-                                    'user': {
-                                        'name': attendee.full_name,
-                                        'role': attendee.role.get_name_display() if attendee.role else 'No Role',
-                                        'time': attendance.time_in.strftime('%I:%M %p')
-                                    }
-                                })
-                        except CustomUser.DoesNotExist:
-                            messages.error(request, 'User not found or QR code is invalid.')
-                            return JsonResponse({
-                                'success': False,
-                                'message': 'User not found or QR code is invalid.'
-                            })
+        # Check if it's a manual attendance form submission
+        if 'manual_attendance' in request.POST:
+            form = ManualAttendanceForm(request.POST, church=church)
+            if form.is_valid():
+                try:
+                    attendee = form.cleaned_data['member']
+                    date = form.cleaned_data['date']
+                    time = form.cleaned_data['time']
+                    service_type = form.cleaned_data['service_type']
+                    notes = form.cleaned_data['notes']
+                    
+                    # Check if already attended on this date for this service type
+                    existing_attendance = Attendance.objects.filter(
+                        user=attendee,
+                        date=date,
+                        attendance_type=service_type
+                    ).first()
+                    
+                    if existing_attendance:
+                        messages.warning(request, f'{attendee.full_name} has already been marked present for {service_type} on {date}.')
                     else:
-                        messages.error(request, 'Invalid QR code format.')
+                        # Create attendance record
+                        attendance = Attendance.objects.create(
+                            user=attendee,
+                            church=church,
+                            attendance_type=service_type,
+                            date=date,
+                            time_in=time,
+                            notes=notes,
+                            scanned_by=user,
+                            ip_address=request.META.get('REMOTE_ADDR'),
+                            user_agent=request.META.get('HTTP_USER_AGENT', '')
+                        )
+                        
+                        # Update user's last attendance
+                        attendee.record_attendance()
+                        
+                        messages.success(request, f'Manual attendance recorded for {attendee.full_name}')
+                        
                         return JsonResponse({
-                            'success': False,
-                            'message': 'Invalid QR code format.'
+                            'success': True,
+                            'message': f'Manual attendance recorded for {attendee.full_name}',
+                            'user': {
+                                'name': attendee.full_name,
+                                'role': attendee.role.get_name_display() if attendee.role else 'No Role',
+                                'time': attendance.time_in.strftime('%I:%M %p')
+                            }
                         })
-                else:
-                    messages.error(request, 'Invalid QR code. Please scan a valid church attendance QR code.')
+                except Exception as e:
+                    messages.error(request, f'Error recording manual attendance: {str(e)}')
                     return JsonResponse({
                         'success': False,
-                        'message': 'Invalid QR code. Please scan a valid church attendance QR code.'
+                        'message': f'Error recording manual attendance: {str(e)}'
                     })
-            except Exception as e:
-                messages.error(request, f'Error processing QR code: {str(e)}')
-                return JsonResponse({
-                    'success': False,
-                    'message': f'Error processing QR code: {str(e)}'
-                })
+        else:
+            # QR code scanning
+            form = QRCodeScanForm(request.POST)
+            if form.is_valid():
+                qr_data = form.cleaned_data['qr_data']
+                attendance_type = form.cleaned_data['attendance_type']
+                notes = form.cleaned_data['notes']
+                
+                try:
+                    # Parse QR code data
+                    if qr_data.startswith('CHURCH_ATTENDANCE:'):
+                        parts = qr_data.split(':')
+                        if len(parts) >= 3:
+                            qr_code_id = parts[1]
+                            email = parts[2]
+                            
+                            # Find user by QR code ID
+                            try:
+                                attendee = CustomUser.objects.get(qr_code_id=qr_code_id, church=church)
+                                
+                                # Check if already attended today
+                                today = timezone.now().date()
+                                existing_attendance = Attendance.objects.filter(
+                                    user=attendee,
+                                    date=today,
+                                    attendance_type=attendance_type
+                                ).first()
+                                
+                                if existing_attendance:
+                                    messages.warning(request, f'{attendee.full_name} has already been marked present for {attendance_type} today.')
+                                else:
+                                    # Create attendance record
+                                    attendance = Attendance.objects.create(
+                                        user=attendee,
+                                        church=church,
+                                        attendance_type=attendance_type,
+                                        date=today,
+                                        time_in=timezone.now().time(),
+                                        notes=notes,
+                                        scanned_by=user,
+                                        ip_address=request.META.get('REMOTE_ADDR'),
+                                        user_agent=request.META.get('HTTP_USER_AGENT', '')
+                                    )
+                                    
+                                    # Update user's last attendance
+                                    attendee.record_attendance()
+                                    
+                                    messages.success(request, f'Attendance recorded for {attendee.full_name}')
+                                    
+                                    return JsonResponse({
+                                        'success': True,
+                                        'message': f'Attendance recorded for {attendee.full_name}',
+                                        'user': {
+                                            'name': attendee.full_name,
+                                            'role': attendee.role.get_name_display() if attendee.role else 'No Role',
+                                            'time': attendance.time_in.strftime('%I:%M %p')
+                                        }
+                                    })
+                            except CustomUser.DoesNotExist:
+                                messages.error(request, 'User not found or QR code is invalid.')
+                                return JsonResponse({
+                                    'success': False,
+                                    'message': 'User not found or QR code is invalid.'
+                                })
+                        else:
+                            messages.error(request, 'Invalid QR code format.')
+                            return JsonResponse({
+                                'success': False,
+                                'message': 'Invalid QR code format.'
+                            })
+                    else:
+                        messages.error(request, 'Invalid QR code. Please scan a valid church attendance QR code.')
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'Invalid QR code. Please scan a valid church attendance QR code.'
+                        })
+                except Exception as e:
+                    messages.error(request, f'Error processing QR code: {str(e)}')
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'Error processing QR code: {str(e)}'
+                    })
     else:
         form = QRCodeScanForm()
+        manual_form = ManualAttendanceForm(church=church)
     
     # Get recent attendances
     recent_attendances = Attendance.objects.filter(
@@ -2084,6 +2141,7 @@ def qr_scanner(request):
     
     context = {
         'form': form,
+        'manual_form': manual_form,
         'recent_attendances': recent_attendances,
     }
     

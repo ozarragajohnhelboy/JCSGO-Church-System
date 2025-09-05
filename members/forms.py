@@ -759,6 +759,73 @@ class QRCodeScanForm(forms.Form):
     )
 
 
+class ManualAttendanceForm(forms.Form):
+    """Form for manual attendance entry"""
+    date = forms.DateField(
+        initial=timezone.now().date,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        })
+    )
+    time = forms.TimeField(
+        initial=timezone.now().time,
+        widget=forms.TimeInput(attrs={
+            'class': 'form-control',
+            'type': 'time'
+        })
+    )
+    member = forms.ModelChoiceField(
+        queryset=CustomUser.objects.none(),
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Select the member to record attendance for"
+    )
+    role_status = forms.ChoiceField(
+        choices=[
+            ('', 'Select Role/Status'),
+            ('VSL', 'VSL (Vision Small Group Leader)'),
+            ('CSL', 'CSL (Cell Small Group Leader)'),
+            ('CL', 'CL (Cell Leader)'),
+            ('CM', 'CM (Care Member)'),
+            ('NEW_FRIEND', 'New Friend'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Select the member's role or status"
+    )
+    service_type = forms.ChoiceField(
+        choices=[
+            ('SERVICE', 'Church Service'),
+            ('MIDWEEK', 'Midweek Service'),
+            ('SUNDAY', 'Sunday Service'),
+            ('CARE_GROUP', 'Care Group'),
+            ('MINISTRY', 'Ministry Meeting'),
+            ('EVENT', 'Special Event'),
+            ('OTHER', 'Other'),
+        ],
+        initial='SERVICE',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Select the type of service/event"
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 2,
+            'placeholder': 'Optional notes about the attendance...'
+        })
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.church = kwargs.pop('church', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.church:
+            self.fields['member'].queryset = CustomUser.objects.filter(
+                church=self.church, 
+                is_active=True
+            ).order_by('first_name', 'last_name')
+
+
 class AttendanceFilterForm(forms.Form):
     """Form for filtering attendance records"""
     date_from = forms.DateField(
