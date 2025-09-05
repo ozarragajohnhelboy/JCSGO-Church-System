@@ -229,6 +229,12 @@
                           Care Groups
                         </a>
                       </li>
+                      <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'role_new_friends_list' %}active{% endif %}" href="{% url 'members:role_new_friends_list' %}">
+                          <i class="bi bi-person-plus me-2"></i>
+                          My New Friends
+                        </a>
+                      </li>
                     {% elif user.role.name == 'CM' %}
                       <!-- CM Sidebar (blank for now) -->
                       <li class="nav-item">

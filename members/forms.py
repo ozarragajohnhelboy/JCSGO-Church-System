@@ -82,6 +82,14 @@ class NewFriendForm(forms.ModelForm):
             'class': 'form-select'
         })
     )
+    endorsed_to = forms.ModelChoiceField(
+        queryset=CustomUser.objects.none(),
+        required=False,
+        empty_label="Select who will follow up with this person",
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        })
+    )
     
     def __init__(self, *args, **kwargs):
         self.church = kwargs.pop('church', None)
@@ -95,8 +103,17 @@ class NewFriendForm(forms.ModelForm):
                 is_new_friend=False  # Only regular members can invite
             ).order_by('first_name', 'last_name')
             
+            # Populate endorsed_to field with VSL, CSL, CL from the same church
+            self.fields['endorsed_to'].queryset = CustomUser.objects.filter(
+                church=self.church,
+                is_active=True,
+                is_new_friend=False,
+                role__name__in=['VSL', 'CSL', 'CL']  # Only leadership roles can be endorsed to
+            ).order_by('first_name', 'last_name')
+            
             # Custom label to show only names, not emails
             self.fields['invited_by'].label_from_instance = lambda obj: obj.full_name
+            self.fields['endorsed_to'].label_from_instance = lambda obj: f"{obj.full_name} ({obj.role.get_name_display()})"
         
         # Limit regular_role choices to VSL, CSL, CL, CM (exclude admin, super, new_friend)
         role_choices = Role.ROLE_CHOICES[2:-1]
@@ -133,7 +150,7 @@ class NewFriendForm(forms.ModelForm):
     
     class Meta:
         model = NewFriend
-        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'invited_by', 'notes', 'timer_status', 'convert_to_regular', 'regular_role']
+        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'invited_by', 'endorsed_to', 'notes', 'timer_status', 'convert_to_regular', 'regular_role']
     
     def clean_email_prefix(self):
         email_prefix = self.cleaned_data['email_prefix']
@@ -149,8 +166,12 @@ class NewFriendForm(forms.ModelForm):
         if self.church:
             full_email = f"{email_prefix}@{self.church.domain}.jcsgo.com"
             
-            # Check if email already exists
-            if CustomUser.objects.filter(email=full_email).exists():
+            # Check if email already exists (exclude current user if editing)
+            existing_users = CustomUser.objects.filter(email=full_email)
+            if self.instance and self.instance.user:
+                existing_users = existing_users.exclude(pk=self.instance.user.pk)
+            
+            if existing_users.exists():
                 raise ValidationError('This username is already taken.')
             
             # Store the full email for later use
@@ -237,8 +258,12 @@ class RegularMemberForm(forms.ModelForm):
         if self.church:
             full_email = f"{email_prefix}@{self.church.domain}.jcsgo.com"
             
-            # Check if email already exists
-            if CustomUser.objects.filter(email=full_email).exists():
+            # Check if email already exists (exclude current user if editing)
+            existing_users = CustomUser.objects.filter(email=full_email)
+            if self.instance and self.instance.user:
+                existing_users = existing_users.exclude(pk=self.instance.user.pk)
+            
+            if existing_users.exists():
                 raise ValidationError('This username is already taken.')
             
             # Store the full email for later use

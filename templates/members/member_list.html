@@ -156,10 +156,13 @@
                             <i class="bi bi-eye"></i>
                         </a>
                         {% if member.is_new_friend %}
-                        <button type="button" class="btn btn-sm btn-outline-warning btn-action" 
-                                onclick="updateTimerStatus({{ member.pk }}, {{ member.timer_status }})"
-                                data-bs-toggle="tooltip" title="Update Timer Status">
-                            <i class="bi bi-clock"></i>
+                        <button type="button" class="btn btn-sm btn-outline-secondary btn-action" 
+                                data-user-id="{{ member.pk }}"
+                                data-timer-status="{{ member.timer_status }}"
+                                data-full-name="{{ member.full_name }}"
+                                onclick="openTimerOrRegularModalFromBtn(this)"
+                                data-bs-toggle="tooltip" title="Update Timer / Make Regular">
+                            <i class="bi bi-clock-history"></i>
                         </button>
                         {% endif %}
                         <button type="button" class="btn btn-sm btn-outline-success btn-action" 
@@ -239,25 +242,134 @@
     </ul>
 </nav>
 {% endif %}
+
+<!-- Modal: Update Timer or Make Regular -->
+<div class="modal fade" id="timerRegularModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i><span id="trModalTitle">Update Status</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="trUserId" />
+        <div class="mb-3">
+          <label class="form-label">Action</label>
+          <select id="trAction" class="form-select">
+            <option value="TIMER">Update timer status</option>
+            <option value="REGULAR">Regular member</option>
+          </select>
+        </div>
+        <div id="trTimerSection" class="mb-3">
+          <label class="form-label">Timer Status</label>
+          <select id="trTimer" class="form-select">
+            <option value="1">1st Timer</option>
+            <option value="2">2nd Timer</option>
+            <option value="3">3rd Timer</option>
+            <option value="4">4th Timer</option>
+            <option value="5">5th Timer</option>
+          </select>
+        </div>
+        <div id="trRegularSection" class="mb-3" style="display:none;">
+          <label class="form-label">Assign Role</label>
+          <select id="trRole" class="form-select">
+            <option value="VSL">VSL</option>
+            <option value="CSL">CSL</option>
+            <option value="CL">CL</option>
+            <option value="CM">CM</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="submitTimerOrRegular()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
 <script>
-function updateTimerStatus(userId, currentStatus) {
-    const newStatus = prompt(`Current timer status: ${currentStatus}\nEnter new timer status (1-5):`, currentStatus);
-    
-    if (newStatus && !isNaN(newStatus) && newStatus >= 1 && newStatus <= 5) {
+function openTimerOrRegularModalFromBtn(button) {
+    const userId = button.dataset.userId;
+    const currentStatus = button.dataset.timerStatus;
+    const fullName = button.dataset.fullName;
+    openTimerOrRegularModal(userId, currentStatus, fullName);
+}
+
+function openTimerOrRegularModal(userId, currentStatus, fullName) {
+    document.getElementById('trUserId').value = userId;
+    document.getElementById('trTimer').value = String(currentStatus || 1);
+    document.getElementById('trAction').value = 'TIMER';
+    document.getElementById('trTimerSection').style.display = '';
+    document.getElementById('trRegularSection').style.display = 'none';
+    document.getElementById('trModalTitle').innerText = `Update ${fullName}`;
+    const modal = new bootstrap.Modal(document.getElementById('timerRegularModal'));
+    modal.show();
+}
+
+// Event listener for action change
+document.addEventListener('DOMContentLoaded', function() {
+    const actionSelect = document.getElementById('trAction');
+    if (actionSelect) {
+        actionSelect.addEventListener('change', function() {
+            const isRegular = this.value === 'REGULAR';
+            document.getElementById('trTimerSection').style.display = isRegular ? 'none' : '';
+            document.getElementById('trRegularSection').style.display = isRegular ? '' : 'none';
+        });
+    }
+});
+
+function submitTimerOrRegular() {
+    const userId = document.getElementById('trUserId').value;
+    const action = document.getElementById('trAction').value;
+
+    if (action === 'REGULAR') {
+        const role = document.getElementById('trRole').value;
         $.ajax({
-            url: `/members/ajax/update-timer-status/${userId}/`,
+            url: `/members/ajax/update-user-role/${userId}/`,
             method: 'POST',
             data: {
-                timer_status: newStatus,
+                role: role,
                 csrfmiddlewaretoken: '{{ csrf_token }}'
             },
             success: function(response) {
                 if (response.success) {
-                    location.reload();
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('timerRegularModal'));
+                    modal.hide();
+                    
+                    // Show success message and reload
+                    showSuccess('Member status updated successfully');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showError('Failed to update member status');
+                }
+            },
+            error: function() {
+                showError('Failed to update member status');
+            }
+        });
+    } else {
+        const timerStatus = document.getElementById('trTimer').value;
+        $.ajax({
+            url: `/members/ajax/update-timer-status/${userId}/`,
+            method: 'POST',
+            data: {
+                timer_status: timerStatus,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('timerRegularModal'));
+                    modal.hide();
+                    
+                    // Show success message and reload
+                    showSuccess('Timer status updated successfully');
+                    setTimeout(() => location.reload(), 1000);
                 } else {
                     showError('Failed to update timer status');
                 }

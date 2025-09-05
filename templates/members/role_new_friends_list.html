@@ -1,24 +1,14 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}New Friends - {{ block.super }}{% endblock %}
+{% block title %}My New Friends - {{ block.super }}{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">New Friends</h1>
+    <h1 class="h2">My New Friends</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            {% if user.is_superuser or user.role.name == 'ADMIN' %}
-            <a href="{% url 'members:new_friend_add' %}" class="btn btn-sm btn-primary">
-                <i class="bi bi-person-plus"></i> Add New Friend
-            </a>
-            <a href="{% url 'members:new_friend_import' %}" class="btn btn-sm btn-info">
-                <i class="bi bi-upload"></i> Import
-            </a>
-            {% endif %}
-            <a href="{% url 'members:export_members' %}?format=csv&status=new_friends" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-download"></i> Export CSV
-            </a>
+            <span class="badge bg-primary fs-6">{{ user_role }} View</span>
         </div>
     </div>
 </div>
@@ -28,7 +18,7 @@
     <div class="col-md-3">
         <div class="stats-card">
             <h3>{{ total_new_friends }}</h3>
-            <p>Total New Friends</p>
+            <p>Total Endorsed to Me</p>
         </div>
     </div>
     <div class="col-md-3">
@@ -102,7 +92,6 @@
                 <th>Timer Status</th>
                 <th>Follow-up Status</th>
                 <th>Invited By</th>
-                <th>Endorsed To</th>
                 <th>Registration</th>
                 <th>Actions</th>
             </tr>
@@ -148,14 +137,6 @@
                     {% endif %}
                 </td>
                 <td>
-                    {% if new_friend.endorsed_to %}
-                    <span class="badge bg-info">{{ new_friend.endorsed_to.full_name }}</span>
-                    <br><small class="text-muted">{{ new_friend.endorsed_to.role.get_name_display }}</small>
-                    {% else %}
-                    <span class="text-muted">-</span>
-                    {% endif %}
-                </td>
-                <td>
                     <small>{{ new_friend.registration_date|date:"M d, Y" }}</small>
                     <br>
                     <small class="text-muted">{{ new_friend.days_since_registration }} days ago</small>
@@ -166,25 +147,6 @@
                            data-bs-toggle="tooltip" title="View Details">
                             <i class="bi bi-eye"></i>
                         </a>
-                        {% if user.is_superuser or user.role.name == 'ADMIN' %}
-                        <a href="{% url 'members:new_friend_edit' new_friend.pk %}" class="btn btn-sm btn-outline-warning btn-action" 
-                           data-bs-toggle="tooltip" title="Edit New Friend">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <button type="button" class="btn btn-sm btn-outline-secondary btn-action" 
-                                data-user-id="{{ new_friend.user.pk }}"
-                                data-timer-status="{{ new_friend.user.timer_status }}"
-                                data-full-name="{{ new_friend.user.full_name }}"
-                                onclick="openTimerOrRegularModalFromBtn(this)"
-                                data-bs-toggle="tooltip" title="Update Timer / Make Regular">
-                            <i class="bi bi-clock-history"></i>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-action" 
-                                onclick="deleteNewFriend({{ new_friend.pk }}, '{{ new_friend.user.full_name|escapejs }}')"
-                                data-bs-toggle="tooltip" title="Delete New Friend">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                        {% endif %}
                         <button type="button" class="btn btn-sm btn-outline-info btn-action" 
                                 onclick="updateFollowUp({{ new_friend.pk }})"
                                 data-bs-toggle="tooltip" title="Update Follow-up">
@@ -200,11 +162,11 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8" class="text-center py-4">
+                <td colspan="7" class="text-center py-4">
                     <div class="text-muted">
                         <i class="bi bi-person-plus display-4"></i>
-                        <p class="mt-2">No new friends found matching your criteria.</p>
-                        <p>Try adjusting your search or filters.</p>
+                        <p class="mt-2">No new friends endorsed to you yet.</p>
+                        <p>New friends will appear here when they are endorsed to you by the admin.</p>
                     </div>
                 </td>
             </tr>
@@ -268,52 +230,6 @@
 </nav>
 {% endif %}
 
-<!-- Modal: Update Timer or Make Regular -->
-<div class="modal fade" id="timerRegularModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i><span id="trModalTitle">Update Status</span></h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body">
-        <input type="hidden" id="trUserId" />
-        <div class="mb-3">
-          <label class="form-label">Action</label>
-          <select id="trAction" class="form-select">
-            <option value="TIMER">Update timer status</option>
-            <option value="REGULAR">Regular member</option>
-          </select>
-        </div>
-        <div id="trTimerSection" class="mb-3">
-          <label class="form-label">Timer Status</label>
-          <select id="trTimer" class="form-select">
-            <option value="1">1st Timer</option>
-            <option value="2">2nd Timer</option>
-            <option value="3">3rd Timer</option>
-            <option value="4">4th Timer</option>
-            <option value="5">5th Timer</option>
-          </select>
-        </div>
-        <div id="trRegularSection" class="mb-3" style="display:none;">
-          <label class="form-label">Assign Role</label>
-          <select id="trRole" class="form-select">
-            <option value="VSL">VSL</option>
-            <option value="CSL">CSL</option>
-            <option value="CL">CL</option>
-            <option value="CM" selected>CM</option>
-          </select>
-          <div class="form-text">The member will be moved to Regular Members.</div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" onclick="submitTimerOrRegular()">Save</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Modal: Update Follow-up -->
 <div class="modal fade" id="followUpModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
@@ -353,102 +269,6 @@
 {% block extra_js %}
 {{ block.super }}
 <script>
-function openTimerOrRegularModal(userId, currentStatus, fullName) {
-    document.getElementById('trUserId').value = userId;
-    document.getElementById('trTimer').value = String(currentStatus || 1);
-    document.getElementById('trAction').value = 'TIMER';
-    document.getElementById('trTimerSection').style.display = '';
-    document.getElementById('trRegularSection').style.display = 'none';
-    document.getElementById('trModalTitle').innerText = `Update ${fullName}`;
-    const modal = new bootstrap.Modal(document.getElementById('timerRegularModal'));
-    modal.show();
-}
-
-function openTimerOrRegularModalFromBtn(button) {
-    const userId = button.dataset.userId;
-    const currentStatus = button.dataset.timerStatus;
-    const fullName = button.dataset.fullName;
-    openTimerOrRegularModal(userId, currentStatus, fullName);
-}
-
-document.getElementById('trAction').addEventListener('change', function() {
-    const isRegular = this.value === 'REGULAR';
-    document.getElementById('trTimerSection').style.display = isRegular ? 'none' : '';
-    document.getElementById('trRegularSection').style.display = isRegular ? '' : 'none';
-});
-
-function submitTimerOrRegular() {
-    const userId = document.getElementById('trUserId').value;
-    const action = document.getElementById('trAction').value;
-
-    if (action === 'REGULAR') {
-        const role = document.getElementById('trRole').value;
-        $.ajax({
-            url: `/members/ajax/update-user-role/${userId}/`,
-            method: 'POST',
-            data: {
-                role: role,
-                csrfmiddlewaretoken: '{{ csrf_token }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    location.reload();
-                } else {
-                    showError(response.error || 'Failed to update role');
-                }
-            },
-            error: function() {
-                showError('Failed to update role');
-            }
-        });
-    } else {
-        const newStatus = document.getElementById('trTimer').value;
-        $.ajax({
-            url: `/members/ajax/update-timer-status/${userId}/`,
-            method: 'POST',
-            data: {
-                timer_status: newStatus,
-                csrfmiddlewaretoken: '{{ csrf_token }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    location.reload();
-                } else {
-                    showError('Failed to update timer status');
-                }
-            },
-            error: function() {
-                showError('Failed to update timer status');
-            }
-        });
-    }
-}
-
-function updateTimerStatus(userId, currentStatus) {
-    const newStatus = prompt(`Current timer status: ${currentStatus}\nEnter new timer status (1-5):`, currentStatus);
-    
-    if (newStatus && !isNaN(newStatus) && newStatus >= 1 && newStatus <= 5) {
-        $.ajax({
-            url: `/members/ajax/update-timer-status/${userId}/`,
-            method: 'POST',
-            data: {
-                timer_status: newStatus,
-                csrfmiddlewaretoken: '{{ csrf_token }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    location.reload();
-                } else {
-                    showError('Failed to update timer status');
-                }
-            },
-            error: function() {
-                showError('Failed to update timer status');
-            }
-        });
-    }
-}
-
 function updateFollowUp(new_friend_id) {
     // Set the new friend ID for the modal
     document.getElementById('fuNewFriendId').value = new_friend_id;
@@ -511,25 +331,5 @@ function recordAttendance(userId) {
         });
     }
 }
-
-function deleteNewFriend(newFriendId, memberName) {
-    if (confirm(`Are you sure you want to delete "${memberName}"? This action cannot be undone.`)) {
-        // Create a form to submit the delete request
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/members/new-friends/${newFriendId}/delete/`;
-        
-        // Add CSRF token
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = '{{ csrf_token }}';
-        form.appendChild(csrfInput);
-        
-        // Submit the form
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
 </script>
-{% endblock %} 
+{% endblock %}

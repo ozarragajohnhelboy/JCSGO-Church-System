@@ -100,6 +100,19 @@ def member_detail(request, pk):
         messages.error(request, 'You do not have permission to view this member.')
         return redirect('members:member_list')
     
+    # Determine the appropriate back URL based on user role and referrer
+    back_url = 'members:member_list'  # Default fallback
+    
+    # Check if user came from role-specific new friends list
+    if user.role.name in ['VSL', 'CSL', 'CL'] and member.is_new_friend:
+        # Check if this new friend is endorsed to the current user
+        try:
+            new_friend_profile = member.new_friend_profile
+            if new_friend_profile.endorsed_to == user:
+                back_url = 'members:role_new_friends_list'
+        except NewFriend.DoesNotExist:
+            pass
+    
     # Get related data based on user type
     new_friend_profile = None
     regular_member_profile = None
@@ -132,6 +145,7 @@ def member_detail(request, pk):
         'recent_activity': recent_activity,
         'group_membership': group_membership,
         'activity_summary': member.get_activity_summary(),
+        'back_url': back_url,
     }
     
     return render(request, 'members/member_detail.html', context)
@@ -1005,6 +1019,7 @@ def new_friend_add(request):
                     new_friend = NewFriend.objects.create(
                         user=user,
                         invited_by=form.cleaned_data['invited_by'],
+                        endorsed_to=form.cleaned_data['endorsed_to'],
                         notes=form.cleaned_data['notes']
                     )
                     
@@ -1057,6 +1072,7 @@ def new_friend_edit(request, new_friend_id):
                     
                     # Update NewFriend profile
                     new_friend.invited_by = form.cleaned_data['invited_by']
+                    new_friend.endorsed_to = form.cleaned_data['endorsed_to']
                     new_friend.notes = form.cleaned_data['notes']
                     new_friend.save()
                     
@@ -1111,11 +1127,14 @@ def new_friend_edit(request, new_friend_id):
     else:
         # Pre-populate form with current data
         form = NewFriendForm(instance=new_friend, church=request.user.church)
-        form.fields['email'].initial = new_friend.user.email
+        # Extract email prefix from the full email
+        email_prefix = new_friend.user.email.split('@')[0] if '@' in new_friend.user.email else new_friend.user.email
+        form.fields['email_prefix'].initial = email_prefix
         form.fields['first_name'].initial = new_friend.user.first_name
         form.fields['last_name'].initial = new_friend.user.last_name
         form.fields['phone'].initial = new_friend.user.phone_number
         form.fields['invited_by'].initial = new_friend.invited_by
+        form.fields['endorsed_to'].initial = new_friend.endorsed_to
         form.fields['timer_status'].initial = new_friend.user.timer_status
     
     context = {
@@ -1223,6 +1242,7 @@ def new_friend_import(request):
                                 NewFriend.objects.create(
                                     user=user,
                                     invited_by=None,  # CSV import doesn't have invited_by info
+                                    endorsed_to=None,  # CSV import doesn't have endorsed_to info
                                     notes=row.get('notes', '').strip() or ''
                                 )
                                 
@@ -1376,7 +1396,9 @@ def regular_member_edit(request, regular_member_id):
     else:
         # Pre-populate form with current data
         form = RegularMemberForm(instance=regular_member, church=request.user.church)
-        form.fields['email'].initial = regular_member.user.email
+        # Extract email prefix from the full email
+        email_prefix = regular_member.user.email.split('@')[0] if '@' in regular_member.user.email else regular_member.user.email
+        form.fields['email_prefix'].initial = email_prefix
         form.fields['first_name'].initial = regular_member.user.first_name
         form.fields['last_name'].initial = regular_member.user.last_name
         form.fields['phone'].initial = regular_member.user.phone_number
@@ -1823,4 +1845,90 @@ def care_group_remove_member(request, group_id, member_id):
         messages.error(request, 'Member not found in this care group.')
     
     return redirect('members:care_group_detail', group_id=group_id)
+
+
+# Role-specific New Friends Views
+@login_required
+def role_new_friends_list(request):
+    """List new friends endorsed to the current user (VSL, CSL, CL)"""
+    user = request.user
+    
+    # Check if user has permission to access this view
+    if user.role.name not in ['VSL', 'CSL', 'CL']:
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('churches:dashboard')
+    
+    church = user.church
+    
+    # Get search and filter parameters
+    search = request.GET.get('search', '')
+    follow_up_status = request.GET.get('follow_up_status', '')
+    timer_status = request.GET.get('timer_status', '')
+    
+    # Base queryset - Get new friends endorsed to this user
+    new_friends_users = CustomUser.objects.filter(
+        church=church,
+        is_active=True,
+        is_new_friend=True,
+        new_friend_profile__endorsed_to=user  # Only show new friends endorsed to this user
+    )
+    
+    # Apply search filters
+    if search:
+        new_friends_users = new_friends_users.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search) |
+            Q(new_friend_profile__invited_by__first_name__icontains=search) |
+            Q(new_friend_profile__invited_by__last_name__icontains=search)
+        )
+    
+    if timer_status:
+        new_friends_users = new_friends_users.filter(timer_status=timer_status)
+    
+    # Get NewFriend profiles for these users (if they exist)
+    new_friends = []
+    for user_obj in new_friends_users:
+        try:
+            new_friend_profile = NewFriend.objects.get(user=user_obj)
+            # Add follow-up status filter if specified
+            if follow_up_status and new_friend_profile.follow_up_status != follow_up_status:
+                continue
+            new_friends.append(new_friend_profile)
+        except NewFriend.DoesNotExist:
+            # Create a default NewFriend profile if it doesn't exist
+            new_friend_profile = NewFriend.objects.create(
+                user=user_obj,
+                invited_by=None,
+                endorsed_to=user,
+                notes='',
+                is_active=True
+            )
+            new_friends.append(new_friend_profile)
+    
+    # Apply follow-up status filter to the list
+    if follow_up_status:
+        new_friends = [nf for nf in new_friends if nf.follow_up_status == follow_up_status]
+    
+    # Order by registration date (newest first)
+    new_friends.sort(key=lambda x: x.registration_date, reverse=True)
+    
+    # Pagination
+    paginator = Paginator(new_friends, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'search': search,
+        'follow_up_status': follow_up_status,
+        'timer_status': timer_status,
+        'total_new_friends': len(new_friends),
+        'pending_follow_up': len([nf for nf in new_friends if nf.follow_up_status == 'PENDING']),
+        'engaged_count': len([nf for nf in new_friends if nf.follow_up_status == 'ENGAGED']),
+        'user_role': user.role.name,
+        'is_role_view': True,  # Flag to indicate this is a role-specific view
+    }
+    
+    return render(request, 'members/role_new_friends_list.html', context)
 

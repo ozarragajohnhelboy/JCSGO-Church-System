@@ -8,7 +8,7 @@
     <h1 class="h2">Member Details</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            <a href="{% url 'members:member_list' %}" class="btn btn-sm btn-outline-secondary">
+            <a href="{% url back_url %}" class="btn btn-sm btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to List
             </a>
             <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.print()">
@@ -71,9 +71,12 @@
             </div>
             <div class="card-body">
                 {% if member.is_new_friend %}
-                <button type="button" class="btn btn-warning btn-sm w-100 mb-2" 
-                        onclick="updateTimerStatus({{ member.pk }}, {{ member.timer_status }})">
-                    <i class="bi bi-clock"></i> Update Timer Status
+                <button type="button" class="btn btn-outline-secondary btn-sm w-100 mb-2" 
+                        data-user-id="{{ member.pk }}"
+                        data-timer-status="{{ member.timer_status }}"
+                        data-full-name="{{ member.full_name }}"
+                        onclick="openTimerOrRegularModalFromBtn(this)">
+                    <i class="bi bi-clock-history"></i> Update Timer / Make Regular
                 </button>
                 {% endif %}
                 
@@ -164,6 +167,14 @@
                             <span class="text-muted">Not specified</span>
                             {% endif %}
                         </p>
+                        <p><strong>Endorsed To:</strong> 
+                            {% if new_friend_profile.endorsed_to %}
+                            <span class="badge bg-info">{{ new_friend_profile.endorsed_to.full_name }}</span>
+                            <br><small class="text-muted">{{ new_friend_profile.endorsed_to.role.get_name_display }}</small>
+                            {% else %}
+                            <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                        </p>
                         <p><strong>Days Since Registration:</strong> {{ new_friend_profile.days_since_registration }}</p>
                     </div>
                     <div class="col-md-6">
@@ -182,9 +193,6 @@
                             <span class="text-muted">Never</span>
                             {% endif %}
                         </p>
-                        {% if new_friend_profile.invited_by %}
-                        <p><strong>Invited By:</strong> {{ new_friend_profile.invited_by.full_name }}</p>
-                        {% endif %}
                     </div>
                 </div>
                 
@@ -297,25 +305,169 @@
         </div>
     </div>
 </div>
+
+<!-- Modal: Update Follow-up -->
+<div class="modal fade" id="followUpModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-chat-dots me-2"></i>Update Follow-up Status</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="fuNewFriendId" />
+        <div class="mb-3">
+          <label class="form-label">Follow-up Status</label>
+          <select id="fuStatus" class="form-select">
+            <option value="PENDING">Pending</option>
+            <option value="CONTACTED">Contacted</option>
+            <option value="FOLLOWED_UP">Followed Up</option>
+            <option value="ENGAGED">Engaged</option>
+            <option value="NOT_INTERESTED">Not Interested</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Follow-up Notes</label>
+          <textarea id="fuNotes" class="form-control" rows="3" placeholder="Enter any additional notes about the follow-up..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="submitFollowUp()">
+          <i class="bi bi-check-circle me-1"></i>Update Follow-up
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Update Timer or Make Regular -->
+<div class="modal fade" id="timerRegularModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i><span id="trModalTitle">Update Status</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="trUserId" />
+        <div class="mb-3">
+          <label class="form-label">Action</label>
+          <select id="trAction" class="form-select">
+            <option value="TIMER">Update timer status</option>
+            <option value="REGULAR">Regular member</option>
+          </select>
+        </div>
+        <div id="trTimerSection" class="mb-3">
+          <label class="form-label">Timer Status</label>
+          <select id="trTimer" class="form-select">
+            <option value="1">1st Timer</option>
+            <option value="2">2nd Timer</option>
+            <option value="3">3rd Timer</option>
+            <option value="4">4th Timer</option>
+            <option value="5">5th Timer</option>
+          </select>
+        </div>
+        <div id="trRegularSection" class="mb-3" style="display:none;">
+          <label class="form-label">Assign Role</label>
+          <select id="trRole" class="form-select">
+            <option value="VSL">VSL</option>
+            <option value="CSL">CSL</option>
+            <option value="CL">CL</option>
+            <option value="CM">CM</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="submitTimerOrRegular()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
 <script>
-function updateTimerStatus(userId, currentStatus) {
-    const newStatus = prompt(`Current timer status: ${currentStatus}\nEnter new timer status (1-5):`, currentStatus);
-    
-    if (newStatus && !isNaN(newStatus) && newStatus >= 1 && newStatus <= 5) {
+function openTimerOrRegularModalFromBtn(button) {
+    const userId = button.dataset.userId;
+    const currentStatus = button.dataset.timerStatus;
+    const fullName = button.dataset.fullName;
+    openTimerOrRegularModal(userId, currentStatus, fullName);
+}
+
+function openTimerOrRegularModal(userId, currentStatus, fullName) {
+    document.getElementById('trUserId').value = userId;
+    document.getElementById('trTimer').value = String(currentStatus || 1);
+    document.getElementById('trAction').value = 'TIMER';
+    document.getElementById('trTimerSection').style.display = '';
+    document.getElementById('trRegularSection').style.display = 'none';
+    document.getElementById('trModalTitle').innerText = `Update ${fullName}`;
+    const modal = new bootstrap.Modal(document.getElementById('timerRegularModal'));
+    modal.show();
+}
+
+// Event listener for action change
+document.addEventListener('DOMContentLoaded', function() {
+    const actionSelect = document.getElementById('trAction');
+    if (actionSelect) {
+        actionSelect.addEventListener('change', function() {
+            const isRegular = this.value === 'REGULAR';
+            document.getElementById('trTimerSection').style.display = isRegular ? 'none' : '';
+            document.getElementById('trRegularSection').style.display = isRegular ? '' : 'none';
+        });
+    }
+});
+
+function submitTimerOrRegular() {
+    const userId = document.getElementById('trUserId').value;
+    const action = document.getElementById('trAction').value;
+
+    if (action === 'REGULAR') {
+        const role = document.getElementById('trRole').value;
         $.ajax({
-            url: `/members/ajax/update-timer-status/${userId}/`,
+            url: `/members/ajax/update-user-role/${userId}/`,
             method: 'POST',
             data: {
-                timer_status: newStatus,
+                role: role,
                 csrfmiddlewaretoken: '{{ csrf_token }}'
             },
             success: function(response) {
                 if (response.success) {
-                    location.reload();
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('timerRegularModal'));
+                    modal.hide();
+                    
+                    // Show success message and reload
+                    showSuccess('Member status updated successfully');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showError('Failed to update member status');
+                }
+            },
+            error: function() {
+                showError('Failed to update member status');
+            }
+        });
+    } else {
+        const timerStatus = document.getElementById('trTimer').value;
+        $.ajax({
+            url: `/members/ajax/update-timer-status/${userId}/`,
+            method: 'POST',
+            data: {
+                timer_status: timerStatus,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('timerRegularModal'));
+                    modal.hide();
+                    
+                    // Show success message and reload
+                    showSuccess('Timer status updated successfully');
+                    setTimeout(() => location.reload(), 1000);
                 } else {
                     showError('Failed to update timer status');
                 }
@@ -351,30 +503,44 @@ function recordAttendance(userId) {
 }
 
 function updateFollowUp(newFriendId) {
-    const status = prompt('Enter follow-up status (PENDING, CONTACTED, FOLLOWED_UP, ENGAGED, NOT_INTERESTED):', 'PENDING');
-    const notes = prompt('Enter follow-up notes:');
+    // Set the new friend ID for the modal
+    document.getElementById('fuNewFriendId').value = newFriendId;
     
-    if (status) {
-        $.ajax({
-            url: `/members/ajax/update-follow-up/${newFriendId}/`,
-            method: 'POST',
-            data: {
-                status: status,
-                notes: notes || '',
-                csrfmiddlewaretoken: '{{ csrf_token }}'
-            },
-            success: function(response) {
-                if (response.success) {
-                    location.reload();
-                } else {
-                    showError('Failed to update follow-up status');
-                }
-            },
-            error: function() {
+    // Show the follow-up modal
+    const modal = new bootstrap.Modal(document.getElementById('followUpModal'));
+    modal.show();
+}
+
+function submitFollowUp() {
+    const newFriendId = document.getElementById('fuNewFriendId').value;
+    const status = document.getElementById('fuStatus').value;
+    const notes = document.getElementById('fuNotes').value;
+    
+    $.ajax({
+        url: `/members/ajax/update-follow-up/${newFriendId}/`,
+        method: 'POST',
+        data: {
+            status: status,
+            notes: notes || '',
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('followUpModal'));
+                modal.hide();
+                
+                // Show success message and reload
+                showSuccess('Follow-up status updated successfully');
+                setTimeout(() => location.reload(), 1000);
+            } else {
                 showError('Failed to update follow-up status');
             }
-        });
-    }
+        },
+        error: function() {
+            showError('Failed to update follow-up status');
+        }
+    });
 }
 </script>
 {% endblock %} 

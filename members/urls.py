@@ -34,6 +34,9 @@ urlpatterns = [
     path('care-groups/<int:group_id>/add-member/', views.care_group_add_member, name='care_group_add_member'),
     path('care-groups/<int:group_id>/remove-member/<int:member_id>/', views.care_group_remove_member, name='care_group_remove_member'),
     
+    # Role-specific New Friends (VSL, CSL, CL)
+    path('my-new-friends/', views.role_new_friends_list, name='role_new_friends_list'),
+    
     # Role Management
     path('role-management/', views.role_management, name='role_management'),
     path('ajax/update-user-role/<int:user_id>/', views.ajax_update_user_role, name='ajax_update_user_role'),

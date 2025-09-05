@@ -309,6 +309,14 @@ class NewFriend(models.Model):
         blank=True, 
         related_name='invited_new_friends'
     )
+    endorsed_to = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='endorsed_new_friends',
+        help_text="The VSL, CSL, or CL who will follow up with this new friend"
+    )
     follow_up_status = models.CharField(
         max_length=20,
         choices=[
