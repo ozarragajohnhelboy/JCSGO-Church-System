@@ -71,6 +71,7 @@
             </div>
             <div class="card-body">
                 {% if member.is_new_friend %}
+                {% if user.is_superuser or user.role.name == 'ADMIN' %}
                 <button type="button" class="btn btn-outline-secondary btn-sm w-100 mb-2" 
                         data-user-id="{{ member.pk }}"
                         data-timer-status="{{ member.timer_status }}"
@@ -78,6 +79,7 @@
                         onclick="openTimerOrRegularModalFromBtn(this)">
                     <i class="bi bi-clock-history"></i> Update Timer / Make Regular
                 </button>
+                {% endif %}
                 {% endif %}
                 
                 <button type="button" class="btn btn-success btn-sm w-100 mb-2" 

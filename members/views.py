@@ -2083,6 +2083,10 @@ def qr_scanner(request):
                                 
                                 if existing_attendance:
                                     messages.warning(request, f'{attendee.full_name} has already been marked present for {attendance_type} today.')
+                                    return JsonResponse({
+                                        'success': False,
+                                        'message': 'qr is already scanned'
+                                    })
                                 else:
                                     # Create attendance record (record in the church where scanning happens)
                                     attendance = Attendance.objects.create(

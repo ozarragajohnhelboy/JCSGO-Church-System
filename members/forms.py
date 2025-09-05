@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import authenticate, get_user_model
 from .models import CustomUser, NewFriend, RegularMember, Group, Role, Church, Attendance
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils import timezone
 from datetime import datetime
 import csv
@@ -168,8 +168,11 @@ class NewFriendForm(forms.ModelForm):
             
             # Check if email already exists (exclude current user if editing)
             existing_users = CustomUser.objects.filter(email=full_email)
-            if self.instance and self.instance.user:
-                existing_users = existing_users.exclude(pk=self.instance.user.pk)
+            try:
+                if self.instance and self.instance.user:
+                    existing_users = existing_users.exclude(pk=self.instance.user.pk)
+            except ObjectDoesNotExist:
+                pass
             
             if existing_users.exists():
                 raise ValidationError('This username is already taken.')
@@ -260,8 +263,11 @@ class RegularMemberForm(forms.ModelForm):
             
             # Check if email already exists (exclude current user if editing)
             existing_users = CustomUser.objects.filter(email=full_email)
-            if self.instance and self.instance.user:
-                existing_users = existing_users.exclude(pk=self.instance.user.pk)
+            try:
+                if self.instance and self.instance.user:
+                    existing_users = existing_users.exclude(pk=self.instance.user.pk)
+            except ObjectDoesNotExist:
+                pass
             
             if existing_users.exists():
                 raise ValidationError('This username is already taken.')

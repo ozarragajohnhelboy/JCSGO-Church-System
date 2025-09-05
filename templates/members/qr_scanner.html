@@ -95,33 +95,13 @@
                         </div>
                         <div class="text-white-50 mt-1" style="font-size: 0.8em;">
                             <i class="fas fa-qrcode"></i> 
-                            QR Format: CHURCH_ATTENDANCE:UUID:EMAIL
                         </div>
                         <div id="debug-info" class="text-white-50 mt-2" style="font-size: 0.8em; display: none;">
                             <div>Video: <span id="video-info">Not ready</span></div>
                             <div>Canvas: <span id="canvas-info">Not ready</span></div>
                             <div>Scanning: <span id="scan-info">Not active</span></div>
                             <div>Stream: <span id="stream-info">Not active</span></div>
-                            <div class="mt-2">
-                                <button id="test-qr" class="btn btn-outline-light btn-sm">
-                                    <i class="fas fa-qrcode"></i> Test QR Detection
-                                </button>
-                                <button id="generate-test-qr" class="btn btn-outline-light btn-sm ms-2">
-                                    <i class="fas fa-image"></i> Generate Test QR
-                                </button>
-                                <button id="debug-qr-data" class="btn btn-outline-light btn-sm ms-2">
-                                    <i class="fas fa-bug"></i> Debug QR Data
-                                </button>
-                                <div class="mt-1 text-white-50" style="font-size: 0.7em;">
-                                    Tests with: John Helboy Ozarraga (JCSGO Kasiglahan)
-                                </div>
-                                <div id="test-qr-image" class="mt-2" style="display: none;">
-                                    <img id="generated-qr" src="" alt="Test QR Code" style="max-width: 200px; border: 2px solid white; border-radius: 10px;">
-                                    <div class="text-white-50 mt-1" style="font-size: 0.7em;">
-                                        Point camera at this QR code to test detection
-                                    </div>
-                                </div>
-                            </div>
+                            
                         </div>
                     </div>
                 </div>
@@ -275,9 +255,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const startCameraBtn = document.getElementById('start-camera');
     const stopCameraBtn = document.getElementById('stop-camera');
     const debugCameraBtn = document.getElementById('debug-camera');
-    const testQrBtn = document.getElementById('test-qr');
-    const generateTestQrBtn = document.getElementById('generate-test-qr');
-    const debugQrDataBtn = document.getElementById('debug-qr-data');
+    
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
@@ -316,8 +294,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     location.reload();
                 }, 2000);
             } else {
-                showMessage('error', data.message);
-                updateScannerStatus('Error: ' + data.message, 'error');
+                if (data.message && data.message.toLowerCase() === 'qr is already scanned') {
+                    showMessage('error', 'qr is already scanned');
+                    updateScannerStatus('qr is already scanned', 'error');
+                } else {
+                    showMessage('error', data.message);
+                    updateScannerStatus('Error: ' + data.message, 'error');
+                }
             }
         })
         .catch(error => {
@@ -488,60 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Test QR button
-    testQrBtn.addEventListener('click', function() {
-        // Test QR detection with John Helboy's QR code data (the one you're testing with)
-        const testQrData = 'CHURCH_ATTENDANCE:6c3d903e-840f-4837-b4f5-91f868ff7fae:ozarragahelboy@kasiglahan.jcsgo.com';
-        console.log('Testing QR detection with:', testQrData);
-        
-        // Set the QR data in hidden form
-        document.getElementById('hidden-qr-data').value = testQrData;
-        
-        // Show message
-        showMessage('info', 'Testing QR detection with John Helboy Ozarraga...');
-        updateScannerStatus('Testing QR detection...', 'processing');
-        
-        // Submit the form
-        form.dispatchEvent(new Event('submit'));
-    });
     
-    // Generate Test QR button
-    generateTestQrBtn.addEventListener('click', function() {
-        // Generate a QR code image for testing (using John Helboy's data)
-        const testQrData = 'CHURCH_ATTENDANCE:6c3d903e-840f-4837-b4f5-91f868ff7fae:ozarragahelboy@kasiglahan.jcsgo.com';
-        
-        // Create a simple QR code using a free QR code API
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(testQrData)}`;
-        
-        // Show the QR code image
-        const testQrImage = document.getElementById('test-qr-image');
-        const generatedQr = document.getElementById('generated-qr');
-        
-        generatedQr.src = qrUrl;
-        testQrImage.style.display = 'block';
-        
-        console.log('Generated test QR code with data:', testQrData);
-        showMessage('success', 'Test QR code generated! Point your camera at it to test detection.');
-    });
-    
-    // Debug QR Data button
-    debugQrDataBtn.addEventListener('click', function() {
-        // Show expected QR data format and help debug
-        const expectedQrData = 'CHURCH_ATTENDANCE:6c3d903e-840f-4837-b4f5-91f868ff7fae:ozarragahelboy@kasiglahan.jcsgo.com';
-        
-        console.log('=== QR CODE DEBUG INFO ===');
-        console.log('Expected QR Data Format:', expectedQrData);
-        console.log('QR Data Parts:');
-        console.log('  - Prefix: CHURCH_ATTENDANCE');
-        console.log('  - UUID: 6c3d903e-840f-4837-b4f5-91f868ff7fae');
-        console.log('  - Email: ozarragahelboy@kasiglahan.jcsgo.com');
-        console.log('========================');
-        
-        // Show in alert for easy reading
-        alert(`Expected QR Data:\n${expectedQrData}\n\nCheck browser console for detailed debug info.`);
-        
-        showMessage('info', 'QR debug info logged to console. Check F12 → Console tab.');
-    });
     
     // Start automatic QR code scanning
     function startQRScanning() {
