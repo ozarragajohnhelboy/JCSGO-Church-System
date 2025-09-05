@@ -977,15 +977,17 @@ def new_friend_add(request):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # Create the user first
+                    # Create the user first with church-specific default password
+                    default_password = f"jcsgo{request.user.church.domain}"
                     user = CustomUser.objects.create_user(
-                        email=form.cleaned_data['email'],
+                        email=form.full_email,
                         first_name=form.cleaned_data['first_name'],
                         last_name=form.cleaned_data['last_name'],
                         phone_number=form.cleaned_data['phone'],
                         church=request.user.church,
                         is_new_friend=True,
-                        is_active=True
+                        is_active=True,
+                        password=default_password  # Church-specific default password
                     )
                     
                     # Remove any existing RegularMember profile if it exists
@@ -1181,15 +1183,29 @@ def new_friend_import(request):
                     for row_num, row in enumerate(csv_data, start=2):  # Start from 2 to account for header
                         try:
                             with transaction.atomic():
-                                # Create user
+                                # Create user with email_prefix and default password
+                                email_prefix = row.get('email_prefix', '').strip()
+                                if not email_prefix:
+                                    # If no email_prefix, try to extract from email field
+                                    email = row.get('email', '').strip()
+                                    if '@' in email:
+                                        email_prefix = email.split('@')[0]
+                                    else:
+                                        email_prefix = email
+                                
+                                full_email = f"{email_prefix}@{request.user.church.domain}.jcsgo.com"
+                                
+                                # Create user with church-specific default password
+                                default_password = f"jcsgo{request.user.church.domain}"
                                 user = CustomUser.objects.create_user(
-                                    email=row.get('email', '').strip(),
+                                    email=full_email,
                                     first_name=row.get('first_name', '').strip(),
                                     last_name=row.get('last_name', '').strip(),
                                     phone_number=row.get('phone', '').strip() or None,
                                     church=request.user.church,
                                     is_new_friend=True,
-                                    is_active=True
+                                    is_active=True,
+                                    password=default_password  # Church-specific default password
                                 )
                                 
                                 # Remove any existing RegularMember profile if it exists
@@ -1260,15 +1276,17 @@ def regular_member_add(request):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # Create the user first
+                    # Create the user first with church-specific default password
+                    default_password = f"jcsgo{request.user.church.domain}"
                     user = CustomUser.objects.create_user(
-                        email=form.cleaned_data['email'],
+                        email=form.full_email,
                         first_name=form.cleaned_data['first_name'],
                         last_name=form.cleaned_data['last_name'],
                         phone_number=form.cleaned_data['phone'],
                         church=request.user.church,
                         is_new_friend=False,
-                        is_active=True
+                        is_active=True,
+                        password=default_password  # Church-specific default password
                     )
                     
                     # Assign role
@@ -1443,16 +1461,30 @@ def regular_member_import(request):
                                         defaults={'is_active': True}
                                     )
                                 
-                                # Create user
+                                # Create user with email_prefix and default password
+                                email_prefix = row.get('email_prefix', '').strip()
+                                if not email_prefix:
+                                    # If no email_prefix, try to extract from email field
+                                    email = row.get('email', '').strip()
+                                    if '@' in email:
+                                        email_prefix = email.split('@')[0]
+                                    else:
+                                        email_prefix = email
+                                
+                                full_email = f"{email_prefix}@{request.user.church.domain}.jcsgo.com"
+                                
+                                # Create user with church-specific default password
+                                default_password = f"jcsgo{request.user.church.domain}"
                                 user = CustomUser.objects.create_user(
-                                    email=row.get('email', '').strip(),
+                                    email=full_email,
                                     first_name=row.get('first_name', '').strip(),
                                     last_name=row.get('last_name', '').strip(),
                                     phone_number=row.get('phone', '').strip() or None,
                                     church=request.user.church,
                                     role=role,
                                     is_new_friend=False,
-                                    is_active=True
+                                    is_active=True,
+                                    password=default_password  # Church-specific default password
                                 )
                                 
                                 # Remove any existing NewFriend profile if it exists

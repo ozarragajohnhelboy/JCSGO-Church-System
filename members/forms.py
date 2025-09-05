@@ -44,10 +44,12 @@ class CustomUserForm(forms.ModelForm):
 
 class NewFriendForm(forms.ModelForm):
     """Form for adding/editing New Friends"""
-    email = forms.EmailField(
-        widget=forms.EmailInput(attrs={
+    email_prefix = forms.CharField(
+        max_length=50,
+        widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter email address'
+            'placeholder': 'Enter username (e.g., johnhb)',
+            'id': 'new-friend-email-prefix'
         })
     )
     first_name = forms.CharField(
@@ -131,16 +133,30 @@ class NewFriendForm(forms.ModelForm):
     
     class Meta:
         model = NewFriend
-        fields = ['email', 'first_name', 'last_name', 'phone', 'invited_by', 'notes', 'timer_status', 'convert_to_regular', 'regular_role']
+        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'invited_by', 'notes', 'timer_status', 'convert_to_regular', 'regular_role']
     
-    def clean_email(self):
-        email = self.cleaned_data['email']
+    def clean_email_prefix(self):
+        email_prefix = self.cleaned_data['email_prefix']
+        
+        # Validate email prefix format
+        if not email_prefix.isalnum():
+            raise ValidationError('Username can only contain letters and numbers.')
+        
+        if len(email_prefix) < 3:
+            raise ValidationError('Username must be at least 3 characters long.')
+        
+        # Create full email
         if self.church:
-            # Check if email already exists in this church
-            if CustomUser.objects.filter(email=email, church=self.church).exists():
-                if not self.instance.pk:  # Only for new users
-                    raise ValidationError('A user with this email already exists in this church.')
-        return email
+            full_email = f"{email_prefix}@{self.church.domain}.jcsgo.com"
+            
+            # Check if email already exists
+            if CustomUser.objects.filter(email=full_email).exists():
+                raise ValidationError('This username is already taken.')
+            
+            # Store the full email for later use
+            self.full_email = full_email
+        
+        return email_prefix
 
     def clean(self):
         cleaned = super().clean()
@@ -153,10 +169,12 @@ class NewFriendForm(forms.ModelForm):
 
 class RegularMemberForm(forms.ModelForm):
     """Form for adding/editing Regular Members"""
-    email = forms.EmailField(
-        widget=forms.EmailInput(attrs={
+    email_prefix = forms.CharField(
+        max_length=50,
+        widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Enter email address'
+            'placeholder': 'Enter username (e.g., johnhb)',
+            'id': 'regular-member-email-prefix'
         })
     )
     first_name = forms.CharField(
@@ -197,7 +215,7 @@ class RegularMemberForm(forms.ModelForm):
     
     class Meta:
         model = RegularMember
-        fields = ['email', 'first_name', 'last_name', 'phone', 'role', 'group']
+        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'role', 'group']
     
     def __init__(self, *args, **kwargs):
         self.church = kwargs.pop('church', None)
@@ -205,14 +223,28 @@ class RegularMemberForm(forms.ModelForm):
         if self.church:
             self.fields['group'].queryset = Group.objects.filter(church=self.church, is_active=True)
     
-    def clean_email(self):
-        email = self.cleaned_data['email']
+    def clean_email_prefix(self):
+        email_prefix = self.cleaned_data['email_prefix']
+        
+        # Validate email prefix format
+        if not email_prefix.isalnum():
+            raise ValidationError('Username can only contain letters and numbers.')
+        
+        if len(email_prefix) < 3:
+            raise ValidationError('Username must be at least 3 characters long.')
+        
+        # Create full email
         if self.church:
-            # Check if email already exists in this church
-            if CustomUser.objects.filter(email=email, church=self.church).exists():
-                if not self.instance.pk:  # Only for new users
-                    raise ValidationError('A user with this email already exists in this church.')
-        return email
+            full_email = f"{email_prefix}@{self.church.domain}.jcsgo.com"
+            
+            # Check if email already exists
+            if CustomUser.objects.filter(email=full_email).exists():
+                raise ValidationError('This username is already taken.')
+            
+            # Store the full email for later use
+            self.full_email = full_email
+        
+        return email_prefix
 
 
 class GroupForm(forms.ModelForm):

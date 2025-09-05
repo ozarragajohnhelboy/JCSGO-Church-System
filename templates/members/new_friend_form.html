@@ -45,11 +45,17 @@
               <div class="row">
                 <!-- Email -->
                 <div class="col-md-6 mb-3">
-                  <label for="{{ form.email.id_for_label }}" class="form-label"><i class="bi bi-envelope me-2"></i>Email Address *</label>
-                  {{ form.email }}
-                  {% if form.email.errors %}
+                  <label for="{{ form.email_prefix.id_for_label }}" class="form-label"><i class="bi bi-envelope me-2"></i>Email Address *</label>
+                  <div class="input-group">
+                    {{ form.email_prefix }}
+                    <span class="input-group-text">@{{ church.domain }}.jcsgo.com</span>
+                  </div>
+                  <div class="form-text">
+                    Full email will be: <span id="email-preview"></span>
+                  </div>
+                  {% if form.email_prefix.errors %}
                     <div class="invalid-feedback d-block">
-                      {% for error in form.email.errors %}
+                      {% for error in form.email_prefix.errors %}
                         {{ error }}
                       {% endfor %}
                     </div>
@@ -207,5 +213,24 @@
     sync();
   }
 })();
+
+// Email preview functionality
+function updateEmailPreview() {
+  const emailPrefix = document.getElementById('{{ form.email_prefix.id_for_label }}');
+  const preview = document.getElementById('email-preview');
+  if (emailPrefix && preview) {
+    const prefix = emailPrefix.value || 'username';
+    preview.textContent = prefix + '@{{ church.domain }}.jcsgo.com';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const emailPrefix = document.getElementById('{{ form.email_prefix.id_for_label }}');
+  if (emailPrefix) {
+    emailPrefix.addEventListener('input', updateEmailPreview);
+    // Initial preview
+    updateEmailPreview();
+  }
+});
 </script>
 {% endblock %}
