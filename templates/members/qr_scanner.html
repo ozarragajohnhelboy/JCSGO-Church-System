@@ -69,67 +69,37 @@
             <!-- QR Code Scanner Section -->
             <div class="scanner-container mb-4">
                 <div class="text-center mb-4">
-                    <h3><i class="fas fa-camera"></i> QR Code Scanner</h3>
-                    <p class="mb-4">Point your camera at a member's QR code or enter the code manually</p>
+                    <h3><i class="fas fa-camera"></i> Automatic QR Scanner</h3>
+                    <p class="mb-4">Point your camera at a member's QR code - attendance will be recorded automatically!</p>
                 </div>
-
-                <form id="qr-scan-form" method="post">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="{{ form.qr_data.id_for_label }}" class="form-label text-white">QR Code Data</label>
-                        {{ form.qr_data }}
-                        {% if form.qr_data.errors %}
-                            <div class="text-warning">{{ form.qr_data.errors }}</div>
-                        {% endif %}
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.attendance_type.id_for_label }}" class="form-label text-white">Attendance Type</label>
-                                {{ form.attendance_type }}
-                                {% if form.attendance_type.errors %}
-                                    <div class="text-warning">{{ form.attendance_type.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="{{ form.notes.id_for_label }}" class="form-label text-white">Notes (Optional)</label>
-                                {{ form.notes }}
-                                {% if form.notes.errors %}
-                                    <div class="text-warning">{{ form.notes.errors }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-light btn-lg px-5">
-                            <i class="fas fa-check"></i> Record Attendance
-                        </button>
-                    </div>
-                </form>
 
                 <!-- Camera Access -->
-                <div class="text-center mt-4">
+                <div class="text-center">
                     <button id="start-camera" class="btn btn-outline-light btn-lg">
-                        <i class="fas fa-camera"></i> Start Camera Scanner
+                        <i class="fas fa-camera"></i> Start Automatic Scanner
                     </button>
                     <button id="stop-camera" class="btn btn-outline-warning btn-lg" style="display: none;">
-                        <i class="fas fa-stop"></i> Stop Camera
+                        <i class="fas fa-stop"></i> Stop Scanner
                     </button>
                     <div class="mt-3">
-                        <video id="video" style="display: none; width: 100%; max-width: 400px; border-radius: 10px; border: 3px solid #fff;"></video>
+                        <video id="video" style="display: none; width: 100%; max-width: 500px; border-radius: 10px; border: 3px solid #fff;"></video>
                         <canvas id="canvas" style="display: none;"></canvas>
                     </div>
-                    <div class="mt-2">
-                        <small class="text-white-50">
+                    <div class="mt-3">
+                        <div id="scanner-status" class="text-white-50">
                             <i class="fas fa-info-circle"></i> 
-                            Camera will automatically detect and record attendance when QR code is scanned
-                        </small>
+                            Camera will automatically record attendance when QR code is detected
+                        </div>
                     </div>
                 </div>
+
+                <!-- Hidden form for automatic submission -->
+                <form id="qr-scan-form" method="post" style="display: none;">
+                    {% csrf_token %}
+                    <input type="hidden" name="qr_data" id="hidden-qr-data">
+                    <input type="hidden" name="attendance_type" value="SERVICE">
+                    <input type="hidden" name="notes" value="Auto-recorded via QR scanner">
+                </form>
             </div>
 
             <!-- Manual Attendance Section -->
@@ -268,26 +238,25 @@
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('qr-scan-form');
     const manualForm = document.getElementById('manual-attendance-form');
-    const qrInput = document.getElementById('qr-scanner-input');
     const messageContainer = document.getElementById('message-container');
     const startCameraBtn = document.getElementById('start-camera');
     const stopCameraBtn = document.getElementById('stop-camera');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
+    const scannerStatus = document.getElementById('scanner-status');
     
     let stream = null;
     let isScanning = false;
     let scanInterval = null;
+    let isProcessing = false; // Prevent multiple simultaneous submissions
     
-    // Auto-focus on QR input
-    if (qrInput) {
-        qrInput.focus();
-    }
-    
-    // Handle QR form submission with AJAX
+    // Handle QR form submission with AJAX (for automatic submission)
     form.addEventListener('submit', function(e) {
         e.preventDefault();
+        
+        if (isProcessing) return; // Prevent multiple submissions
+        isProcessing = true;
         
         const formData = new FormData(form);
         
@@ -302,18 +271,22 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 showMessage('success', data.message);
-                form.reset();
-                if (qrInput) qrInput.focus();
+                updateScannerStatus('Attendance recorded! Scanning for next QR code...', 'success');
                 // Reload page to show updated attendance list
                 setTimeout(() => {
                     location.reload();
                 }, 2000);
             } else {
                 showMessage('error', data.message);
+                updateScannerStatus('Error: ' + data.message, 'error');
             }
         })
         .catch(error => {
             showMessage('error', 'An error occurred while processing the QR code.');
+            updateScannerStatus('Error processing QR code', 'error');
+        })
+        .finally(() => {
+            isProcessing = false;
         });
     });
     
@@ -400,7 +373,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 video.play();
                 isScanning = true;
                 startQRScanning();
-                showMessage('success', 'Camera started! Point at a QR code to scan automatically.');
+                updateScannerStatus('Camera active - Point at QR code to automatically record attendance', 'scanning');
+                showMessage('success', 'Automatic scanner started! Point at QR codes to record attendance instantly.');
             };
             
         } catch (err) {
@@ -416,6 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             showMessage('error', errorMessage);
+            updateScannerStatus('Camera error: ' + errorMessage, 'error');
         }
     });
     
@@ -430,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!isScanning) return;
         
         scanInterval = setInterval(() => {
-            if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0 && video.videoHeight > 0) {
+            if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0 && video.videoHeight > 0 && !isProcessing) {
                 try {
                     // Set canvas size to match video
                     canvas.width = video.videoWidth;
@@ -452,17 +427,26 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Check if it's a valid church attendance QR code
                         if (code.data.startsWith('CHURCH_ATTENDANCE:')) {
-                            stopScanning();
-                            fillQRInput(code.data);
-                            showMessage('success', 'QR Code detected! Recording attendance...');
+                            // Stop scanning temporarily to prevent multiple submissions
+                            isScanning = false;
+                            updateScannerStatus('QR Code detected! Recording attendance...', 'processing');
                             
-                            // Auto-submit the form
+                            // Set the QR data in hidden form
+                            document.getElementById('hidden-qr-data').value = code.data;
+                            
+                            // Automatically submit the form
+                            form.dispatchEvent(new Event('submit'));
+                            
+                            // Resume scanning after a delay
                             setTimeout(() => {
-                                form.dispatchEvent(new Event('submit'));
-                            }, 1000);
+                                if (!isProcessing) {
+                                    isScanning = true;
+                                    updateScannerStatus('Camera active - Point at QR code to automatically record attendance', 'scanning');
+                                }
+                            }, 3000);
                         } else {
                             console.log('Invalid QR code format:', code.data);
-                            showMessage('error', 'Invalid QR code. Please scan a church attendance QR code.');
+                            updateScannerStatus('Invalid QR code detected - Please scan a church attendance QR code', 'error');
                         }
                     }
                 } catch (error) {
@@ -488,26 +472,28 @@ document.addEventListener('DOMContentLoaded', function() {
         video.style.display = 'none';
         startCameraBtn.style.display = 'inline-block';
         stopCameraBtn.style.display = 'none';
+        updateScannerStatus('Scanner stopped', 'stopped');
     }
     
-    // Fill QR input field
-    function fillQRInput(qrData) {
-        if (qrInput) {
-            qrInput.value = qrData;
-        }
-    }
-    
-    // Auto-submit when QR code is manually entered
-    if (qrInput) {
-        qrInput.addEventListener('input', function() {
-            const value = this.value.trim();
-            if (value.startsWith('CHURCH_ATTENDANCE:') && value.split(':').length >= 3) {
-                // Auto-submit if it looks like a valid QR code
-                setTimeout(() => {
-                    form.dispatchEvent(new Event('submit'));
-                }, 500);
+    // Update scanner status
+    function updateScannerStatus(message, type) {
+        if (scannerStatus) {
+            scannerStatus.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+            
+            // Update color based on status
+            scannerStatus.className = 'text-white-50';
+            if (type === 'success') {
+                scannerStatus.className = 'text-success';
+            } else if (type === 'error') {
+                scannerStatus.className = 'text-warning';
+            } else if (type === 'processing') {
+                scannerStatus.className = 'text-info';
+            } else if (type === 'scanning') {
+                scannerStatus.className = 'text-white-50';
+            } else if (type === 'stopped') {
+                scannerStatus.className = 'text-muted';
             }
-        });
+        }
     }
     
     // Stop scanning when page is unloaded
