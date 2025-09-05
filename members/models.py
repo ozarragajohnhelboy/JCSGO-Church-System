@@ -641,6 +641,11 @@ class Attendance(models.Model):
     """Attendance tracking model"""
     ATTENDANCE_TYPES = [
         ('SERVICE', 'Church Service'),
+        ('SUNDAY', 'Sunday Service'),
+        ('MIDWEEK', 'Midweek'),
+        ('CHAMP_HARVEST', 'Champ Harvest'),
+        ('CHAMP_YOUTH', 'Champ Youth'),
+        ('CHAMP_YOUNG_ADULT', 'Champ Young Adult'),
         ('CARE_GROUP', 'Care Group'),
         ('MINISTRY', 'Ministry Meeting'),
         ('EVENT', 'Special Event'),

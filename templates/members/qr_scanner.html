@@ -75,6 +75,20 @@
 
                 <!-- Camera Access -->
                 <div class="text-center">
+                    <div class="row justify-content-center mb-3">
+                        <div class="col-md-6">
+                            <label for="event-select" class="form-label text-white">Select Church Event</label>
+                            <select id="event-select" class="form-select">
+                                <option value="" selected disabled>-- Choose an event --</option>
+                                <option value="SUNDAY">Sunday Service</option>
+                                <option value="MIDWEEK">Midweek</option>
+                                <option value="CHAMP_HARVEST">Champ Harvest</option>
+                                <option value="CHAMP_YOUTH">Champ Youth</option>
+                                <option value="CHAMP_YOUNG_ADULT">Champ Young Adult</option>
+                                <option value="OTHER">Other Event</option>
+                            </select>
+                        </div>
+                    </div>
                     <button id="start-camera" class="btn btn-outline-light btn-lg">
                         <i class="fas fa-camera"></i> Start Automatic Scanner
                     </button>
@@ -110,7 +124,7 @@
                 <form id="qr-scan-form" method="post" style="display: none;">
                     {% csrf_token %}
                     <input type="hidden" name="qr_data" id="hidden-qr-data">
-                    <input type="hidden" name="attendance_type" value="SERVICE">
+                    <input type="hidden" name="attendance_type" id="hidden-attendance-type" value="SERVICE">
                     <input type="hidden" name="notes" value="Auto-recorded via QR scanner">
                 </form>
             </div>
@@ -264,6 +278,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let stream = null;
     let isScanning = false;
+    // Event selection handling
+    const eventSelect = document.getElementById('event-select');
+    const hiddenAttendanceType = document.getElementById('hidden-attendance-type');
+    if (eventSelect) {
+        eventSelect.addEventListener('change', function() {
+            const value = this.value;
+            if (value) {
+                hiddenAttendanceType.value = value;
+                updateScannerStatus(`Event selected: ${this.options[this.selectedIndex].text}. You can start the scanner.`, 'info');
+            }
+        });
+    }
+
     let scanInterval = null;
     let debugInterval = null;
     let isProcessing = false; // Prevent multiple simultaneous submissions
@@ -367,6 +394,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Start camera and automatic QR scanning
     startCameraBtn.addEventListener('click', async function() {
+        // Require event selection before starting
+        if (!eventSelect || !eventSelect.value) {
+            showMessage('error', 'Please select a church event before starting the scanner.');
+            updateScannerStatus('Please select a church event first.', 'error');
+            return;
+        }
         try {
             // Check if jsQR is available
             if (typeof jsQR === 'undefined') {
@@ -427,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 video.play();
                 isScanning = true;
                 startQRScanning();
-                updateScannerStatus('Camera active - Point at QR code to automatically record attendance', 'scanning');
+                updateScannerStatus(`Camera active - Event: ${eventSelect.options[eventSelect.selectedIndex].text}. Point at QR code to record attendance.`, 'scanning');
                 updateDebugInfo();
                 showMessage('success', 'Automatic scanner started! Point at QR codes to record attendance instantly.');
             };

@@ -1998,6 +1998,10 @@ def qr_scanner(request):
     user = request.user
     church = user.church
     
+    # Initialize forms
+    form = QRCodeScanForm()
+    manual_form = ManualAttendanceForm(church=church)
+    
     if request.method == 'POST':
         # Check if it's a manual attendance form submission
         if 'manual_attendance' in request.POST:
@@ -2139,9 +2143,6 @@ def qr_scanner(request):
                         'success': False,
                         'message': f'Error processing QR code: {str(e)}'
                     })
-    else:
-        form = QRCodeScanForm()
-        manual_form = ManualAttendanceForm(church=church)
     
     # Get recent attendances
     recent_attendances = Attendance.objects.filter(
