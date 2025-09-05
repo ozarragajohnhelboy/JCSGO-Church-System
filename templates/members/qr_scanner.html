@@ -81,6 +81,9 @@
                     <button id="stop-camera" class="btn btn-outline-warning btn-lg" style="display: none;">
                         <i class="fas fa-stop"></i> Stop Scanner
                     </button>
+                    <button id="debug-camera" class="btn btn-outline-info btn-sm ms-2" style="display: none;">
+                        <i class="fas fa-bug"></i> Debug
+                    </button>
                     <div class="mt-3">
                         <video id="video" style="display: none; width: 100%; max-width: 500px; border-radius: 10px; border: 3px solid #fff;"></video>
                         <canvas id="canvas" style="display: none;"></canvas>
@@ -89,6 +92,36 @@
                         <div id="scanner-status" class="text-white-50">
                             <i class="fas fa-info-circle"></i> 
                             Camera will automatically record attendance when QR code is detected
+                        </div>
+                        <div class="text-white-50 mt-1" style="font-size: 0.8em;">
+                            <i class="fas fa-qrcode"></i> 
+                            QR Format: CHURCH_ATTENDANCE:UUID:EMAIL
+                        </div>
+                        <div id="debug-info" class="text-white-50 mt-2" style="font-size: 0.8em; display: none;">
+                            <div>Video: <span id="video-info">Not ready</span></div>
+                            <div>Canvas: <span id="canvas-info">Not ready</span></div>
+                            <div>Scanning: <span id="scan-info">Not active</span></div>
+                            <div>Stream: <span id="stream-info">Not active</span></div>
+                            <div class="mt-2">
+                                <button id="test-qr" class="btn btn-outline-light btn-sm">
+                                    <i class="fas fa-qrcode"></i> Test QR Detection
+                                </button>
+                                <button id="generate-test-qr" class="btn btn-outline-light btn-sm ms-2">
+                                    <i class="fas fa-image"></i> Generate Test QR
+                                </button>
+                                <button id="debug-qr-data" class="btn btn-outline-light btn-sm ms-2">
+                                    <i class="fas fa-bug"></i> Debug QR Data
+                                </button>
+                                <div class="mt-1 text-white-50" style="font-size: 0.7em;">
+                                    Tests with: John Helboy Ozarraga (JCSGO Kasiglahan)
+                                </div>
+                                <div id="test-qr-image" class="mt-2" style="display: none;">
+                                    <img id="generated-qr" src="" alt="Test QR Code" style="max-width: 200px; border: 2px solid white; border-radius: 10px;">
+                                    <div class="text-white-50 mt-1" style="font-size: 0.7em;">
+                                        Point camera at this QR code to test detection
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -241,14 +274,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const messageContainer = document.getElementById('message-container');
     const startCameraBtn = document.getElementById('start-camera');
     const stopCameraBtn = document.getElementById('stop-camera');
+    const debugCameraBtn = document.getElementById('debug-camera');
+    const testQrBtn = document.getElementById('test-qr');
+    const generateTestQrBtn = document.getElementById('generate-test-qr');
+    const debugQrDataBtn = document.getElementById('debug-qr-data');
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const context = canvas.getContext('2d');
     const scannerStatus = document.getElementById('scanner-status');
+    const debugInfo = document.getElementById('debug-info');
     
     let stream = null;
     let isScanning = false;
     let scanInterval = null;
+    let debugInterval = null;
     let isProcessing = false; // Prevent multiple simultaneous submissions
     
     // Handle QR form submission with AJAX (for automatic submission)
@@ -352,21 +391,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // Request camera access
-            const constraints = {
+            // Try different camera constraints for MacBook compatibility
+            let constraints = {
                 video: { 
                     facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
+                    width: { ideal: 1280, min: 640 },
+                    height: { ideal: 720, min: 480 },
+                    frameRate: { ideal: 30, max: 60 }
                 } 
             };
             
-            stream = await navigator.mediaDevices.getUserMedia(constraints);
+            try {
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                console.log('Camera access successful with environment facing mode');
+            } catch (err) {
+                console.log('Environment camera failed, trying user facing mode:', err);
+                // Fallback to user facing camera (MacBook built-in camera)
+                constraints = {
+                    video: { 
+                        facingMode: 'user',
+                        width: { ideal: 1280, min: 640 },
+                        height: { ideal: 720, min: 480 },
+                        frameRate: { ideal: 30, max: 60 }
+                    } 
+                };
+                
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    console.log('Camera access successful with user facing mode');
+                } catch (err2) {
+                    console.log('User camera failed, trying basic constraints:', err2);
+                    // Final fallback - basic constraints
+                    constraints = {
+                        video: { 
+                            width: { ideal: 1280, min: 640 },
+                            height: { ideal: 720, min: 480 }
+                        } 
+                    };
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    console.log('Camera access successful with basic constraints');
+                }
+            }
             
             video.srcObject = stream;
             video.style.display = 'block';
             startCameraBtn.style.display = 'none';
             stopCameraBtn.style.display = 'inline-block';
+            debugCameraBtn.style.display = 'inline-block';
             
             // Wait for video to be ready
             video.onloadedmetadata = function() {
@@ -374,6 +445,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 isScanning = true;
                 startQRScanning();
                 updateScannerStatus('Camera active - Point at QR code to automatically record attendance', 'scanning');
+                updateDebugInfo();
                 showMessage('success', 'Automatic scanner started! Point at QR codes to record attendance instantly.');
             };
             
@@ -400,9 +472,83 @@ document.addEventListener('DOMContentLoaded', function() {
         showMessage('success', 'Camera stopped.');
     });
     
+    // Debug camera button
+    debugCameraBtn.addEventListener('click', function() {
+        if (debugInfo.style.display === 'none') {
+            debugInfo.style.display = 'block';
+            updateDebugInfo();
+            // Update debug info every second when visible
+            debugInterval = setInterval(updateDebugInfo, 1000);
+        } else {
+            debugInfo.style.display = 'none';
+            if (debugInterval) {
+                clearInterval(debugInterval);
+                debugInterval = null;
+            }
+        }
+    });
+    
+    // Test QR button
+    testQrBtn.addEventListener('click', function() {
+        // Test QR detection with John Helboy's QR code data (the one you're testing with)
+        const testQrData = 'CHURCH_ATTENDANCE:6c3d903e-840f-4837-b4f5-91f868ff7fae:ozarragahelboy@kasiglahan.jcsgo.com';
+        console.log('Testing QR detection with:', testQrData);
+        
+        // Set the QR data in hidden form
+        document.getElementById('hidden-qr-data').value = testQrData;
+        
+        // Show message
+        showMessage('info', 'Testing QR detection with John Helboy Ozarraga...');
+        updateScannerStatus('Testing QR detection...', 'processing');
+        
+        // Submit the form
+        form.dispatchEvent(new Event('submit'));
+    });
+    
+    // Generate Test QR button
+    generateTestQrBtn.addEventListener('click', function() {
+        // Generate a QR code image for testing (using John Helboy's data)
+        const testQrData = 'CHURCH_ATTENDANCE:6c3d903e-840f-4837-b4f5-91f868ff7fae:ozarragahelboy@kasiglahan.jcsgo.com';
+        
+        // Create a simple QR code using a free QR code API
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(testQrData)}`;
+        
+        // Show the QR code image
+        const testQrImage = document.getElementById('test-qr-image');
+        const generatedQr = document.getElementById('generated-qr');
+        
+        generatedQr.src = qrUrl;
+        testQrImage.style.display = 'block';
+        
+        console.log('Generated test QR code with data:', testQrData);
+        showMessage('success', 'Test QR code generated! Point your camera at it to test detection.');
+    });
+    
+    // Debug QR Data button
+    debugQrDataBtn.addEventListener('click', function() {
+        // Show expected QR data format and help debug
+        const expectedQrData = 'CHURCH_ATTENDANCE:6c3d903e-840f-4837-b4f5-91f868ff7fae:ozarragahelboy@kasiglahan.jcsgo.com';
+        
+        console.log('=== QR CODE DEBUG INFO ===');
+        console.log('Expected QR Data Format:', expectedQrData);
+        console.log('QR Data Parts:');
+        console.log('  - Prefix: CHURCH_ATTENDANCE');
+        console.log('  - UUID: 6c3d903e-840f-4837-b4f5-91f868ff7fae');
+        console.log('  - Email: ozarragahelboy@kasiglahan.jcsgo.com');
+        console.log('========================');
+        
+        // Show in alert for easy reading
+        alert(`Expected QR Data:\n${expectedQrData}\n\nCheck browser console for detailed debug info.`);
+        
+        showMessage('info', 'QR debug info logged to console. Check F12 → Console tab.');
+    });
+    
     // Start automatic QR code scanning
     function startQRScanning() {
         if (!isScanning) return;
+        
+        console.log('Starting QR scanning...');
+        let scanCount = 0;
         
         scanInterval = setInterval(() => {
             if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0 && video.videoHeight > 0 && !isProcessing) {
@@ -417,9 +563,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Get image data
                     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
                     
-                    // Scan for QR code using jsQR
+                    // Log scanning activity every 50 scans (10 seconds)
+                    scanCount++;
+                    if (scanCount % 50 === 0) {
+                        console.log(`QR Scanning... (${scanCount} scans completed)`);
+                    }
+                    
+                    // Scan for QR code using jsQR with better options for MacBook
                     const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "dontInvert"
+                        inversionAttempts: "attemptBoth",
+                        greyScaleWeights: {
+                            red: 0.2126,
+                            green: 0.7152,
+                            blue: 0.0722,
+                        }
                     });
                     
                     if (code && code.data) {
@@ -427,6 +584,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Check if it's a valid church attendance QR code
                         if (code.data.startsWith('CHURCH_ATTENDANCE:')) {
+                            console.log('Valid church attendance QR code detected!');
                             // Stop scanning temporarily to prevent multiple submissions
                             isScanning = false;
                             updateScannerStatus('QR Code detected! Recording attendance...', 'processing');
@@ -452,6 +610,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 } catch (error) {
                     console.error('QR scanning error:', error);
                 }
+            } else {
+                // Log why scanning is not active
+                if (scanCount % 100 === 0) {
+                    console.log('QR Scanning conditions not met:', {
+                        videoReadyState: video.readyState,
+                        videoWidth: video.videoWidth,
+                        videoHeight: video.videoHeight,
+                        isProcessing: isProcessing
+                    });
+                }
             }
         }, 200); // Scan every 200ms for better performance
     }
@@ -472,6 +640,8 @@ document.addEventListener('DOMContentLoaded', function() {
         video.style.display = 'none';
         startCameraBtn.style.display = 'inline-block';
         stopCameraBtn.style.display = 'none';
+        debugCameraBtn.style.display = 'none';
+        debugInfo.style.display = 'none';
         updateScannerStatus('Scanner stopped', 'stopped');
     }
     
@@ -493,6 +663,46 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (type === 'stopped') {
                 scannerStatus.className = 'text-muted';
             }
+        }
+    }
+    
+    // Update debug information
+    function updateDebugInfo() {
+        if (debugInfo) {
+            const videoInfo = document.getElementById('video-info');
+            const canvasInfo = document.getElementById('canvas-info');
+            const scanInfo = document.getElementById('scan-info');
+            
+            if (videoInfo) {
+                const readyState = ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][video.readyState];
+                videoInfo.textContent = video.readyState >= 2 ? 
+                    `Ready (${video.videoWidth}x${video.videoHeight}) - ${readyState}` : `Not ready - ${readyState}`;
+            }
+            
+            if (canvasInfo) {
+                canvasInfo.textContent = canvas.width > 0 ? 
+                    `Ready (${canvas.width}x${canvas.height})` : 'Not ready';
+            }
+            
+            if (scanInfo) {
+                scanInfo.textContent = isScanning ? 'Active' : 'Inactive';
+            }
+            
+            const streamInfo = document.getElementById('stream-info');
+            if (streamInfo) {
+                streamInfo.textContent = stream ? (stream.active ? 'Active' : 'Inactive') : 'None';
+            }
+            
+            // Add more debug info
+            console.log('Debug Info:', {
+                videoReadyState: video.readyState,
+                videoWidth: video.videoWidth,
+                videoHeight: video.videoHeight,
+                canvasWidth: canvas.width,
+                canvasHeight: canvas.height,
+                isScanning: isScanning,
+                streamActive: stream ? stream.active : false
+            });
         }
     }
     

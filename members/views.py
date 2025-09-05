@@ -1943,7 +1943,10 @@ def user_profile(request):
     
     # Generate QR code if it doesn't exist
     if not user.qr_code_image:
-        user.generate_qr_code()
+        try:
+            user.generate_qr_code()
+        except Exception as e:
+            messages.warning(request, f'Could not generate QR code: {str(e)}')
     
     if request.method == 'POST':
         form = UserProfileForm(request.POST, request.FILES, instance=user)
@@ -1983,7 +1986,10 @@ def generate_qr_code(request, user_id):
     except Exception as e:
         messages.error(request, f'Error generating QR code: {str(e)}')
     
-    return redirect('members:user_profile' if request.user == user else 'members:member_detail', pk=user_id)
+    if request.user == user:
+        return redirect('members:user_profile')
+    else:
+        return redirect('members:member_detail', pk=user_id)
 
 
 @login_required
@@ -2063,7 +2069,7 @@ def qr_scanner(request):
                             qr_code_id = parts[1]
                             email = parts[2]
                             
-                            # Find user by QR code ID
+                            # Find user by QR code ID (only within the same church)
                             try:
                                 attendee = CustomUser.objects.get(qr_code_id=qr_code_id, church=church)
                                 
@@ -2078,10 +2084,10 @@ def qr_scanner(request):
                                 if existing_attendance:
                                     messages.warning(request, f'{attendee.full_name} has already been marked present for {attendance_type} today.')
                                 else:
-                                    # Create attendance record
+                                    # Create attendance record (record in the church where scanning happens)
                                     attendance = Attendance.objects.create(
                                         user=attendee,
-                                        church=church,
+                                        church=church,  # Use scanner's church (where the scanning is happening)
                                         attendance_type=attendance_type,
                                         date=today,
                                         time_in=timezone.now().time(),

@@ -266,15 +266,20 @@ class CustomUser(AbstractUser):
     def generate_qr_code(self):
         """Generate QR code for the user"""
         if not self.qr_code_image:
+            # Ensure QR code ID exists
+            if not self.qr_code_id:
+                self.qr_code_id = uuid.uuid4()
+                self.save(update_fields=['qr_code_id'])
+            
             # Create QR code data
             qr_data = f"CHURCH_ATTENDANCE:{self.qr_code_id}:{self.email}"
             
-            # Generate QR code
+            # Generate QR code with better camera detection settings
             qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
+                version=None,  # Auto-determine version based on data
+                error_correction=qrcode.constants.ERROR_CORRECT_M,  # Medium error correction for better detection
+                box_size=15,  # Larger box size for better camera detection
+                border=6,  # Larger border for better scanning
             )
             qr.add_data(qr_data)
             qr.make(fit=True)
@@ -307,6 +312,24 @@ class CustomUser(AbstractUser):
             ip_address='',  # Will be set by middleware
             user_agent=''   # Will be set by middleware
         )
+
+    def save(self, *args, **kwargs):
+        """Override save to automatically generate QR code for new users"""
+        is_new = self.pk is None
+        
+        # Generate QR code ID if it doesn't exist
+        if not self.qr_code_id:
+            self.qr_code_id = uuid.uuid4()
+        
+        super().save(*args, **kwargs)
+        
+        # Generate QR code for new users
+        if is_new and not self.qr_code_image:
+            try:
+                self.generate_qr_code()
+            except Exception as e:
+                # Log error but don't fail user creation
+                print(f"Error generating QR code for {self.email}: {e}")
 
     def get_activity_summary(self, days=30):
         """Get user activity summary for the last N days"""

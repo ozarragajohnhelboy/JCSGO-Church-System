@@ -116,7 +116,7 @@
           </div>
           <div class="card-body text-center">
             {% if user.qr_code_image %}
-              <img src="{{ user.qr_code_image.url }}" alt="QR Code" class="img-fluid mb-3" style="max-width: 200px;" />
+              <img src="{{ user.qr_code_image.url }}" alt="QR Code" class="img-fluid mb-3" style="max-width: 300px;" />
               <p class="text-muted small">Scan this QR code for attendance</p>
               <a href="{{ user.qr_code_image.url }}" download class="btn btn-outline-primary btn-sm"><i class="fas fa-download"></i> Download QR Code</a>
             {% else %}

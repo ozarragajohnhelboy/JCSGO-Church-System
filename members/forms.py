@@ -783,9 +783,9 @@ class ManualAttendanceForm(forms.Form):
     role_status = forms.ChoiceField(
         choices=[
             ('', 'Select Role/Status'),
-            ('VSL', 'VSL (Vision Small Group Leader)'),
-            ('CSL', 'CSL (Cell Small Group Leader)'),
-            ('CL', 'CL (Cell Leader)'),
+            ('VSL', 'VSL (Vine Servant Leader)'),
+            ('CSL', 'CSL (Cluster Servant Leader)'),
+            ('CL', 'CL (Care Leader)'),
             ('CM', 'CM (Care Member)'),
             ('NEW_FRIEND', 'New Friend'),
         ],
@@ -824,6 +824,9 @@ class ManualAttendanceForm(forms.Form):
                 church=self.church, 
                 is_active=True
             ).order_by('first_name', 'last_name')
+            
+            # Custom label to show only names, not emails
+            self.fields['member'].label_from_instance = lambda obj: obj.full_name
 
 
 class AttendanceFilterForm(forms.Form):
