@@ -61,10 +61,10 @@
                     <div>
                         <h5 class="card-title text-white">Your Role</h5>
                         <h2 class="text-white mb-0">
-                            {% if user_role == 'VSL' %}VSL{% elif user_role == 'CSL' %}CSL{% else %}CL{% endif %}
+                            {% if user_role == 'VSL' %}VSL{% elif user_role == 'CSL' %}CSL{% elif user_role == 'CL' %}CL{% elif user_role == 'ADMIN' %}ADMIN{% endif %}
                         </h2>
                         <small class="text-white-50">
-                            {% if user_role == 'VSL' %}Vine Leader{% elif user_role == 'CSL' %}Cluster Leader{% else %}Care Leader{% endif %}
+                            {% if user_role == 'VSL' %}Vine Leader{% elif user_role == 'CSL' %}Cluster Leader{% elif user_role == 'CL' %}Care Leader{% elif user_role == 'ADMIN' %}Administrator{% endif %}
                         </small>
                     </div>
                     <div class="align-self-center">
@@ -165,22 +165,24 @@
                            data-bs-toggle="tooltip" title="View Details">
                             <i class="bi bi-eye"></i>
                         </a>
-                        {% if group.leader == user %}
+                        {% if group.leader == user or user.role.name == 'ADMIN' %}
                         <a href="{% url 'members:care_group_edit' group.pk %}" class="btn btn-sm btn-outline-secondary btn-action" 
                            data-bs-toggle="tooltip" title="Edit Group">
                             <i class="bi bi-pencil"></i>
                         </a>
                         {% endif %}
-                        {% if group.leader == user and not group.is_full %}
-                        <button type="button" class="btn btn-sm btn-outline-success btn-action" 
-                                onclick="showAddMemberModal({{ group.pk }})"
-                                data-bs-toggle="tooltip" title="Add Member">
-                            <i class="bi bi-person-plus"></i>
-                        </button>
-                        {% elif group.is_full %}
-                        <span class="btn btn-sm btn-outline-danger disabled" title="Group is full">
-                            <i class="bi bi-person-x"></i>
-                        </span>
+                        {% if group.leader == user or user.role.name == 'ADMIN' %}
+                            {% if not group.is_full %}
+                            <button type="button" class="btn btn-sm btn-outline-success btn-action" 
+                                    onclick="showAddMemberModal({{ group.pk }})"
+                                    data-bs-toggle="tooltip" title="Add Member">
+                                <i class="bi bi-person-plus"></i>
+                            </button>
+                            {% else %}
+                            <span class="btn btn-sm btn-outline-danger disabled" title="Group is full">
+                                <i class="bi bi-person-x"></i>
+                            </span>
+                            {% endif %}
                         {% endif %}
                     </div>
                 </td>

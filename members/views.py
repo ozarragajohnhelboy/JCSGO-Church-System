@@ -1542,11 +1542,11 @@ def regular_member_import(request):
 # Care Group Views for VSL, CSL, CL roles
 @login_required
 def care_group_list(request):
-    """List care groups for leadership roles (VSL, CSL, CL)"""
+    """List care groups for leadership roles (VSL, CSL, CL) and admin"""
     user = request.user
     
     # Check if user has permission to access care groups
-    if user.role.name not in ['VSL', 'CSL', 'CL']:
+    if user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to access care groups.')
         return redirect('churches:dashboard')
     
@@ -1562,7 +1562,7 @@ def care_group_list(request):
         is_active=True
     ).select_related('leader').prefetch_related('members')
     
-    # For VSL, show all care groups in their church
+    # For VSL and ADMIN, show all care groups in their church
     # For CSL and CL, show only groups they lead or are members of
     if user.role.name in ['CSL', 'CL']:
         care_groups = care_groups.filter(
@@ -1599,7 +1599,7 @@ def care_group_list(request):
         'search': search,
         'total_care_groups': care_groups.count(),
         'led_groups_count': led_groups.count(),
-        'can_create_group': user.role.name in ['VSL', 'CSL', 'CL'],
+        'can_create_group': user.role.name in ['VSL', 'CSL', 'CL', 'ADMIN'],
         'user_role': user.role.name,
     }
     
@@ -1608,11 +1608,11 @@ def care_group_list(request):
 
 @login_required
 def care_group_create(request):
-    """Create a new care group - for VSL, CSL, CL roles"""
+    """Create a new care group - for VSL, CSL, CL roles and admin"""
     user = request.user
     
     # Check if user has permission to create care groups
-    if user.role.name not in ['VSL', 'CSL', 'CL']:
+    if user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to create care groups.')
         return redirect('members:care_group_list')
     
@@ -1653,7 +1653,7 @@ def care_group_detail(request, group_id):
         messages.error(request, 'You do not have permission to view this care group.')
         return redirect('members:care_group_list')
     
-    # Additional permission check for CSL and CL
+    # Additional permission check for CSL and CL (admin can view all groups)
     if user.role.name in ['CSL', 'CL'] and care_group.leader != user:
         # Check if user is a member of this group
         try:
@@ -1673,9 +1673,9 @@ def care_group_detail(request, group_id):
         user__regular_member_profile__group=care_group
     ).select_related('user').order_by('-timestamp')[:10]
     
-    # Get available members to add (if user is the leader)
+    # Get available members to add (if user is the leader or admin)
     available_members = None
-    if care_group.leader == user:
+    if care_group.leader == user or user.role.name == 'ADMIN':
         available_members = CustomUser.objects.filter(
             church=care_group.church,
             is_active=True,
@@ -1691,7 +1691,7 @@ def care_group_detail(request, group_id):
         'recent_activity': recent_activity,
         'capacity_percentage': care_group.capacity_percentage,
         'is_full': care_group.is_full,
-        'is_leader': care_group.leader == user,
+        'is_leader': care_group.leader == user or user.role.name == 'ADMIN',
         'available_members': available_members,
         'user_role': user.role.name,
     }
@@ -1701,13 +1701,13 @@ def care_group_detail(request, group_id):
 
 @login_required
 def care_group_edit(request, group_id):
-    """Edit a care group - only the leader can edit"""
+    """Edit a care group - only the leader or admin can edit"""
     user = request.user
     care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
     
-    # Check if user is the leader of this care group
-    if care_group.leader != user:
-        messages.error(request, 'Only the group leader can edit this care group.')
+    # Check if user is the leader of this care group or admin
+    if care_group.leader != user and user.role.name != 'ADMIN':
+        messages.error(request, 'Only the group leader or admin can edit this care group.')
         return redirect('members:care_group_detail', group_id=group_id)
     
     if request.method == 'POST':
@@ -1743,9 +1743,9 @@ def care_group_add_member(request, group_id):
     user = request.user
     care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
     
-    # Check if user is the leader of this care group
-    if care_group.leader != user:
-        messages.error(request, 'Only the group leader can add members to this care group.')
+    # Check if user is the leader of this care group or admin
+    if care_group.leader != user and user.role.name != 'ADMIN':
+        messages.error(request, 'Only the group leader or admin can add members to this care group.')
         return redirect('members:care_group_detail', group_id=group_id)
     
     if care_group.is_full:
@@ -1795,9 +1795,9 @@ def care_group_remove_member(request, group_id, member_id):
     user = request.user
     care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
     
-    # Check if user is the leader of this care group
-    if care_group.leader != user:
-        messages.error(request, 'Only the group leader can remove members from this care group.')
+    # Check if user is the leader of this care group or admin
+    if care_group.leader != user and user.role.name != 'ADMIN':
+        messages.error(request, 'Only the group leader or admin can remove members from this care group.')
         return redirect('members:care_group_detail', group_id=group_id)
     
     try:
