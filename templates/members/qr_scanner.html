@@ -323,6 +323,18 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(data => {
         if (data.success) {
             showMessage('success', data.message);
+            
+            // Show additional info for new friends
+            if (data.user && data.user.is_new_friend && data.user.timer_status) {
+                const timerInfo = document.createElement('div');
+                timerInfo.className = 'alert alert-info mt-2';
+                timerInfo.innerHTML = `
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>New Friend Status:</strong> ${data.user.timer_status}${data.user.timer_status == 1 ? 'st' : data.user.timer_status == 2 ? 'nd' : data.user.timer_status == 3 ? 'rd' : 'th'} Timer
+                `;
+                document.querySelector('.scanner-container').appendChild(timerInfo);
+            }
+            
             updateScannerStatus('Attendance recorded! Scanning for next QR code...', 'success');
             // Reload page to show updated attendance list
             setTimeout(() => {
@@ -373,6 +385,18 @@ document.addEventListener('DOMContentLoaded', function() {
     .then(data => {
         if (data.success) {
             showMessage('success', data.message);
+            
+            // Show additional info for new friends
+            if (data.user && data.user.is_new_friend && data.user.timer_status) {
+                const timerInfo = document.createElement('div');
+                timerInfo.className = 'alert alert-info mt-2';
+                timerInfo.innerHTML = `
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>New Friend Status:</strong> ${data.user.timer_status}${data.user.timer_status == 1 ? 'st' : data.user.timer_status == 2 ? 'nd' : data.user.timer_status == 3 ? 'rd' : 'th'} Timer
+                `;
+                document.querySelector('.scanner-container').appendChild(timerInfo);
+            }
+            
             manualForm.reset();
             // Reload page to show updated attendance list
             setTimeout(() => {

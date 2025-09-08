@@ -2163,15 +2163,40 @@ def qr_scanner(request):
                         # Update user's last attendance
                         attendee.record_attendance()
                         
-                        messages.success(request, f'Manual attendance recorded for {attendee.full_name}')
+                        # Auto-update new friend timer status for Sunday Service attendance
+                        status_update_message = ""
+                        if attendee.is_new_friend and service_type == 'SUNDAY':
+                            current_status = attendee.timer_status
+                            if current_status < 5:
+                                new_status = current_status + 1
+                                attendee.timer_status = new_status
+                                attendee.save()
+                                status_update_message = f" Status updated to {new_status}{'st' if new_status == 1 else 'nd' if new_status == 2 else 'rd' if new_status == 3 else 'th'} timer."
+                            elif current_status == 5:
+                                # 5th timer attending Sunday Service - transition to regular member with CM role
+                                from members.models import Role
+                                cm_role, created = Role.objects.get_or_create(
+                                    name='CM',
+                                    defaults={'description': 'Care Member'}
+                                )
+                                attendee.transition_to_regular()
+                                attendee.role = cm_role
+                                attendee.save()
+                                status_update_message = " Congratulations! You are now a regular member with CM role!"
+                            else:
+                                status_update_message = " You are already a regular member!"
+                        
+                        messages.success(request, f'Manual attendance recorded for {attendee.full_name}{status_update_message}')
                         
                         return JsonResponse({
                             'success': True,
-                            'message': f'Manual attendance recorded for {attendee.full_name}',
+                            'message': f'Manual attendance recorded for {attendee.full_name}{status_update_message}',
                             'user': {
                                 'name': attendee.full_name,
                                 'role': attendee.role.get_name_display() if attendee.role else 'No Role',
-                                'time': attendance.time_in.strftime('%I:%M %p')
+                                'time': attendance.time_in.strftime('%I:%M %p'),
+                                'timer_status': attendee.timer_status if attendee.is_new_friend else None,
+                                'is_new_friend': attendee.is_new_friend
                             }
                         })
                 except Exception as e:
@@ -2249,15 +2274,40 @@ def qr_scanner(request):
                                     # Update user's last attendance
                                     attendee.record_attendance()
                                     
-                                    messages.success(request, f'Attendance recorded for {attendee.full_name}')
+                                    # Auto-update new friend timer status for Sunday Service attendance
+                                    status_update_message = ""
+                                    if attendee.is_new_friend and attendance_type == 'SUNDAY':
+                                        current_status = attendee.timer_status
+                                        if current_status < 5:
+                                            new_status = current_status + 1
+                                            attendee.timer_status = new_status
+                                            attendee.save()
+                                            status_update_message = f" Status updated to {new_status}{'st' if new_status == 1 else 'nd' if new_status == 2 else 'rd' if new_status == 3 else 'th'} timer."
+                                        elif current_status == 5:
+                                            # 5th timer attending Sunday Service - transition to regular member with CM role
+                                            from members.models import Role
+                                            cm_role, created = Role.objects.get_or_create(
+                                                name='CM',
+                                                defaults={'description': 'Care Member'}
+                                            )
+                                            attendee.transition_to_regular()
+                                            attendee.role = cm_role
+                                            attendee.save()
+                                            status_update_message = " Congratulations! You are now a regular member with CM role!"
+                                        else:
+                                            status_update_message = " You are already a regular member!"
+                                    
+                                    messages.success(request, f'Attendance recorded for {attendee.full_name}{status_update_message}')
                                     
                                     return JsonResponse({
                                         'success': True,
-                                        'message': f'Attendance recorded for {attendee.full_name}',
+                                        'message': f'Attendance recorded for {attendee.full_name}{status_update_message}',
                                         'user': {
                                             'name': attendee.full_name,
                                             'role': attendee.role.get_name_display() if attendee.role else 'No Role',
-                                            'time': attendance.time_in.strftime('%I:%M %p')
+                                            'time': attendance.time_in.strftime('%I:%M %p'),
+                                            'timer_status': attendee.timer_status if attendee.is_new_friend else None,
+                                            'is_new_friend': attendee.is_new_friend
                                         }
                                     })
                             except CustomUser.DoesNotExist:

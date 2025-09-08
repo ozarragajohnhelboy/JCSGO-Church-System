@@ -259,8 +259,8 @@ class CustomUser(AbstractUser):
         """Update timer status for New Friends"""
         if 1 <= new_status <= 5:
             self.timer_status = new_status
-            if new_status == 5:
-                self.transition_to_regular()
+            # Note: Transition to regular member happens when 5th timer attends Sunday Service
+            # This is handled in the attendance views, not here
             self.save()
 
     def generate_qr_code(self):
