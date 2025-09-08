@@ -70,4 +70,16 @@ urlpatterns = [
     # Profile Import/Export
     path('profiles/export/', views.profile_export, name='profile_export'),
     path('profiles/import/', views.profile_import, name='profile_import'),
+    
+    # Care Group Reports
+    path('care-group-reports/', views.care_group_report_list, name='care_group_report_list'),
+    path('care-group-reports/create/', views.care_group_report_create, name='care_group_report_create'),
+    path('care-group-reports/<int:report_id>/member-reports/', views.care_group_member_report_create, name='care_group_member_report_create'),
+    path('care-group-reports/<int:report_id>/', views.care_group_report_detail, name='care_group_report_detail'),
+    path('care-group-reports/<int:report_id>/print/', views.care_group_report_print, name='care_group_report_print'),
+    path('care-group-reports/<int:report_id>/edit/', views.care_group_report_edit, name='care_group_report_edit'),
+    path('care-group-reports/<int:report_id>/delete/', views.care_group_report_delete, name='care_group_report_delete'),
+    
+    # Care Group Attendance Tracking
+    path('care-groups/<int:group_id>/attendance/', views.care_group_attendance_tracking, name='care_group_attendance_tracking'),
 ] 

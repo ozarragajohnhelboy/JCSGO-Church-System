@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Care Group Attendance - {{ care_group.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-calendar-check me-2"></i>Care Group Attendance Tracking
+                    </h3>
+                    <a href="{% url 'members:care_group_detail' care_group.id %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Care Group
+                    </a>
+                </div>
+                
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <h5 class="text-primary mb-3">
+                                <i class="fas fa-users me-2"></i>{{ care_group.name }}
+                            </h5>
+                            <p class="text-muted">
+                                <strong>Leader:</strong> {{ care_group.leader.full_name }}<br>
+                                <strong>Members:</strong> {{ care_group_members.count }} active members
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Form -->
+                    <form method="post" class="mb-4">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="attendance_date" class="form-label">
+                                    <i class="fas fa-calendar me-1"></i>Attendance Date *
+                                </label>
+                                <input type="date" name="attendance_date" id="attendance_date" 
+                                       class="form-control" required 
+                                       value="{% now 'Y-m-d' %}">
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Member Name</th>
+                                        <th>Role</th>
+                                        <th class="text-center">Present</th>
+                                        <th>Last Attendance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in care_group_members %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    {% if member.profile_picture %}
+                                                        <img src="{{ member.profile_picture.url }}" 
+                                                             alt="Profile" class="rounded-circle me-2" 
+                                                             width="32" height="32">
+                                                    {% else %}
+                                                        <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" 
+                                                             style="width: 32px; height: 32px;">
+                                                            <i class="fas fa-user text-white"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                    <div>
+                                                        <strong>{{ member.full_name }}</strong>
+                                                        <br>
+                                                        <small class="text-muted">{{ member.email }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">{{ member.role.get_name_display }}</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="form-check d-flex justify-content-center">
+                                                    <input type="checkbox" name="attended_{{ member.id }}" 
+                                                           class="form-check-input" 
+                                                           id="attended_{{ member.id }}">
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {% if member.last_attendance %}
+                                                    <small class="text-muted">
+                                                        {{ member.last_attendance|date:"M d, Y" }}
+                                                    </small>
+                                                {% else %}
+                                                    <small class="text-muted">Never</small>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">
+                                                <i class="fas fa-users fa-2x mb-2"></i>
+                                                <br>No members found in this care group.
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {% if care_group_members %}
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-save me-1"></i>Record Attendance
+                                    </button>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </form>
+
+                    <!-- Recent Attendance Records -->
+                    {% if recent_attendances %}
+                        <hr class="my-4">
+                        
+                        <h5 class="text-primary mb-3">
+                            <i class="fas fa-history me-2"></i>Recent Attendance Records (Last 30 Days)
+                        </h5>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Member</th>
+                                        <th>Time In</th>
+                                        <th>Recorded By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for attendance in recent_attendances %}
+                                        <tr>
+                                            <td>{{ attendance.date|date:"M d, Y" }}</td>
+                                            <td>{{ attendance.user.full_name }}</td>
+                                            <td>{{ attendance.time_in|time:"H:i" }}</td>
+                                            <td>
+                                                {% if attendance.scanned_by %}
+                                                    {{ attendance.scanned_by.full_name }}
+                                                {% else %}
+                                                    <span class="text-muted">System</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('attendance_date').value = today;
+    
+    // Add select all/none functionality
+    const checkboxes = document.querySelectorAll('input[type="checkbox"][name^="attended_"]');
+    if (checkboxes.length > 0) {
+        // Add select all button
+        const selectAllBtn = document.createElement('button');
+        selectAllBtn.type = 'button';
+        selectAllBtn.className = 'btn btn-outline-primary btn-sm me-2';
+        selectAllBtn.innerHTML = '<i class="fas fa-check-square me-1"></i>Select All';
+        selectAllBtn.onclick = function() {
+            checkboxes.forEach(cb => cb.checked = true);
+        };
+        
+        const selectNoneBtn = document.createElement('button');
+        selectNoneBtn.type = 'button';
+        selectNoneBtn.className = 'btn btn-outline-secondary btn-sm';
+        selectNoneBtn.innerHTML = '<i class="fas fa-square me-1"></i>Select None';
+        selectNoneBtn.onclick = function() {
+            checkboxes.forEach(cb => cb.checked = false);
+        };
+        
+        const form = document.querySelector('form');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.parentNode.insertBefore(selectAllBtn, submitBtn);
+        submitBtn.parentNode.insertBefore(selectNoneBtn, submitBtn);
+    }
+});
+</script>
+{% endblock %}

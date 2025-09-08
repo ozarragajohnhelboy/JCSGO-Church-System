@@ -22,13 +22,14 @@ from datetime import datetime, timedelta
 
 from .models import (
     CustomUser, NewFriend, RegularMember, Group, Role, 
-    ActivityLog, Attendance
+    ActivityLog, Attendance, CareGroupReport, CareGroupMemberReport
 )
 from .forms import (
     CustomUserForm, NewFriendForm, RegularMemberForm, 
     GroupForm, ProfileUpdateForm, NewFriendImportForm, RegularMemberImportForm,
     CareGroupForm, CareGroupMemberForm, UserProfileForm, QRCodeScanForm,
-    ManualAttendanceForm, AttendanceFilterForm, AttendanceExportForm, ProfileExportForm, ProfileImportForm
+    ManualAttendanceForm, AttendanceFilterForm, AttendanceExportForm, ProfileExportForm, ProfileImportForm,
+    CareGroupReportForm, CareGroupMemberReportForm, CareGroupMemberReportFormSet
 )
 
 
@@ -508,27 +509,56 @@ def ajax_get_available_members(request, group_id):
             care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
             
             # Check if user can manage this care group
-            if care_group.leader != request.user:
+            user_role = getattr(request.user.role, 'name', None) if request.user.role else None
+            if care_group.leader != request.user and user_role != 'ADMIN':
                 return JsonResponse({'error': 'Permission denied'}, status=403)
             
-            # Get available members
-            available_members = CustomUser.objects.filter(
+            # Get available members - simplified query to avoid potential issues
+            all_members = CustomUser.objects.filter(
                 church=care_group.church,
                 is_active=True,
                 is_new_friend=False,
                 role__name__in=['VSL', 'CSL', 'CL', 'CM']
-            ).exclude(
-                regular_member_profile__group__isnull=False
-            ).order_by('first_name', 'last_name')
+            ).select_related('role').order_by('first_name', 'last_name')
+            
+            # Filter out members who are already in a care group
+            available_members = []
+            for member in all_members:
+                try:
+                    # Check if member has a regular_member_profile and if they're already in a group
+                    if hasattr(member, 'regular_member_profile') and member.regular_member_profile:
+                        if member.regular_member_profile.group is None:
+                            available_members.append(member)
+                    else:
+                        # Member doesn't have a regular_member_profile, so they're available
+                        available_members.append(member)
+                except Exception as e:
+                    # If there's an error checking the profile, skip this member
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Error checking member {member.pk} profile: {str(e)}")
+                    continue
             
             members_data = []
             for member in available_members:
-                members_data.append({
-                    'id': member.pk,
-                    'full_name': member.full_name,
-                    'role': member.get_role_display(),
-                    'email': member.email
-                })
+                try:
+                    # Safely get full name
+                    full_name = f"{member.first_name or ''} {member.last_name or ''}".strip()
+                    if not full_name:
+                        full_name = member.email or f"User {member.pk}"
+                    
+                    members_data.append({
+                        'id': member.pk,
+                        'full_name': full_name,
+                        'role': member.role.get_name_display() if member.role else 'No Role',
+                        'email': member.email or ''
+                    })
+                except Exception as e:
+                    # Skip problematic members but continue processing
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(f"Skipping member {member.pk} due to error: {str(e)}")
+                    continue
             
             return JsonResponse({
                 'success': True,
@@ -538,6 +568,9 @@ def ajax_get_available_members(request, group_id):
         except Group.DoesNotExist:
             return JsonResponse({'error': 'Care group not found'}, status=404)
         except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in ajax_get_available_members: {str(e)}", exc_info=True)
             return JsonResponse({'error': str(e)}, status=500)
     
     return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -1585,12 +1618,37 @@ def care_group_list(request):
         is_active=True
     ).select_related('leader').prefetch_related('members')
     
-    # For VSL and ADMIN, show all care groups in their church
-    # For CSL and CL, show only groups they lead or are members of
-    if user.role.name in ['CSL', 'CL']:
+    # Apply role-based filtering
+    if user.role.name == 'VSL':
+        # VSL can see their own care groups + care groups of their members (CSL/CL)
+        # Get members under this VSL through the group relationship
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
         care_groups = care_groups.filter(
-            Q(leader=user) | Q(members__user=user)
+            Q(leader=user) | 
+            Q(leader__in=member_users)  # Care groups led by members under this VSL
         ).distinct()
+    elif user.role.name == 'CSL':
+        # CSL can see their own care groups + care groups of their members (CL)
+        # Get members under this CSL through the group relationship
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        care_groups = care_groups.filter(
+            Q(leader=user) | 
+            Q(leader__in=member_users)  # Care groups led by members under this CSL
+        ).distinct()
+    elif user.role.name == 'CL':
+        # CL can only see care groups they lead
+        care_groups = care_groups.filter(leader=user)
+    elif user.role.name == 'ADMIN':
+        # Admin can see all care groups
+        pass
     
     # Apply search filter
     if search:
@@ -1789,6 +1847,9 @@ def care_group_add_member(request, group_id):
             # Check if member is already in a care group
             if regular_member.group:
                 messages.error(request, f'{member_user.full_name} is already in a care group.')
+                # Check if request came from care group list or detail
+                if request.META.get('HTTP_REFERER', '').endswith('/care-groups/'):
+                    return redirect('members:care_group_list')
                 return redirect('members:care_group_detail', group_id=group_id)
             
             # Add member to care group
@@ -1809,6 +1870,9 @@ def care_group_add_member(request, group_id):
         except CustomUser.DoesNotExist:
             messages.error(request, 'Selected member not found.')
     
+    # Check if request came from care group list or detail
+    if request.META.get('HTTP_REFERER', '').endswith('/care-groups/'):
+        return redirect('members:care_group_list')
     return redirect('members:care_group_detail', group_id=group_id)
 
 
@@ -2449,4 +2513,447 @@ def profile_import(request):
     }
     
     return render(request, 'members/profile_import.html', context)
+
+
+# Care Group Report Views
+
+@login_required
+def care_group_report_list(request):
+    """List all care group reports for the user's church"""
+    user = request.user
+    church = user.church
+    
+    # Check if user has permission to view reports
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to view care group reports.')
+        return redirect('members:dashboard')
+    
+    # Get search parameters
+    search = request.GET.get('search', '')
+    care_group_filter = request.GET.get('care_group', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    
+    # Base queryset
+    reports = CareGroupReport.objects.filter(church=church)
+    
+    # Apply role-based filtering for reports
+    if user.role.name == 'VSL':
+        # VSL can see reports for their own care groups + care groups of their members (CSL/CL)
+        # Get members under this VSL through the group relationship
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        reports = reports.filter(
+            Q(care_group__leader=user) | 
+            Q(care_group__leader__in=member_users)  # Reports for care groups led by members under this VSL
+        ).distinct()
+    elif user.role.name == 'CSL':
+        # CSL can see reports for their own care groups + care groups of their members (CL)
+        # Get members under this CSL through the group relationship
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        reports = reports.filter(
+            Q(care_group__leader=user) | 
+            Q(care_group__leader__in=member_users)  # Reports for care groups led by members under this CSL
+        ).distinct()
+    elif user.role.name == 'CL':
+        # CL can only see reports for care groups they lead
+        reports = reports.filter(care_group__leader=user)
+    elif user.role.name == 'ADMIN':
+        # Admin can see all reports
+        pass
+    
+    # Apply filters
+    if search:
+        reports = reports.filter(
+            Q(care_group__name__icontains=search) |
+            Q(topic_discussed__icontains=search) |
+            Q(scripture_used__icontains=search)
+        )
+    
+    if care_group_filter:
+        reports = reports.filter(care_group_id=care_group_filter)
+    
+    if date_from:
+        reports = reports.filter(date_of_cg__gte=date_from)
+    
+    if date_to:
+        reports = reports.filter(date_of_cg__lte=date_to)
+    
+    # Order by date
+    reports = reports.order_by('-date_of_cg', '-created_at')
+    
+    # Pagination
+    paginator = Paginator(reports, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Get available care groups for filter (apply same role-based filtering)
+    care_groups = Group.objects.filter(
+        church=church,
+        group_type='CARE',
+        is_active=True
+    )
+    
+    # Apply role-based filtering for care groups dropdown
+    if user.role.name == 'VSL':
+        # VSL can see their own care groups + care groups of their members (CSL/CL)
+        # Get members under this VSL through the group relationship
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        care_groups = care_groups.filter(
+            Q(leader=user) | 
+            Q(leader__in=member_users)  # Care groups led by members under this VSL
+        ).distinct()
+    elif user.role.name == 'CSL':
+        # CSL can see their own care groups + care groups of their members (CL)
+        # Get members under this CSL through the group relationship
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        care_groups = care_groups.filter(
+            Q(leader=user) | 
+            Q(leader__in=member_users)  # Care groups led by members under this CSL
+        ).distinct()
+    elif user.role.name == 'CL':
+        # CL can only see care groups they lead
+        care_groups = care_groups.filter(leader=user)
+    elif user.role.name == 'ADMIN':
+        # Admin can see all care groups
+        pass
+    
+    care_groups = care_groups.order_by('name')
+    
+    context = {
+        'page_obj': page_obj,
+        'search': search,
+        'care_group_filter': care_group_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'care_groups': care_groups,
+        'total_reports': reports.count(),
+    }
+    
+    return render(request, 'members/care_group_report_list.html', context)
+
+
+@login_required
+def care_group_report_create(request):
+    """Create a new care group report"""
+    user = request.user
+    church = user.church
+    
+    # Check if user has permission to create reports
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to create care group reports.')
+        return redirect('members:dashboard')
+    
+    if request.method == 'POST':
+        form = CareGroupReportForm(request.POST, user=user)
+        
+        if form.is_valid():
+            report = form.save(commit=False)
+            report.church = church
+            report.created_by = user
+            report.save()
+            
+            # Redirect to member report form
+            return redirect('members:care_group_member_report_create', report_id=report.id)
+    else:
+        form = CareGroupReportForm(user=user)
+        
+        # Pre-select care group if provided in URL
+        care_group_id = request.GET.get('care_group')
+        if care_group_id:
+            try:
+                care_group = Group.objects.get(id=care_group_id, church=church, group_type='CARE')
+                
+                # Check if user has permission to create report for this care group
+                if user.role.name == 'CL' and care_group.leader != user:
+                    messages.error(request, 'You can only create reports for care groups you lead.')
+                    return redirect('members:care_group_report_list')
+                
+                form.fields['care_group'].initial = care_group
+            except Group.DoesNotExist:
+                pass
+    
+    context = {
+        'form': form,
+        'title': 'Create Care Group Report'
+    }
+    
+    return render(request, 'members/care_group_report_form.html', context)
+
+
+@login_required
+def care_group_member_report_create(request, report_id):
+    """Create member reports for a care group report"""
+    user = request.user
+    report = get_object_or_404(CareGroupReport, id=report_id, church=user.church)
+    
+    # Check if user has permission
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to create care group reports.')
+        return redirect('members:dashboard')
+    
+    # Check role-based access
+    if user.role.name == 'CL' and report.care_group.leader != user:
+        messages.error(request, 'You can only create member reports for care groups you lead.')
+        return redirect('members:care_group_report_list')
+    
+    # Get care group members
+    care_group_members = CustomUser.objects.filter(
+        regular_member_profile__group=report.care_group,
+        is_active=True
+    ).order_by('first_name', 'last_name')
+    
+    if request.method == 'POST':
+        # Process member reports
+        for member in care_group_members:
+            member_id = str(member.id)
+            status = request.POST.get(f'status_{member_id}', 'ACTIVE')
+            sunday_attendance = f'sunday_attendance_{member_id}' in request.POST
+            group_attendance = f'group_attendance_{member_id}' in request.POST
+            new_disciples_invited = int(request.POST.get(f'new_disciples_invited_{member_id}', 0))
+            follow_ups = int(request.POST.get(f'follow_ups_{member_id}', 0))
+            notes = request.POST.get(f'notes_{member_id}', '')
+            
+            # Create or update member report
+            member_report, created = CareGroupMemberReport.objects.get_or_create(
+                report=report,
+                member=member,
+                defaults={
+                    'status': status,
+                    'sunday_attendance': sunday_attendance,
+                    'group_attendance': group_attendance,
+                    'new_disciples_invited': new_disciples_invited,
+                    'follow_ups': follow_ups,
+                    'notes': notes,
+                }
+            )
+            
+            if not created:
+                member_report.status = status
+                member_report.sunday_attendance = sunday_attendance
+                member_report.group_attendance = group_attendance
+                member_report.new_disciples_invited = new_disciples_invited
+                member_report.follow_ups = follow_ups
+                member_report.notes = notes
+                member_report.save()
+        
+        messages.success(request, f'Care group report for {report.care_group.name} has been created successfully.')
+        return redirect('members:care_group_report_detail', report_id=report.id)
+    
+    # Get existing member reports
+    existing_reports = {
+        mr.member.id: mr for mr in report.member_reports.all()
+    }
+    
+    context = {
+        'report': report,
+        'care_group_members': care_group_members,
+        'existing_reports': existing_reports,
+    }
+    
+    return render(request, 'members/care_group_member_report_form.html', context)
+
+
+@login_required
+def care_group_report_detail(request, report_id):
+    """View care group report details"""
+    user = request.user
+    report = get_object_or_404(CareGroupReport, id=report_id, church=user.church)
+    
+    # Check if user has permission
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to view care group reports.')
+        return redirect('members:dashboard')
+    
+    # Check role-based access
+    if user.role.name == 'CL' and report.care_group.leader != user:
+        messages.error(request, 'You can only view reports for care groups you lead.')
+        return redirect('members:care_group_report_list')
+    
+    # Get member reports
+    member_reports = report.member_reports.all().order_by('member__first_name', 'member__last_name')
+    
+    context = {
+        'report': report,
+        'member_reports': member_reports,
+    }
+    
+    return render(request, 'members/care_group_report_detail.html', context)
+
+
+@login_required
+def care_group_report_print(request, report_id):
+    """Print view for care group report"""
+    user = request.user
+    report = get_object_or_404(CareGroupReport, id=report_id, church=user.church)
+    
+    # Check if user has permission
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to view care group reports.')
+        return redirect('members:dashboard')
+    
+    # Check role-based access
+    if user.role.name == 'CL' and report.care_group.leader != user:
+        messages.error(request, 'You can only print reports for care groups you lead.')
+        return redirect('members:care_group_report_list')
+    
+    # Get member reports
+    member_reports = report.member_reports.all().order_by('member__first_name', 'member__last_name')
+    
+    context = {
+        'report': report,
+        'member_reports': member_reports,
+    }
+    
+    return render(request, 'members/care_group_report_print.html', context)
+
+
+@login_required
+def care_group_report_edit(request, report_id):
+    """Edit a care group report"""
+    user = request.user
+    report = get_object_or_404(CareGroupReport, id=report_id, church=user.church)
+    
+    # Check if user has permission
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to edit care group reports.')
+        return redirect('members:dashboard')
+    
+    # Check role-based access
+    if user.role.name == 'CL' and report.care_group.leader != user:
+        messages.error(request, 'You can only edit reports for care groups you lead.')
+        return redirect('members:care_group_report_list')
+    
+    if request.method == 'POST':
+        form = CareGroupReportForm(request.POST, instance=report, user=user)
+        
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Care group report has been updated successfully.')
+            return redirect('members:care_group_report_detail', report_id=report.id)
+    else:
+        form = CareGroupReportForm(instance=report, user=user)
+    
+    context = {
+        'form': form,
+        'report': report,
+        'title': 'Edit Care Group Report'
+    }
+    
+    return render(request, 'members/care_group_report_form.html', context)
+
+
+@login_required
+def care_group_report_delete(request, report_id):
+    """Delete a care group report"""
+    user = request.user
+    report = get_object_or_404(CareGroupReport, id=report_id, church=user.church)
+    
+    # Check if user has permission
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to delete care group reports.')
+        return redirect('members:dashboard')
+    
+    # Check role-based access
+    if user.role.name == 'CL' and report.care_group.leader != user:
+        messages.error(request, 'You can only delete reports for care groups you lead.')
+        return redirect('members:care_group_report_list')
+    
+    if request.method == 'POST':
+        report_name = report.care_group.name
+        report.delete()
+        messages.success(request, f'Care group report for {report_name} has been deleted successfully.')
+        return redirect('members:care_group_report_list')
+    
+    context = {
+        'report': report,
+    }
+    
+    return render(request, 'members/care_group_report_confirm_delete.html', context)
+
+
+@login_required
+def care_group_attendance_tracking(request, group_id):
+    """Track care group attendance for members"""
+    user = request.user
+    care_group = get_object_or_404(Group, id=group_id, church=user.church, group_type='CARE')
+    
+    # Check if user has permission
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to track care group attendance.')
+        return redirect('members:dashboard')
+    
+    # Check role-based access
+    if user.role.name == 'CL' and care_group.leader != user:
+        messages.error(request, 'You can only track attendance for care groups you lead.')
+        return redirect('members:care_group_list')
+    
+    # Get care group members
+    care_group_members = CustomUser.objects.filter(
+        regular_member_profile__group=care_group,
+        is_active=True
+    ).order_by('first_name', 'last_name')
+    
+    if request.method == 'POST':
+        attendance_date = request.POST.get('attendance_date')
+        if not attendance_date:
+            messages.error(request, 'Please select a date.')
+            return redirect('members:care_group_attendance_tracking', group_id=group_id)
+        
+        # Process attendance for each member
+        for member in care_group_members:
+            member_id = str(member.id)
+            attended = request.POST.get(f'attended_{member_id}') == 'on'
+            
+            if attended:
+                # Create or update attendance record
+                attendance, created = Attendance.objects.get_or_create(
+                    user=member,
+                    church=user.church,
+                    date=attendance_date,
+                    attendance_type='CARE_GROUP',
+                    defaults={
+                        'time_in': timezone.now().time(),
+                        'scanned_by': user,
+                    }
+                )
+                
+                if not created:
+                    # Update existing attendance
+                    attendance.time_in = timezone.now().time()
+                    attendance.scanned_by = user
+                    attendance.save()
+        
+        messages.success(request, f'Care group attendance for {care_group.name} has been recorded successfully.')
+        return redirect('members:care_group_detail', group_id=group_id)
+    
+    # Get recent attendance records for this care group
+    recent_attendances = Attendance.objects.filter(
+        user__regular_member_profile__group=care_group,
+        attendance_type='CARE_GROUP',
+        date__gte=timezone.now().date() - timedelta(days=30)
+    ).order_by('-date', '-time_in')
+    
+    context = {
+        'care_group': care_group,
+        'care_group_members': care_group_members,
+        'recent_attendances': recent_attendances,
+    }
+    
+    return render(request, 'members/care_group_attendance_tracking.html', context)
 

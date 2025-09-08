@@ -9,12 +9,19 @@
         <i class="bi bi-collection me-2"></i>
         Care Groups
     </h1>
-    {% if can_create_group %}
+    {% if can_create_group or user.role.name in 'VSL,CSL,CL,ADMIN' %}
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
+            {% if can_create_group %}
             <a href="{% url 'members:care_group_create' %}" class="btn btn-sm btn-primary">
                 <i class="bi bi-plus-circle"></i> Create Care Group
             </a>
+            {% endif %}
+            {% if user.role.name in 'VSL,CSL,CL,ADMIN' %}
+            <a href="{% url 'members:care_group_report_list' %}" class="btn btn-sm btn-success">
+                <i class="bi bi-file-earmark-text"></i> Care Group Reports
+            </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}
@@ -184,6 +191,13 @@
                             </span>
                             {% endif %}
                         {% endif %}
+                        {% if user.role.name in 'VSL,CSL,CL,ADMIN' %}
+                        <a href="{% url 'members:care_group_report_create' %}?care_group={{ group.pk }}" 
+                           class="btn btn-sm btn-outline-info btn-action" 
+                           data-bs-toggle="tooltip" title="Create Report">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>
@@ -288,6 +302,10 @@
         </div>
     </div>
 </div>
+<!-- Alert Container -->
+<div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+</div>
+
 {% endblock %}
 
 {% block extra_css %}
@@ -317,32 +335,74 @@
 <script>
 let currentGroupId = null;
 
+function showAlert(type, title, message) {
+    const alertContainer = document.getElementById('alertContainer');
+    const alertId = 'alert-' + Date.now();
+    
+    const alertHtml = `
+        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert" style="min-width: 300px;">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : type === 'info' ? 'info-circle' : 'exclamation-circle'} me-2"></i>
+                <div>
+                    <strong>${title}</strong>
+                    <div class="small">${message}</div>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alertElement = document.getElementById(alertId);
+        if (alertElement) {
+            const bsAlert = new bootstrap.Alert(alertElement);
+            bsAlert.close();
+        }
+    }, 5000);
+}
+
 function showAddMemberModal(groupId) {
     currentGroupId = groupId;
     
     // Load available members for this group
     fetch(`/members/ajax/get-available-members/${groupId}/`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
             const select = document.getElementById('member_select');
             select.innerHTML = '<option value="">Choose a member...</option>';
             
-            data.members.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member.id;
-                option.textContent = `${member.full_name} (${member.role})`;
-                select.appendChild(option);
-            });
-            
-            // Update form action
-            document.getElementById('addMemberForm').action = `/members/care-groups/${groupId}/add-member/`;
-            
-            // Show modal
-            new bootstrap.Modal(document.getElementById('addMemberModal')).show();
+            if (data.members && data.members.length > 0) {
+                data.members.forEach(member => {
+                    const option = document.createElement('option');
+                    option.value = member.id;
+                    option.textContent = `${member.full_name} (${member.role})`;
+                    select.appendChild(option);
+                });
+                
+                // Update form action
+                document.getElementById('addMemberForm').action = `/members/care-groups/${groupId}/add-member/`;
+                
+                // Show modal
+                new bootstrap.Modal(document.getElementById('addMemberModal')).show();
+            } else {
+                showAlert('info', 'No Available Members', 'All members are already in care groups. There are no available members to add at this time.');
+            }
         })
         .catch(error => {
             console.error('Error loading available members:', error);
-            alert('Error loading available members');
+            showAlert('danger', 'Error', 'Unable to load available members. Please try again later.');
         });
 }
 

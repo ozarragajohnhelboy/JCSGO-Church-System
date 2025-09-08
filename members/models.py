@@ -748,3 +748,134 @@ class Attendance(models.Model):
             'recent_attendances': attendances.order_by('-date', '-time_in')[:10],
             'attendance_rate': round((attendances.count() / days) * 100, 2) if days > 0 else 0
         }
+
+
+class CareGroupReport(models.Model):
+    """Care Group Weekly Report model"""
+    # Report identification
+    care_group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='reports')
+    church = models.ForeignKey(Church, on_delete=models.CASCADE, related_name='care_group_reports')
+    
+    # Leadership information
+    vine_servant_leader = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='vsl_reports',
+        limit_choices_to={'role__name': 'VSL'}
+    )
+    cluster_servant_leader = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='csl_reports',
+        limit_choices_to={'role__name': 'CSL'}
+    )
+    
+    # Care group details
+    care_leader = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='cl_reports',
+        limit_choices_to={'role__name': 'CL'}
+    )
+    contact_number = models.CharField(max_length=15, blank=True)
+    venue_address = models.TextField(blank=True)
+    
+    # Meeting details
+    topic_discussed = models.CharField(max_length=200, blank=True)
+    scripture_used = models.CharField(max_length=200, blank=True)
+    group_day = models.CharField(
+        max_length=10,
+        choices=[
+            ('MONDAY', 'Monday'),
+            ('TUESDAY', 'Tuesday'),
+            ('WEDNESDAY', 'Wednesday'),
+            ('THURSDAY', 'Thursday'),
+            ('FRIDAY', 'Friday'),
+            ('SATURDAY', 'Saturday'),
+            ('SUNDAY', 'Sunday'),
+        ],
+        blank=True
+    )
+    group_time = models.TimeField(null=True, blank=True)
+    date_of_cg = models.DateField()
+    
+    # Report metadata
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='created_reports')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Care Group Report"
+        verbose_name_plural = "Care Group Reports"
+        ordering = ['-date_of_cg', '-created_at']
+        unique_together = ['care_group', 'date_of_cg']
+
+    def __str__(self):
+        return f"{self.care_group.name} - {self.date_of_cg}"
+
+    @property
+    def total_members_reported(self):
+        """Get total number of members in this report"""
+        return self.member_reports.count()
+
+    @property
+    def total_sunday_attendance(self):
+        """Get total Sunday attendance"""
+        return self.member_reports.filter(sunday_attendance=True).count()
+
+    @property
+    def total_group_attendance(self):
+        """Get total group attendance"""
+        return self.member_reports.filter(group_attendance=True).count()
+
+    @property
+    def total_new_disciples_invited(self):
+        """Get total new disciples invited"""
+        return sum(report.new_disciples_invited for report in self.member_reports.all())
+
+    @property
+    def total_follow_ups(self):
+        """Get total follow-ups"""
+        return sum(report.follow_ups for report in self.member_reports.all())
+
+
+class CareGroupMemberReport(models.Model):
+    """Individual member report within a care group report"""
+    STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('INACTIVE', 'Inactive'),
+        ('ABSENT', 'Absent'),
+        ('EXCUSED', 'Excused'),
+    ]
+    
+    report = models.ForeignKey(CareGroupReport, on_delete=models.CASCADE, related_name='member_reports')
+    member = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='care_group_member_reports')
+    
+    # Member status
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ACTIVE')
+    
+    # Attendance
+    sunday_attendance = models.BooleanField(default=False)
+    group_attendance = models.BooleanField(default=False)
+    
+    # Outreach
+    new_disciples_invited = models.PositiveIntegerField(default=0)
+    follow_ups = models.PositiveIntegerField(default=0)
+    
+    # Additional notes
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = "Care Group Member Report"
+        verbose_name_plural = "Care Group Member Reports"
+        ordering = ['member__first_name', 'member__last_name']
+        unique_together = ['report', 'member']
+
+    def __str__(self):
+        return f"{self.member.full_name} - {self.report.care_group.name} ({self.report.date_of_cg})"

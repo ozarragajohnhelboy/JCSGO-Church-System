@@ -19,6 +19,11 @@
                 <i class="bi bi-pencil"></i> Edit Group
             </a>
             {% endif %}
+            {% if user.role.name in 'VSL,CSL,CL,ADMIN' %}
+            <a href="{% url 'members:care_group_attendance_tracking' group.pk %}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-calendar-check"></i> Track Attendance
+            </a>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -312,6 +317,10 @@
     </div>
 </div>
 {% endif %}
+
+<!-- Alert Container -->
+<div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1055;">
+</div>
 {% endblock %}
 
 {% block extra_css %}
@@ -350,18 +359,92 @@
 
 {% block extra_js %}
 <script>
+function showAlert(type, title, message) {
+    const alertContainer = document.getElementById('alertContainer');
+    const alertId = 'alert-' + Date.now();
+    
+    const alertHtml = `
+        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert" style="min-width: 300px;">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : type === 'info' ? 'info-circle' : 'exclamation-circle'} me-2"></i>
+                <div>
+                    <strong>${title}</strong>
+                    <div class="small">${message}</div>
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alertElement = document.getElementById(alertId);
+        if (alertElement) {
+            const bsAlert = new bootstrap.Alert(alertElement);
+            bsAlert.close();
+        }
+    }, 5000);
+}
+
 function showAddMemberModal() {
     {% if available_members %}
     new bootstrap.Modal(document.getElementById('addMemberModal')).show();
     {% else %}
-    alert('No available members to add. All members are already in care groups.');
+    showAlert('info', 'No Available Members', 'All members are already in care groups. There are no available members to add at this time.');
     {% endif %}
 }
 
 function removeMember(memberId, memberName) {
-    if (confirm(`Are you sure you want to remove ${memberName} from this care group?`)) {
-        window.location.href = `{% url 'members:care_group_remove_member' group.pk 0 %}`.replace('0', memberId);
+    // Create confirmation modal
+    const modalHtml = `
+        <div class="modal fade" id="confirmRemoveModal" tabindex="-1" aria-labelledby="confirmRemoveModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmRemoveModalLabel">
+                            <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                            Confirm Removal
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure you want to remove <strong>${memberName}</strong> from this care group?</p>
+                        <p class="text-muted small">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" onclick="confirmRemove(${memberId})">
+                            <i class="bi bi-person-dash me-1"></i>Remove Member
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('confirmRemoveModal');
+    if (existingModal) {
+        existingModal.remove();
     }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('confirmRemoveModal'));
+    modal.show();
+    
+    // Clean up modal after it's hidden
+    document.getElementById('confirmRemoveModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+function confirmRemove(memberId) {
+    window.location.href = `{% url 'members:care_group_remove_member' group.pk 0 %}`.replace('0', memberId);
 }
 
 // Initialize tooltips

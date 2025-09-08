@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import authenticate, get_user_model
-from .models import CustomUser, NewFriend, RegularMember, Group, Role, Church, Attendance
+from django.db.models import Q
+from .models import CustomUser, NewFriend, RegularMember, Group, Role, Church, Attendance, CareGroupReport, CareGroupMemberReport
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils import timezone
 from datetime import datetime
@@ -986,3 +987,153 @@ class ProfileImportForm(forms.Form):
             if ext not in ['csv', 'xlsx', 'xls']:
                 raise ValidationError('Please upload a CSV or Excel file.')
         return file
+
+
+class CareGroupReportForm(forms.ModelForm):
+    """Form for creating/editing Care Group Reports"""
+    
+    class Meta:
+        model = CareGroupReport
+        fields = [
+            'care_group', 'vine_servant_leader', 'cluster_servant_leader', 'care_leader',
+            'contact_number', 'venue_address', 'topic_discussed', 'scripture_used',
+            'group_day', 'group_time', 'date_of_cg'
+        ]
+        widgets = {
+            'care_group': forms.Select(attrs={'class': 'form-select'}),
+            'vine_servant_leader': forms.Select(attrs={'class': 'form-select'}),
+            'cluster_servant_leader': forms.Select(attrs={'class': 'form-select'}),
+            'care_leader': forms.Select(attrs={'class': 'form-select'}),
+            'contact_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'venue_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'topic_discussed': forms.TextInput(attrs={'class': 'form-control'}),
+            'scripture_used': forms.TextInput(attrs={'class': 'form-control'}),
+            'group_day': forms.Select(attrs={'class': 'form-select'}),
+            'group_time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'date_of_cg': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.user and self.user.church:
+            # Filter care groups to only show those from the user's church
+            care_groups = Group.objects.filter(
+                church=self.user.church,
+                group_type='CARE',
+                is_active=True
+            )
+            
+            # Apply role-based filtering
+            if self.user.role and self.user.role.name == 'VSL':
+                # VSL can create reports for their own care groups + care groups of their members (CSL/CL)
+                # Get members under this VSL through the group relationship
+                user_groups = Group.objects.filter(leader=self.user, group_type='CARE')
+                member_users = CustomUser.objects.filter(
+                    regular_member_profile__group__in=user_groups
+                ).exclude(id=self.user.id)
+                
+                care_groups = care_groups.filter(
+                    Q(leader=self.user) | 
+                    Q(leader__in=member_users)  # Care groups led by members under this VSL
+                ).distinct()
+            elif self.user.role and self.user.role.name == 'CSL':
+                # CSL can create reports for their own care groups + care groups of their members (CL)
+                # Get members under this CSL through the group relationship
+                user_groups = Group.objects.filter(leader=self.user, group_type='CARE')
+                member_users = CustomUser.objects.filter(
+                    regular_member_profile__group__in=user_groups
+                ).exclude(id=self.user.id)
+                
+                care_groups = care_groups.filter(
+                    Q(leader=self.user) | 
+                    Q(leader__in=member_users)  # Care groups led by members under this CSL
+                ).distinct()
+            elif self.user.role and self.user.role.name == 'CL':
+                # CL can only create reports for care groups they lead
+                care_groups = care_groups.filter(leader=self.user)
+            # ADMIN can create reports for all care groups
+            
+            self.fields['care_group'].queryset = care_groups
+            
+            # Filter leaders to only show those from the user's church
+            church_users = CustomUser.objects.filter(church=self.user.church, is_active=True)
+            
+            # Show/hide fields and change labels based on user role
+            if self.user.role and self.user.role.name == 'VSL':
+                # VSL: No higher role fields needed, use vine_servant_leader field instead of care_leader
+                self.fields.pop('cluster_servant_leader', None)
+                self.fields.pop('care_leader', None)
+                # Use vine_servant_leader field for VSL
+                self.fields['vine_servant_leader'].label = 'Vine Servant Leader'
+                self.fields['vine_servant_leader'].queryset = church_users.filter(role__name='VSL')
+            elif self.user.role and self.user.role.name == 'CSL':
+                # CSL: Show VSL field, use cluster_servant_leader field instead of care_leader
+                self.fields.pop('care_leader', None)
+                self.fields['vine_servant_leader'].queryset = church_users.filter(role__name='VSL')
+                # Use cluster_servant_leader field for CSL
+                self.fields['cluster_servant_leader'].label = 'Cluster Servant Leader'
+                self.fields['cluster_servant_leader'].queryset = church_users.filter(role__name='CSL')
+            elif self.user.role and self.user.role.name == 'CL':
+                # CL: Show VSL and CSL fields, keep care_leader as is
+                self.fields['vine_servant_leader'].queryset = church_users.filter(role__name='VSL')
+                self.fields['cluster_servant_leader'].queryset = church_users.filter(role__name='CSL')
+                self.fields['care_leader'].queryset = church_users.filter(role__name='CL')
+            else:
+                # ADMIN: Show all fields with original labels
+                self.fields['vine_servant_leader'].queryset = church_users.filter(role__name='VSL')
+                self.fields['cluster_servant_leader'].queryset = church_users.filter(role__name='CSL')
+                self.fields['care_leader'].queryset = church_users.filter(role__name='CL')
+            
+            # Set default date to today
+            if not self.instance.pk:
+                self.fields['date_of_cg'].initial = timezone.now().date()
+
+
+class CareGroupMemberReportForm(forms.ModelForm):
+    """Form for individual member reports within a care group report"""
+    
+    class Meta:
+        model = CareGroupMemberReport
+        fields = ['member', 'status', 'sunday_attendance', 'group_attendance', 
+                 'new_disciples_invited', 'follow_ups', 'notes']
+        widgets = {
+            'member': forms.Select(attrs={'class': 'form-select'}),
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'sunday_attendance': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'group_attendance': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'new_disciples_invited': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'follow_ups': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.care_group = kwargs.pop('care_group', None)
+        super().__init__(*args, **kwargs)
+        
+        if self.care_group:
+            # Filter members to only show those in the care group
+            care_group_members = CustomUser.objects.filter(
+                regular_member_profile__group=self.care_group,
+                is_active=True
+            ).order_by('first_name', 'last_name')
+            
+            self.fields['member'].queryset = care_group_members
+
+
+class CareGroupMemberReportFormSet(forms.BaseFormSet):
+    """Formset for multiple member reports"""
+    
+    def __init__(self, *args, **kwargs):
+        self.care_group = kwargs.pop('care_group', None)
+        super().__init__(*args, **kwargs)
+        
+        # Set the care_group for each form in the formset
+        for form in self.forms:
+            form.care_group = self.care_group
+
+    def get_form_kwargs(self, index):
+        kwargs = super().get_form_kwargs(index)
+        kwargs['care_group'] = self.care_group
+        return kwargs
