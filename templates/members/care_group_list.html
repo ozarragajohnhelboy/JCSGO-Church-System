@@ -302,9 +302,6 @@
         </div>
     </div>
 </div>
-<!-- Alert Container -->
-<div id="alertContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1055;">
-</div>
 
 {% endblock %}
 
@@ -336,23 +333,34 @@
 let currentGroupId = null;
 
 function showAlert(type, title, message) {
-    const alertContainer = document.getElementById('alertContainer');
-    const alertId = 'alert-' + Date.now();
+    // Create a temporary alert element that matches Django's message format
+    const alertContainer = document.querySelector('.position-fixed.top-0.end-0.p-3');
+    if (!alertContainer) {
+        // If no alert container exists, create one
+        const container = document.createElement('div');
+        container.className = 'position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '1055';
+        document.body.appendChild(container);
+    }
     
+    const alertId = 'alert-' + Date.now();
     const alertHtml = `
-        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show" role="alert" style="min-width: 300px;">
+        <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: 12px; min-width: 300px; max-width: 500px;">
             <div class="d-flex align-items-center">
-                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-triangle' : type === 'info' ? 'info-circle' : 'exclamation-circle'} me-2"></i>
-                <div>
-                    <strong>${title}</strong>
+                <div class="me-3">
+                    <i class="bi bi-${type === 'success' ? 'check-circle-fill text-success' : type === 'danger' ? 'exclamation-triangle-fill text-danger' : type === 'info' ? 'info-circle-fill text-info' : 'exclamation-circle-fill text-warning'} fs-4"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <strong class="me-2">${title}!</strong>
                     <div class="small">${message}</div>
                 </div>
+                <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     `;
     
-    alertContainer.insertAdjacentHTML('beforeend', alertHtml);
+    const container = document.querySelector('.position-fixed.top-0.end-0.p-3');
+    container.insertAdjacentHTML('beforeend', alertHtml);
     
     // Auto-dismiss after 5 seconds
     setTimeout(() => {

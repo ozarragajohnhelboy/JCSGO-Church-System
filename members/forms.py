@@ -104,12 +104,12 @@ class NewFriendForm(forms.ModelForm):
                 is_new_friend=False  # Only regular members can invite
             ).order_by('first_name', 'last_name')
             
-            # Populate endorsed_to field with VSL, CSL, CL from the same church
+            # Populate endorsed_to field with VSL, CSL, CL, CM from the same church
             self.fields['endorsed_to'].queryset = CustomUser.objects.filter(
                 church=self.church,
                 is_active=True,
                 is_new_friend=False,
-                role__name__in=['VSL', 'CSL', 'CL']  # Only leadership roles can be endorsed to
+                role__name__in=['VSL', 'CSL', 'CL', 'CM']  # Leadership roles and care members can be endorsed to
             ).order_by('first_name', 'last_name')
             
             # Custom label to show only names, not emails

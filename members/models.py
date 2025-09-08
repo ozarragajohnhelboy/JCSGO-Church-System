@@ -377,7 +377,7 @@ class NewFriend(models.Model):
         null=True,
         blank=True,
         related_name='endorsed_new_friends',
-        help_text="The VSL, CSL, or CL who will follow up with this new friend"
+        help_text="The VSL, CSL, CL, or CM who will follow up with this new friend"
     )
     follow_up_status = models.CharField(
         max_length=20,

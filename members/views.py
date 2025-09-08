@@ -261,8 +261,17 @@ def regular_members_list(request):
     # Get RegularMember profiles for these users (if they exist)
     regular_members = []
     for user_obj in regular_members_users:
+        # Refresh user object from database to get latest role
+        user_obj.refresh_from_db()
+        
         try:
             regular_member_profile = RegularMember.objects.get(user=user_obj)
+            
+            # Check if the RegularMember role_type is out of sync with the user's role
+            if user_obj.role and regular_member_profile.role_type != user_obj.role.name:
+                regular_member_profile.role_type = user_obj.role.name
+                regular_member_profile.save()
+            
             # Add group filter if specified
             if group_filter and str(regular_member_profile.group.id) != group_filter:
                 continue
@@ -1057,6 +1066,31 @@ def new_friend_add(request):
                         notes=form.cleaned_data['notes']
                     )
                     
+                    # If endorsed to a CM, automatically promote them to CL
+                    endorsed_to_user = form.cleaned_data['endorsed_to']
+                    if endorsed_to_user and endorsed_to_user.role and endorsed_to_user.role.name == 'CM':
+                        cl_role = Role.objects.get(name='CL')
+                        endorsed_to_user.role = cl_role
+                        endorsed_to_user.save()
+                        
+                        # Also update the RegularMember role_type if it exists
+                        if hasattr(endorsed_to_user, 'regular_member_profile') and endorsed_to_user.regular_member_profile:
+                            endorsed_to_user.regular_member_profile.role_type = 'CL'
+                            endorsed_to_user.regular_member_profile.save()
+                        
+                        # Log the role promotion
+                        ActivityLog.objects.create(
+                            user=request.user,
+                            action='ROLE_PROMOTED',
+                            description=f'Promoted {endorsed_to_user.full_name} from CM to CL due to new friend endorsement',
+                            related_user=endorsed_to_user,
+                            ip_address=request.META.get('REMOTE_ADDR'),
+                            user_agent=request.META.get('HTTP_USER_AGENT', '')
+                        )
+                        
+                        # Add info message about the promotion
+                        messages.info(request, f'{endorsed_to_user.full_name} has been automatically promoted from CM to CL due to new friend endorsement.')
+                    
                     # Log the activity
                     ActivityLog.objects.create(
                         user=request.user,
@@ -1109,6 +1143,31 @@ def new_friend_edit(request, new_friend_id):
                     new_friend.endorsed_to = form.cleaned_data['endorsed_to']
                     new_friend.notes = form.cleaned_data['notes']
                     new_friend.save()
+                    
+                    # If endorsed to a CM, automatically promote them to CL
+                    endorsed_to_user = form.cleaned_data['endorsed_to']
+                    if endorsed_to_user and endorsed_to_user.role and endorsed_to_user.role.name == 'CM':
+                        cl_role = Role.objects.get(name='CL')
+                        endorsed_to_user.role = cl_role
+                        endorsed_to_user.save()
+                        
+                        # Also update the RegularMember role_type if it exists
+                        if hasattr(endorsed_to_user, 'regular_member_profile') and endorsed_to_user.regular_member_profile:
+                            endorsed_to_user.regular_member_profile.role_type = 'CL'
+                            endorsed_to_user.regular_member_profile.save()
+                        
+                        # Log the role promotion
+                        ActivityLog.objects.create(
+                            user=request.user,
+                            action='ROLE_PROMOTED',
+                            description=f'Promoted {endorsed_to_user.full_name} from CM to CL due to new friend endorsement',
+                            related_user=endorsed_to_user,
+                            ip_address=request.META.get('REMOTE_ADDR'),
+                            user_agent=request.META.get('HTTP_USER_AGENT', '')
+                        )
+                        
+                        # Add info message about the promotion
+                        messages.info(request, f'{endorsed_to_user.full_name} has been automatically promoted from CM to CL due to new friend endorsement.')
                     
                     # Handle conversion to regular member if selected
                     if form.cleaned_data.get('convert_to_regular') and form.cleaned_data.get('regular_role'):
@@ -1915,11 +1974,11 @@ def care_group_remove_member(request, group_id, member_id):
 # Role-specific New Friends Views
 @login_required
 def role_new_friends_list(request):
-    """List new friends endorsed to the current user (VSL, CSL, CL)"""
+    """List new friends endorsed to the current user (VSL, CSL, CL, CM)"""
     user = request.user
     
     # Check if user has permission to access this view
-    if user.role.name not in ['VSL', 'CSL', 'CL']:
+    if user.role.name not in ['VSL', 'CSL', 'CL', 'CM']:
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('churches:dashboard')
     
