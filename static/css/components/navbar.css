@@ -1,0 +1,29 @@
+.navbar-brand {
+    font-weight: bold;
+    color: var(--primary-color) !important;
+}
+
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    background: white !important;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.dropdown-menu {
+    border: none !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+}
+
+.dropdown-header {
+    background-color: #f8f9fa;
+    border-radius: 12px 12px 0 0;
+    padding: 1rem;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}

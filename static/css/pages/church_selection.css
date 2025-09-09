@@ -1,0 +1,139 @@
+.church-selection-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.selection-card {
+  background: white;
+  border-radius: 20px;
+  padding: 3rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+  width: 100%;
+}
+
+.church-logo {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.church-logo .logo-image {
+  width: 200px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.sector-dropdown {
+  margin-bottom: 2rem;
+}
+
+.sector-dropdown select {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  background: white;
+  transition: border-color 0.3s;
+}
+
+.sector-dropdown select:focus {
+  outline: none;
+  border-height: auto;
+  display: block;
+  margin: 0 auto;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.church-list {
+  display: none;
+  margin-top: 1rem;
+}
+
+.church-list.active {
+  display: block;
+}
+
+.church-item {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.church-item:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
+.church-item:hover .church-info small {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.church-info h5 {
+  margin: 0;
+  font-weight: 600;
+}
+
+.church-info small {
+  color: #6c757d;
+  transition: color 0.3s;
+}
+
+.church-arrow {
+  color: #6c757d;
+  transition: color 0.3s;
+}
+
+.church-item:hover .church-arrow {
+  color: white;
+}
+
+.welcome-text {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.welcome-text h1 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.welcome-text p {
+  color: #6c757d;
+  font-size: 1.1rem;
+}
+
+.admin-login-section {
+  margin-top: 2rem;
+}
+
+.admin-login-section hr {
+  border-color: #e9ecef;
+  opacity: 0.5;
+}
+
+.admin-login-section .btn {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+
+.admin-login-section .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}

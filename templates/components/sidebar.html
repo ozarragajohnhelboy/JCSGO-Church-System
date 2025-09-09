@@ -1,0 +1,126 @@
+<div class="col-md-3 col-lg-2 d-md-block bg-light sidebar" id="sidebar">
+  <div class="position-sticky pt-3">
+    <ul class="nav flex-column">
+      {% if user.is_superuser or user.role.name == 'ADMIN' %}
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'churches:dashboard' %}">
+            <i class="bi bi-speedometer2 me-2"></i>
+            Admin Dashboard
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase"><span>Member Management</span></h6>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'member_list' %}active{% endif %}" href="{% url 'members:member_list' %}">
+            <i class="bi bi-people me-2"></i>
+            All Members
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'new_friends_list' %}active{% endif %}" href="{% url 'members:new_friends_list' %}">
+            <i class="bi bi-person-plus me-2"></i>
+            New Friends
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'regular_members_list' %}active{% endif %}" href="{% url 'members:regular_members_list' %}">
+            <i class="bi bi-person-check me-2"></i>
+            Regular Members
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'care_group_list' %}active{% endif %}" href="{% url 'members:care_group_list' %}">
+            <i class="bi bi-collection me-2"></i>
+            Care Groups
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'role_management' %}active{% endif %}" href="{% url 'members:role_management' %}">
+            <i class="bi bi-shield-lock me-2"></i>
+            Roles & Permissions
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'activity_logs' %}active{% endif %}" href="{% url 'members:activity_logs' %}">
+            <i class="bi bi-activity me-2"></i>
+            Activity Logs
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase"><span>Attendance System</span></h6>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'attendance_list' %}active{% endif %}" href="{% url 'members:attendance_list' %}">
+            <i class="bi bi-calendar-check me-2"></i>
+            Attendance Records
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'qr_scanner' %}active{% endif %}" href="{% url 'members:qr_scanner' %}">
+            <i class="bi bi-qr-code me-2"></i>
+            QR Scanner
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'attendance_export' %}active{% endif %}" href="{% url 'members:attendance_export' %}">
+            <i class="bi bi-download me-2"></i>
+            Export Attendance
+          </a>
+        </li>
+      {% elif user.role.name == 'VSL' or user.role.name == 'CSL' or user.role.name == 'CL' %}
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'churches:dashboard' %}">
+            <i class="bi bi-speedometer2 me-2"></i>
+            {% if user.role.name == 'VSL' %}
+              Vine Leader Dashboard
+            {% elif user.role.name == 'CSL' %}
+              Cluster Leader Dashboard
+            {% else %}
+              Care Leader Dashboard
+            {% endif %}
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase"><span>Leadership</span></h6>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'care_group_list' %}active{% endif %}" href="{% url 'members:care_group_list' %}">
+            <i class="bi bi-collection me-2"></i>
+            Care Groups
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'role_new_friends_list' %}active{% endif %}" href="{% url 'members:role_new_friends_list' %}">
+            <i class="bi bi-person-plus me-2"></i>
+            My New Friends
+          </a>
+        </li>
+      {% elif user.role.name == 'CM' %}
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'churches:dashboard' %}">
+            <i class="bi bi-speedometer2 me-2"></i>
+            Care Member Dashboard
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase"><span>Member Area</span></h6>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'user_profile' %}active{% endif %}" href="{% url 'members:user_profile' %}">
+            <i class="bi bi-person me-2"></i>
+            My Profile
+          </a>
+        </li>
+      {% endif %}
+    </ul>
+  </div>
+</div>
