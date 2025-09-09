@@ -39,15 +39,12 @@ def member_list(request):
     user = request.user
     church = user.church
     
-    # Get search parameters
     search = request.GET.get('search', '')
     role_filter = request.GET.get('role', '')
     status_filter = request.GET.get('status', '')
     
-    # Base queryset
     members = CustomUser.objects.filter(church=church, is_active=True)
     
-    # Apply filters
     if search:
         members = members.filter(
             Q(first_name__icontains=search) |
@@ -64,15 +61,12 @@ def member_list(request):
     elif status_filter == 'regular_members':
         members = members.filter(is_new_friend=False)
     
-    # Order by name
     members = members.order_by('first_name', 'last_name')
     
-    # Pagination
     paginator = Paginator(members, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get available roles for filter (exclude system roles)
     roles = Role.objects.filter(
         name__in=['VSL', 'CSL', 'CL', 'CM']
     ).order_by('name')
@@ -97,17 +91,13 @@ def member_detail(request, pk):
     user = request.user
     member = get_object_or_404(CustomUser, pk=pk)
     
-    # Check if user can view this member
     if not user.can_access_church_data(member.church):
         messages.error(request, 'You do not have permission to view this member.')
         return redirect('members:member_list')
     
-    # Determine the appropriate back URL based on user role and referrer
-    back_url = 'members:member_list'  # Default fallback
+    back_url = 'members:member_list'
     
-    # Check if user came from role-specific new friends list
     if user.role.name in ['VSL', 'CSL', 'CL'] and member.is_new_friend:
-        # Check if this new friend is endorsed to the current user
         try:
             new_friend_profile = member.new_friend_profile
             if new_friend_profile.endorsed_to == user:
@@ -115,27 +105,22 @@ def member_detail(request, pk):
         except NewFriend.DoesNotExist:
             pass
     
-    # Get related data based on user type
     new_friend_profile = None
     regular_member_profile = None
     
     if member.is_new_friend:
-        # User is a new friend, only get NewFriend profile
         try:
             new_friend_profile = member.new_friend_profile
         except NewFriend.DoesNotExist:
             pass
     else:
-        # User is a regular member, only get RegularMember profile
         try:
             regular_member_profile = member.regular_member_profile
         except RegularMember.DoesNotExist:
             pass
     
-    # Get recent activity
     recent_activity = member.activity_logs.order_by('-timestamp')[:10]
     
-    # Get group membership
     group_membership = None
     if regular_member_profile and regular_member_profile.group:
         group_membership = regular_member_profile.group
@@ -159,19 +144,16 @@ def new_friends_list(request):
     user = request.user
     church = user.church
     
-    # Get search and filter parameters
     search = request.GET.get('search', '')
     follow_up_status = request.GET.get('follow_up_status', '')
     timer_status = request.GET.get('timer_status', '')
     
-    # Base queryset - Get all new friends from CustomUser model
     new_friends_users = CustomUser.objects.filter(
         church=church,
         is_active=True,
-        is_new_friend=True  # This is the key filter
+        is_new_friend=True
     )
     
-    # Apply search filters
     if search:
         new_friends_users = new_friends_users.filter(
             Q(first_name__icontains=search) |
@@ -183,18 +165,15 @@ def new_friends_list(request):
     
     if timer_status:
         new_friends_users = new_friends_users.filter(timer_status=timer_status)
-    
-    # Get NewFriend profiles for these users (if they exist)
+
     new_friends = []
     for user_obj in new_friends_users:
         try:
             new_friend_profile = NewFriend.objects.get(user=user_obj)
-            # Add follow-up status filter if specified
             if follow_up_status and new_friend_profile.follow_up_status != follow_up_status:
                 continue
             new_friends.append(new_friend_profile)
         except NewFriend.DoesNotExist:
-            # Create a default NewFriend profile if it doesn't exist
             new_friend_profile = NewFriend.objects.create(
                 user=user_obj,
                 invited_by=None,
@@ -203,14 +182,11 @@ def new_friends_list(request):
             )
             new_friends.append(new_friend_profile)
     
-    # Apply follow-up status filter to the list
     if follow_up_status:
         new_friends = [nf for nf in new_friends if nf.follow_up_status == follow_up_status]
     
-    # Order by registration date (newest first)
     new_friends.sort(key=lambda x: x.registration_date, reverse=True)
     
-    # Pagination
     paginator = Paginator(new_friends, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -234,20 +210,17 @@ def regular_members_list(request):
     user = request.user
     church = user.church
     
-    # Get search and filter parameters
     search = request.GET.get('search', '')
     role_type = request.GET.get('role_type', '')
     group_filter = request.GET.get('group', '')
     availability = request.GET.get('availability', '')
     
-    # Base queryset - Get all regular members from CustomUser model
     regular_members_users = CustomUser.objects.filter(
         church=church,
         is_active=True,
-        is_new_friend=False  # This is the key filter
+        is_new_friend=False 
     )
     
-    # Apply search filters
     if search:
         regular_members_users = regular_members_users.filter(
             Q(first_name__icontains=search) |
@@ -258,29 +231,25 @@ def regular_members_list(request):
     if role_type:
         regular_members_users = regular_members_users.filter(role__name=role_type)
     
-    # Get RegularMember profiles for these users (if they exist)
     regular_members = []
     for user_obj in regular_members_users:
-        # Refresh user object from database to get latest role
         user_obj.refresh_from_db()
         
         try:
             regular_member_profile = RegularMember.objects.get(user=user_obj)
             
-            # Check if the RegularMember role_type is out of sync with the user's role
             if user_obj.role and regular_member_profile.role_type != user_obj.role.name:
                 regular_member_profile.role_type = user_obj.role.name
                 regular_member_profile.save()
             
-            # Add group filter if specified
             if group_filter and str(regular_member_profile.group.id) != group_filter:
                 continue
-            # Add availability filter if specified
+            
             if availability and regular_member_profile.availability != availability:
                 continue
             regular_members.append(regular_member_profile)
         except RegularMember.DoesNotExist:
-            # Create a default RegularMember profile if it doesn't exist
+
             regular_member_profile = RegularMember.objects.create(
                 user=user_obj,
                 role_type=user_obj.role.name if user_obj.role else 'CM',
@@ -288,15 +257,12 @@ def regular_members_list(request):
             )
             regular_members.append(regular_member_profile)
     
-    # Order by name
     regular_members.sort(key=lambda x: (x.user.first_name, x.user.last_name))
     
-    # Pagination
     paginator = Paginator(regular_members, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get available groups for filter
     groups = Group.objects.filter(church=church, is_active=True)
     
     context = {
@@ -310,7 +276,6 @@ def regular_members_list(request):
         'by_role_type': {},
     }
     
-    # Calculate role type counts
     for rm in regular_members:
         role = rm.role_type
         if role not in context['by_role_type']:
@@ -326,17 +291,14 @@ def group_list(request):
     user = request.user
     church = user.church
     
-    # Get search and filter parameters
     search = request.GET.get('search', '')
     group_type = request.GET.get('group_type', '')
     
-    # Base queryset
     groups = Group.objects.filter(
         church=church,
         is_active=True
     ).select_related('leader').prefetch_related('members')
     
-    # Apply filters
     if search:
         groups = groups.filter(
             Q(name__icontains=search) |
@@ -348,10 +310,8 @@ def group_list(request):
     if group_type:
         groups = groups.filter(group_type=group_type)
     
-    # Order by name
     groups = groups.order_by('name')
     
-    # Pagination
     paginator = Paginator(groups, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -374,15 +334,12 @@ def group_detail(request, pk):
     user = request.user
     group = get_object_or_404(Group, pk=pk)
     
-    # Check if user can view this group
     if not user.can_access_church_data(group.church):
         messages.error(request, 'You do not have permission to view this group.')
         return redirect('members:group_list')
     
-    # Get group members
     members = group.members.select_related('user').order_by('user__first_name')
     
-    # Get recent activity for the group
     recent_activity = ActivityLog.objects.filter(
         user__regular_member_profile__group=group
     ).select_related('user').order_by('-timestamp')[:10]
@@ -404,18 +361,15 @@ def activity_logs(request):
     user = request.user
     church = user.church
     
-    # Get filter parameters
     action_filter = request.GET.get('action', '')
     user_filter = request.GET.get('user', '')
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
     
-    # Base queryset
     activities = ActivityLog.objects.filter(
         church=church
     ).select_related('user', 'related_user').order_by('-timestamp')
     
-    # Apply filters
     if action_filter:
         activities = activities.filter(action=action_filter)
     
@@ -428,15 +382,12 @@ def activity_logs(request):
     if date_to:
         activities = activities.filter(timestamp__date__lte=date_to)
     
-    # Pagination
     paginator = Paginator(activities, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get available users for filter
     users = CustomUser.objects.filter(church=church, is_active=True).order_by('first_name')
     
-    # Get activity summary
     activity_summary = ActivityLog.get_church_activity_summary(church)
     
     context = {
@@ -459,13 +410,10 @@ def church_statistics(request):
     user = request.user
     church = user.church
     
-    # Get member statistics
     member_stats = church.get_member_statistics()
     
-    # Get activity summary
     activity_summary = ActivityLog.get_church_activity_summary(church)
-    
-    # Get group statistics
+
     groups = Group.objects.filter(church=church, is_active=True)
     group_stats = {
         'total_groups': groups.count(),
@@ -475,7 +423,6 @@ def church_statistics(request):
         'average_group_size': round(sum(group.member_count for group in groups) / groups.count(), 1) if groups.count() > 0 else 0,
     }
     
-    # Get growth trends (last 6 months)
     growth_data = []
     for i in range(6):
         date = datetime.now() - timedelta(days=30*i)
@@ -494,7 +441,7 @@ def church_statistics(request):
             'new_members': new_members
         })
     
-    growth_data.reverse()  # Show oldest first
+    growth_data.reverse() 
     
     context = {
         'church': church,
@@ -508,7 +455,6 @@ def church_statistics(request):
     return render(request, 'members/church_statistics.html', context)
 
 
-# AJAX Views for dynamic functionality
 @csrf_exempt
 @login_required
 def ajax_get_available_members(request, group_id):
@@ -517,12 +463,10 @@ def ajax_get_available_members(request, group_id):
         try:
             care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
             
-            # Check if user can manage this care group
             user_role = getattr(request.user.role, 'name', None) if request.user.role else None
             if care_group.leader != request.user and user_role != 'ADMIN':
                 return JsonResponse({'error': 'Permission denied'}, status=403)
             
-            # Get available members - simplified query to avoid potential issues
             all_members = CustomUser.objects.filter(
                 church=care_group.church,
                 is_active=True,
@@ -530,19 +474,15 @@ def ajax_get_available_members(request, group_id):
                 role__name__in=['VSL', 'CSL', 'CL', 'CM']
             ).select_related('role').order_by('first_name', 'last_name')
             
-            # Filter out members who are already in a care group
             available_members = []
             for member in all_members:
                 try:
-                    # Check if member has a regular_member_profile and if they're already in a group
                     if hasattr(member, 'regular_member_profile') and member.regular_member_profile:
                         if member.regular_member_profile.group is None:
                             available_members.append(member)
                     else:
-                        # Member doesn't have a regular_member_profile, so they're available
                         available_members.append(member)
                 except Exception as e:
-                    # If there's an error checking the profile, skip this member
                     import logging
                     logger = logging.getLogger(__name__)
                     logger.warning(f"Error checking member {member.pk} profile: {str(e)}")
@@ -551,7 +491,6 @@ def ajax_get_available_members(request, group_id):
             members_data = []
             for member in available_members:
                 try:
-                    # Safely get full name
                     full_name = f"{member.first_name or ''} {member.last_name or ''}".strip()
                     if not full_name:
                         full_name = member.email or f"User {member.pk}"
@@ -563,7 +502,6 @@ def ajax_get_available_members(request, group_id):
                         'email': member.email or ''
                     })
                 except Exception as e:
-                    # Skip problematic members but continue processing
                     import logging
                     logger = logging.getLogger(__name__)
                     logger.warning(f"Skipping member {member.pk} due to error: {str(e)}")
@@ -593,7 +531,6 @@ def ajax_update_timer_status(request, user_id):
         try:
             user = get_object_or_404(CustomUser, id=user_id)
             
-            # Check permissions
             if not request.user.can_access_church_data(user.church):
                 return JsonResponse({'error': 'Permission denied'}, status=403)
             
@@ -619,7 +556,6 @@ def ajax_record_attendance(request, user_id):
         try:
             user = get_object_or_404(CustomUser, id=user_id)
             
-            # Check permissions
             if not request.user.can_access_church_data(user.church):
                 return JsonResponse({'error': 'Permission denied'}, status=403)
             
@@ -643,7 +579,6 @@ def ajax_update_follow_up(request, new_friend_id):
         try:
             new_friend = get_object_or_404(NewFriend, id=new_friend_id)
             
-            # Check permissions
             if not request.user.can_access_church_data(new_friend.user.church):
                 return JsonResponse({'error': 'Permission denied'}, status=403)
             
@@ -672,7 +607,6 @@ def ajax_add_to_group(request, user_id, group_id):
             user = get_object_or_404(CustomUser, id=user_id)
             group = get_object_or_404(Group, id=group_id)
             
-            # Check permissions
             if not request.user.can_access_church_data(user.church):
                 return JsonResponse({'error': 'Permission denied'}, status=403)
             
@@ -701,7 +635,6 @@ def ajax_remove_from_group(request, user_id, group_id):
             user = get_object_or_404(CustomUser, id=user_id)
             group = get_object_or_404(Group, id=group_id)
             
-            # Check permissions
             if not request.user.can_access_church_data(user.church):
                 return JsonResponse({'error': 'Permission denied'}, status=403)
             
@@ -721,25 +654,20 @@ def ajax_remove_from_group(request, user_id, group_id):
     return JsonResponse({'error': 'Invalid request'}, status=400)
 
 
-# Export functionality
 @login_required
 def export_members(request):
     """Export members data"""
     user = request.user
     church = user.church
     
-    # Check permissions
     if not user.is_staff and not user.role.name in ['SUPER_ADMIN', 'ADMIN']:
         messages.error(request, 'You do not have permission to export data.')
         return redirect('members:member_list')
     
-    # Get export format
     export_format = request.GET.get('format', 'csv')
     
-    # Get status filter
     status = request.GET.get('status', '')
     
-    # Get filtered data based on status
     if status == 'new_friends':
         members = CustomUser.objects.filter(church=church, is_active=True, is_new_friend=True)
         filename_prefix = "new_friends"
@@ -747,11 +675,9 @@ def export_members(request):
         members = CustomUser.objects.filter(church=church, is_active=True, is_new_friend=False)
         filename_prefix = "regular_members"
     else:
-        # Default: export all members
         members = CustomUser.objects.filter(church=church, is_active=True)
         filename_prefix = "members"
     
-    # Create response
     from django.http import HttpResponse
     from import_export.formats import base_formats
     from .admin import CustomUserResource
@@ -776,22 +702,18 @@ def export_members(request):
 def role_management(request):
     """Role management view for admins only"""
     user = request.user
-    
-    # Check if user has permission to access role management
+
     if not (user.is_superuser or user.role.name == 'ADMIN'):
         messages.error(request, 'You do not have permission to access role management.')
         return redirect('churches:dashboard')
     
     church = user.church
     
-    # Get search parameters
     search = request.GET.get('search', '')
     role_filter = request.GET.get('role', '')
     
-    # Base queryset - get all users in the church
     users = CustomUser.objects.filter(church=church, is_active=True)
     
-    # Apply filters
     if search:
         users = users.filter(
             Q(first_name__icontains=search) |
@@ -802,20 +724,16 @@ def role_management(request):
     if role_filter:
         users = users.filter(role__name=role_filter)
     
-    # Order by role priority, then by name
     users = users.order_by('role__name', 'first_name', 'last_name')
     
-    # Pagination
     paginator = Paginator(users, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # Get available roles for filter
     roles = Role.objects.filter(
         name__in=['VSL', 'CSL', 'CL', 'CM', 'NEW_FRIEND']
     ).order_by('name')
     
-    # Get role statistics
     role_stats = {}
     for role in roles:
         count = users.filter(role=role).count()
@@ -846,7 +764,6 @@ def ajax_update_user_role(request, user_id):
     
     user = request.user
     
-    # Check if user has permission
     if not (user.is_superuser or user.role.name == 'ADMIN'):
         return JsonResponse({'error': 'Permission denied'}, status=403)
     
@@ -857,15 +774,12 @@ def ajax_update_user_role(request, user_id):
         if not new_role_name:
             return JsonResponse({'error': 'Role is required'}, status=400)
         
-        # Get the new role
         new_role = get_object_or_404(Role, name=new_role_name)
-        
-        # Update user role
+
         old_role = target_user.role
         target_user.role = new_role
         target_user.save()
         
-        # Log the role change
         ActivityLog.objects.create(
             user=user,
             action='ROLE_CHANGE',
@@ -875,19 +789,16 @@ def ajax_update_user_role(request, user_id):
             user_agent=request.META.get('HTTP_USER_AGENT', '')
         )
         
-        # If transitioning from new friend to regular member
         if target_user.is_new_friend and new_role_name not in ['NEW_FRIEND']:
             target_user.is_new_friend = False
             target_user.transition_date = timezone.now()
             target_user.save()
             
-            # Create RegularMember profile
             RegularMember.objects.get_or_create(
                 user=target_user,
                 defaults={'role_type': new_role_name}
             )
             
-            # Log the transition
             ActivityLog.objects.create(
                 user=user,
                 action='STATUS_CHANGE',
@@ -913,14 +824,12 @@ def ajax_get_user_details(request, user_id):
     """AJAX endpoint to get user details for role management"""
     user = request.user
     
-    # Check if user has permission
     if not (user.is_superuser or user.role.name == 'ADMIN'):
         return JsonResponse({'error': 'Permission denied'}, status=403)
     
     try:
         target_user = get_object_or_404(CustomUser, pk=user_id, church=user.church)
         
-        # Get user's current group if any
         group_info = None
         if not target_user.is_new_friend:
             try:
@@ -934,7 +843,6 @@ def ajax_get_user_details(request, user_id):
             except RegularMember.DoesNotExist:
                 pass
         
-        # Get recent activity
         recent_activity = target_user.activity_logs.order_by('-timestamp')[:5]
         activity_list = []
         for activity in recent_activity:
@@ -973,7 +881,6 @@ def ajax_bulk_role_update(request):
     
     user = request.user
     
-    # Check if user has permission
     if not (user.is_superuser or user.role.name == 'ADMIN'):
         return JsonResponse({'error': 'Permission denied'}, status=403)
     
@@ -984,10 +891,8 @@ def ajax_bulk_role_update(request):
         if not user_ids or not new_role_name:
             return JsonResponse({'error': 'User IDs and role are required'}, status=400)
         
-        # Get the new role
         new_role = get_object_or_404(Role, name=new_role_name)
         
-        # Update users
         updated_count = 0
         for user_id in user_ids:
             try:
@@ -996,7 +901,6 @@ def ajax_bulk_role_update(request):
                 target_user.role = new_role
                 target_user.save()
                 
-                # Log the role change
                 ActivityLog.objects.create(
                     user=user,
                     action='ROLE_CHANGE',
@@ -1024,7 +928,6 @@ def ajax_bulk_role_update(request):
 @login_required
 def new_friend_add(request):
     """Add a new New Friend"""
-    # Check if user has permission (admin only)
     if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
         messages.error(request, 'You do not have permission to add new friends.')
         return redirect('members:new_friends_list')
@@ -1034,7 +937,6 @@ def new_friend_add(request):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # Create the user first with church-specific default password
                     default_password = f"jcsgo{request.user.church.domain}"
                     user = CustomUser.objects.create_user(
                         email=form.full_email,
@@ -1044,21 +946,18 @@ def new_friend_add(request):
                         church=request.user.church,
                         is_new_friend=True,
                         is_active=True,
-                        password=default_password  # Church-specific default password
+                        password=default_password 
                     )
                     
-                    # Remove any existing RegularMember profile if it exists
                     try:
                         if hasattr(user, 'regular_member_profile'):
                             user.regular_member_profile.delete()
                     except RegularMember.DoesNotExist:
                         pass
                     
-                    # Set timer status on the user
                     user.timer_status = form.cleaned_data['timer_status']
                     user.save()
-                    
-                    # Create the NewFriend profile
+
                     new_friend = NewFriend.objects.create(
                         user=user,
                         invited_by=form.cleaned_data['invited_by'],
@@ -1066,19 +965,16 @@ def new_friend_add(request):
                         notes=form.cleaned_data['notes']
                     )
                     
-                    # If endorsed to a CM, automatically promote them to CL
                     endorsed_to_user = form.cleaned_data['endorsed_to']
                     if endorsed_to_user and endorsed_to_user.role and endorsed_to_user.role.name == 'CM':
                         cl_role = Role.objects.get(name='CL')
                         endorsed_to_user.role = cl_role
                         endorsed_to_user.save()
                         
-                        # Also update the RegularMember role_type if it exists
                         if hasattr(endorsed_to_user, 'regular_member_profile') and endorsed_to_user.regular_member_profile:
                             endorsed_to_user.regular_member_profile.role_type = 'CL'
                             endorsed_to_user.regular_member_profile.save()
-                        
-                        # Log the role promotion
+
                         ActivityLog.objects.create(
                             user=request.user,
                             action='ROLE_PROMOTED',
@@ -1087,11 +983,9 @@ def new_friend_add(request):
                             ip_address=request.META.get('REMOTE_ADDR'),
                             user_agent=request.META.get('HTTP_USER_AGENT', '')
                         )
-                        
-                        # Add info message about the promotion
+
                         messages.info(request, f'{endorsed_to_user.full_name} has been automatically promoted from CM to CL due to new friend endorsement.')
-                    
-                    # Log the activity
+
                     ActivityLog.objects.create(
                         user=request.user,
                         action='NEW_FRIEND_ADDED',
@@ -1118,7 +1012,7 @@ def new_friend_add(request):
 @login_required
 def new_friend_edit(request, new_friend_id):
     """Edit a New Friend"""
-    # Check if user has permission (admin only)
+
     if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
         messages.error(request, 'You do not have permission to edit new friends.')
         return redirect('members:new_friends_list')
@@ -1130,33 +1024,28 @@ def new_friend_edit(request, new_friend_id):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # Update user details
                     user = new_friend.user
                     user.first_name = form.cleaned_data['first_name']
                     user.last_name = form.cleaned_data['last_name']
                     user.phone_number = form.cleaned_data['phone']
                     user.timer_status = form.cleaned_data['timer_status']
                     user.save()
-                    
-                    # Update NewFriend profile
+
                     new_friend.invited_by = form.cleaned_data['invited_by']
                     new_friend.endorsed_to = form.cleaned_data['endorsed_to']
                     new_friend.notes = form.cleaned_data['notes']
                     new_friend.save()
-                    
-                    # If endorsed to a CM, automatically promote them to CL
+
                     endorsed_to_user = form.cleaned_data['endorsed_to']
                     if endorsed_to_user and endorsed_to_user.role and endorsed_to_user.role.name == 'CM':
                         cl_role = Role.objects.get(name='CL')
                         endorsed_to_user.role = cl_role
                         endorsed_to_user.save()
-                        
-                        # Also update the RegularMember role_type if it exists
+
                         if hasattr(endorsed_to_user, 'regular_member_profile') and endorsed_to_user.regular_member_profile:
                             endorsed_to_user.regular_member_profile.role_type = 'CL'
                             endorsed_to_user.regular_member_profile.save()
-                        
-                        # Log the role promotion
+
                         ActivityLog.objects.create(
                             user=request.user,
                             action='ROLE_PROMOTED',
@@ -1165,35 +1054,28 @@ def new_friend_edit(request, new_friend_id):
                             ip_address=request.META.get('REMOTE_ADDR'),
                             user_agent=request.META.get('HTTP_USER_AGENT', '')
                         )
-                        
-                        # Add info message about the promotion
+
                         messages.info(request, f'{endorsed_to_user.full_name} has been automatically promoted from CM to CL due to new friend endorsement.')
-                    
-                    # Handle conversion to regular member if selected
+
                     if form.cleaned_data.get('convert_to_regular') and form.cleaned_data.get('regular_role'):
                         selected_role_name = form.cleaned_data['regular_role']
-                        # Set user as regular
                         user.is_new_friend = False
                         user.transition_date = timezone.now()
-                        # Assign Role on user
                         role = get_object_or_404(Role, name=selected_role_name)
                         user.role = role
                         user.save()
-                        
-                        # Create RegularMember profile
+
                         RegularMember.objects.get_or_create(
                             user=user,
                             defaults={'role_type': selected_role_name}
                         )
-                        
-                        # Remove NewFriend profile
+
                         try:
                             if hasattr(user, 'new_friend_profile'):
                                 user.new_friend_profile.delete()
                         except NewFriend.DoesNotExist:
                             pass
-                        
-                        # Log the transition
+
                         ActivityLog.objects.create(
                             user=request.user,
                             action='STATUS_CHANGE',
@@ -1202,8 +1084,7 @@ def new_friend_edit(request, new_friend_id):
                             ip_address=request.META.get('REMOTE_ADDR'),
                             user_agent=request.META.get('HTTP_USER_AGENT', '')
                         )
-                    
-                    # Log the update
+
                     ActivityLog.objects.create(
                         user=request.user,
                         action='NEW_FRIEND_UPDATED',
@@ -1218,9 +1099,7 @@ def new_friend_edit(request, new_friend_id):
             except Exception as e:
                 messages.error(request, f'Error updating new friend: {str(e)}')
     else:
-        # Pre-populate form with current data
         form = NewFriendForm(instance=new_friend, church=request.user.church)
-        # Extract email prefix from the full email
         email_prefix = new_friend.user.email.split('@')[0] if '@' in new_friend.user.email else new_friend.user.email
         form.fields['email_prefix'].initial = email_prefix
         form.fields['first_name'].initial = new_friend.user.first_name
@@ -1242,7 +1121,6 @@ def new_friend_edit(request, new_friend_id):
 @require_POST
 def new_friend_delete(request, new_friend_id):
     """Delete a New Friend"""
-    # Check if user has permission (admin only)
     if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
         messages.error(request, 'You do not have permission to delete new friends.')
         return redirect('members:new_friends_list')
@@ -1252,7 +1130,6 @@ def new_friend_delete(request, new_friend_id):
     
     try:
         with transaction.atomic():
-            # Log the activity before deletion
             ActivityLog.objects.create(
                 user=request.user,
                 action='NEW_FRIEND_DELETED',
@@ -1261,7 +1138,6 @@ def new_friend_delete(request, new_friend_id):
                 user_agent=request.META.get('HTTP_USER_AGENT', '')
             )
             
-            # Delete the user (this will cascade to NewFriend)
             new_friend.user.delete()
             
             messages.success(request, f'New friend "{user_name}" has been deleted successfully!')
@@ -1274,7 +1150,6 @@ def new_friend_delete(request, new_friend_id):
 @login_required
 def new_friend_import(request):
     """Import New Friends from CSV/Excel"""
-    # Check if user has permission (admin only)
     if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
         messages.error(request, 'You do not have permission to import new friends.')
         return redirect('members:new_friends_list')
@@ -1288,17 +1163,14 @@ def new_friend_import(request):
                 errors = []
                 
                 if file.name.endswith('.csv'):
-                    # Handle CSV import
                     decoded_file = file.read().decode('utf-8')
                     csv_data = csv.DictReader(io.StringIO(decoded_file))
                     
-                    for row_num, row in enumerate(csv_data, start=2):  # Start from 2 to account for header
+                    for row_num, row in enumerate(csv_data, start=2):
                         try:
                             with transaction.atomic():
-                                # Create user with email_prefix and default password
                                 email_prefix = row.get('email_prefix', '').strip()
                                 if not email_prefix:
-                                    # If no email_prefix, try to extract from email field
                                     email = row.get('email', '').strip()
                                     if '@' in email:
                                         email_prefix = email.split('@')[0]
@@ -1307,7 +1179,6 @@ def new_friend_import(request):
                                 
                                 full_email = f"{email_prefix}@{request.user.church.domain}.jcsgo.com"
                                 
-                                # Create user with church-specific default password
                                 default_password = f"jcsgo{request.user.church.domain}"
                                 user = CustomUser.objects.create_user(
                                     email=full_email,
@@ -1317,25 +1188,22 @@ def new_friend_import(request):
                                     church=request.user.church,
                                     is_new_friend=True,
                                     is_active=True,
-                                    password=default_password  # Church-specific default password
+                                    password=default_password 
                                 )
-                                
-                                # Remove any existing RegularMember profile if it exists
+
                                 try:
                                     if hasattr(user, 'regular_member_profile'):
                                         user.regular_member_profile.delete()
                                 except RegularMember.DoesNotExist:
                                     pass
-                                
-                                # Set timer status on the user
+
                                 user.timer_status = int(row.get('timer_status', 1))
                                 user.save()
-                                
-                                # Create NewFriend profile
+
                                 NewFriend.objects.create(
                                     user=user,
-                                    invited_by=None,  # CSV import doesn't have invited_by info
-                                    endorsed_to=None,  # CSV import doesn't have endorsed_to info
+                                    invited_by=None,  
+                                    endorsed_to=None,
                                     notes=row.get('notes', '').strip() or ''
                                 )
                                 
@@ -1346,8 +1214,7 @@ def new_friend_import(request):
                 
                 if imported_count > 0:
                     messages.success(request, f'Successfully imported {imported_count} new friends!')
-                    
-                    # Log the activity
+
                     ActivityLog.objects.create(
                         user=request.user,
                         action='NEW_FRIENDS_IMPORTED',
@@ -1357,7 +1224,7 @@ def new_friend_import(request):
                     )
                 
                 if errors:
-                    for error in errors[:5]:  # Show first 5 errors
+                    for error in errors[:5]:
                         messages.warning(request, error)
                     if len(errors) > 5:
                         messages.warning(request, f'... and {len(errors) - 5} more errors.')
@@ -1379,7 +1246,6 @@ def new_friend_import(request):
 @login_required
 def regular_member_add(request):
     """Add a new Regular Member"""
-    # Check if user has permission (admin only)
     if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
         messages.error(request, 'You do not have permission to add regular members.')
         return redirect('members:regular_members_list')
@@ -1389,7 +1255,6 @@ def regular_member_add(request):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # Create the user first with church-specific default password
                     default_password = f"jcsgo{request.user.church.domain}"
                     user = CustomUser.objects.create_user(
                         email=form.full_email,
@@ -1399,28 +1264,24 @@ def regular_member_add(request):
                         church=request.user.church,
                         is_new_friend=False,
                         is_active=True,
-                        password=default_password  # Church-specific default password
+                        password=default_password
                     )
-                    
-                    # Assign role
+
                     user.role = form.cleaned_data['role']
                     user.save()
-                    
-                    # Remove any existing NewFriend profile if it exists
+
                     try:
                         if hasattr(user, 'new_friend_profile'):
                             user.new_friend_profile.delete()
                     except NewFriend.DoesNotExist:
                         pass
-                    
-                    # Create the RegularMember profile
+
                     regular_member = RegularMember.objects.create(
                         user=user,
                         role_type=form.cleaned_data['role'],
                         group=form.cleaned_data['group']
                     )
-                    
-                    # Log the activity
+
                     ActivityLog.objects.create(
                         user=request.user,
                         action='REGULAR_MEMBER_ADDED',
@@ -1447,7 +1308,6 @@ def regular_member_add(request):
 @login_required
 def regular_member_edit(request, regular_member_id):
     """Edit a Regular Member"""
-    # Check if user has permission (admin only)
     if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
         messages.error(request, 'You do not have permission to edit regular members.')
         return redirect('members:regular_members_list')
@@ -1459,7 +1319,6 @@ def regular_member_edit(request, regular_member_id):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    # Update user details
                     user = regular_member.user
                     user.first_name = form.cleaned_data['first_name']
                     user.last_name = form.cleaned_data['last_name']
@@ -1467,12 +1326,10 @@ def regular_member_edit(request, regular_member_id):
                     user.role = form.cleaned_data['role']
                     user.save()
                     
-                    # Update RegularMember profile
                     regular_member.role_type = form.cleaned_data['role']
                     regular_member.group = form.cleaned_data['group']
                     regular_member.save()
                     
-                    # Log the activity
                     ActivityLog.objects.create(
                         user=request.user,
                         action='REGULAR_MEMBER_UPDATED',
@@ -1487,9 +1344,7 @@ def regular_member_edit(request, regular_member_id):
             except Exception as e:
                 messages.error(request, f'Error updating regular member: {str(e)}')
     else:
-        # Pre-populate form with current data
         form = RegularMemberForm(instance=regular_member, church=request.user.church)
-        # Extract email prefix from the full email
         email_prefix = regular_member.user.email.split('@')[0] if '@' in regular_member.user.email else regular_member.user.email
         form.fields['email_prefix'].initial = email_prefix
         form.fields['first_name'].initial = regular_member.user.first_name
@@ -1509,7 +1364,6 @@ def regular_member_edit(request, regular_member_id):
 @require_POST
 def regular_member_delete(request, regular_member_id):
     """Delete a Regular Member"""
-    # Check if user has permission (admin only)
     if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
         messages.error(request, 'You do not have permission to delete regular members.')
         return redirect('members:regular_members_list')
@@ -1519,7 +1373,6 @@ def regular_member_delete(request, regular_member_id):
     
     try:
         with transaction.atomic():
-            # Log the activity before deletion
             ActivityLog.objects.create(
                 user=request.user,
                 action='REGULAR_MEMBER_DELETED',
@@ -1527,8 +1380,7 @@ def regular_member_delete(request, regular_member_id):
                 ip_address=request.META.get('REMOTE_ADDR'),
                 user_agent=request.META.get('HTTP_USER_AGENT', '')
             )
-            
-            # Delete the user (this will cascade to RegularMember)
+
             regular_member.user.delete()
             
             messages.success(request, f'Regular member "{user_name}" has been deleted successfully!')
@@ -1541,7 +1393,6 @@ def regular_member_delete(request, regular_member_id):
 @login_required
 def regular_member_import(request):
     """Import Regular Members from CSV/Excel"""
-    # Check if user has permission (admin only)
     if not (request.user.is_superuser or request.user.role.name == 'ADMIN'):
         messages.error(request, 'You do not have permission to import regular members.')
         return redirect('members:regular_members_list')
@@ -1555,18 +1406,15 @@ def regular_member_import(request):
                 errors = []
                 
                 if file.name.endswith('.csv'):
-                    # Handle CSV import
                     decoded_file = file.read().decode('utf-8')
                     csv_data = csv.DictReader(io.StringIO(decoded_file))
                     
-                    for row_num, row in enumerate(csv_data, start=2):  # Start from 2 to account for header
+                    for row_num, row in enumerate(csv_data, start=2):  
                         try:
                             with transaction.atomic():
-                                # Get or create role
                                 role_name = row.get('role', 'CM').strip().upper()
                                 role, created = Role.objects.get_or_create(name=role_name)
-                                
-                                # Get group if specified
+
                                 group = None
                                 if row.get('group'):
                                     group_name = row.get('group', '').strip()
@@ -1575,11 +1423,9 @@ def regular_member_import(request):
                                         church=request.user.church,
                                         defaults={'is_active': True}
                                     )
-                                
-                                # Create user with email_prefix and default password
+
                                 email_prefix = row.get('email_prefix', '').strip()
                                 if not email_prefix:
-                                    # If no email_prefix, try to extract from email field
                                     email = row.get('email', '').strip()
                                     if '@' in email:
                                         email_prefix = email.split('@')[0]
@@ -1587,8 +1433,7 @@ def regular_member_import(request):
                                         email_prefix = email
                                 
                                 full_email = f"{email_prefix}@{request.user.church.domain}.jcsgo.com"
-                                
-                                # Create user with church-specific default password
+
                                 default_password = f"jcsgo{request.user.church.domain}"
                                 user = CustomUser.objects.create_user(
                                     email=full_email,
@@ -1599,17 +1444,15 @@ def regular_member_import(request):
                                     role=role,
                                     is_new_friend=False,
                                     is_active=True,
-                                    password=default_password  # Church-specific default password
+                                    password=default_password  
                                 )
                                 
-                                # Remove any existing NewFriend profile if it exists
                                 try:
                                     if hasattr(user, 'new_friend_profile'):
                                         user.new_friend_profile.delete()
                                 except NewFriend.DoesNotExist:
                                     pass
                                 
-                                # Create RegularMember profile
                                 RegularMember.objects.create(
                                     user=user,
                                     role_type=role,
@@ -1623,8 +1466,7 @@ def regular_member_import(request):
                 
                 if imported_count > 0:
                     messages.success(request, f'Successfully imported {imported_count} regular members!')
-                    
-                    # Log the activity
+
                     ActivityLog.objects.create(
                         user=request.user,
                         action='REGULAR_MEMBERS_IMPORTED',
@@ -1634,7 +1476,7 @@ def regular_member_import(request):
                     )
                 
                 if errors:
-                    for error in errors[:5]:  # Show first 5 errors
+                    for error in errors[:5]:
                         messages.warning(request, error)
                     if len(errors) > 5:
                         messages.warning(request, f'... and {len(errors) - 5} more errors.')
@@ -1654,33 +1496,26 @@ def regular_member_import(request):
     return render(request, 'members/regular_member_import.html', context)
 
 
-# Care Group Views for VSL, CSL, CL roles
 @login_required
 def care_group_list(request):
     """List care groups for leadership roles (VSL, CSL, CL) and admin"""
     user = request.user
-    
-    # Check if user has permission to access care groups
+
     if user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to access care groups.')
         return redirect('churches:dashboard')
     
     church = user.church
-    
-    # Get search and filter parameters
+
     search = request.GET.get('search', '')
-    
-    # Base queryset - only care groups
+
     care_groups = Group.objects.filter(
         church=church,
         group_type='CARE',
         is_active=True
     ).select_related('leader').prefetch_related('members')
-    
-    # Apply role-based filtering
+
     if user.role.name == 'VSL':
-        # VSL can see their own care groups + care groups of their members (CSL/CL)
-        # Get members under this VSL through the group relationship
         user_groups = Group.objects.filter(leader=user, group_type='CARE')
         member_users = CustomUser.objects.filter(
             regular_member_profile__group__in=user_groups
@@ -1688,11 +1523,9 @@ def care_group_list(request):
         
         care_groups = care_groups.filter(
             Q(leader=user) | 
-            Q(leader__in=member_users)  # Care groups led by members under this VSL
+            Q(leader__in=member_users)
         ).distinct()
     elif user.role.name == 'CSL':
-        # CSL can see their own care groups + care groups of their members (CL)
-        # Get members under this CSL through the group relationship
         user_groups = Group.objects.filter(leader=user, group_type='CARE')
         member_users = CustomUser.objects.filter(
             regular_member_profile__group__in=user_groups
@@ -1700,16 +1533,13 @@ def care_group_list(request):
         
         care_groups = care_groups.filter(
             Q(leader=user) | 
-            Q(leader__in=member_users)  # Care groups led by members under this CSL
+            Q(leader__in=member_users)
         ).distinct()
     elif user.role.name == 'CL':
-        # CL can only see care groups they lead
         care_groups = care_groups.filter(leader=user)
     elif user.role.name == 'ADMIN':
-        # Admin can see all care groups
         pass
     
-    # Apply search filter
     if search:
         care_groups = care_groups.filter(
             Q(name__icontains=search) |
@@ -1717,16 +1547,13 @@ def care_group_list(request):
             Q(leader__first_name__icontains=search) |
             Q(leader__last_name__icontains=search)
         )
-    
-    # Order by name
+
     care_groups = care_groups.order_by('name')
-    
-    # Pagination
+
     paginator = Paginator(care_groups, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
-    # Get groups led by current user
+
     led_groups = Group.objects.filter(
         church=church,
         group_type='CARE',
@@ -1750,8 +1577,7 @@ def care_group_list(request):
 def care_group_create(request):
     """Create a new care group - for VSL, CSL, CL roles and admin"""
     user = request.user
-    
-    # Check if user has permission to create care groups
+
     if user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to create care groups.')
         return redirect('members:care_group_list')
@@ -1760,8 +1586,7 @@ def care_group_create(request):
         form = CareGroupForm(request.POST, church=user.church, user=user)
         if form.is_valid():
             care_group = form.save()
-            
-            # Log the activity
+
             ActivityLog.objects.create(
                 user=user,
                 church=user.church,
@@ -1788,14 +1613,11 @@ def care_group_detail(request, group_id):
     user = request.user
     care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
     
-    # Check if user can view this care group
     if not user.can_access_church_data(care_group.church):
         messages.error(request, 'You do not have permission to view this care group.')
         return redirect('members:care_group_list')
     
-    # Additional permission check for CSL and CL (admin can view all groups)
     if user.role.name in ['CSL', 'CL'] and care_group.leader != user:
-        # Check if user is a member of this group
         try:
             user_member_profile = RegularMember.objects.get(user=user)
             if user_member_profile.group != care_group:
@@ -1804,16 +1626,13 @@ def care_group_detail(request, group_id):
         except RegularMember.DoesNotExist:
             messages.error(request, 'You can only view care groups you lead or are a member of.')
             return redirect('members:care_group_list')
-    
-    # Get care group members
+
     members = care_group.members.select_related('user').order_by('user__first_name')
-    
-    # Get recent activity for the care group
+
     recent_activity = ActivityLog.objects.filter(
         user__regular_member_profile__group=care_group
     ).select_related('user').order_by('-timestamp')[:10]
-    
-    # Get available members to add (if user is the leader or admin)
+
     available_members = None
     if care_group.leader == user or user.role.name == 'ADMIN':
         available_members = CustomUser.objects.filter(
@@ -1844,8 +1663,7 @@ def care_group_edit(request, group_id):
     """Edit a care group - only the leader or admin can edit"""
     user = request.user
     care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
-    
-    # Check if user is the leader of this care group or admin
+
     if care_group.leader != user and user.role.name != 'ADMIN':
         messages.error(request, 'Only the group leader or admin can edit this care group.')
         return redirect('members:care_group_detail', group_id=group_id)
@@ -1854,8 +1672,7 @@ def care_group_edit(request, group_id):
         form = CareGroupForm(request.POST, instance=care_group, church=user.church, user=user)
         if form.is_valid():
             updated_group = form.save()
-            
-            # Log the activity
+ 
             ActivityLog.objects.create(
                 user=user,
                 church=user.church,
@@ -1882,8 +1699,7 @@ def care_group_add_member(request, group_id):
     """Add a member to a care group"""
     user = request.user
     care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
-    
-    # Check if user is the leader of this care group or admin
+
     if care_group.leader != user and user.role.name != 'ADMIN':
         messages.error(request, 'Only the group leader or admin can add members to this care group.')
         return redirect('members:care_group_detail', group_id=group_id)
@@ -1896,26 +1712,22 @@ def care_group_add_member(request, group_id):
         member_id = request.POST.get('member_id')
         try:
             member_user = CustomUser.objects.get(pk=member_id, church=care_group.church)
-            
-            # Get or create RegularMember profile
+
             regular_member, created = RegularMember.objects.get_or_create(
                 user=member_user,
                 defaults={'role_type': member_user.role.name}
             )
-            
-            # Check if member is already in a care group
+
             if regular_member.group:
                 messages.error(request, f'{member_user.full_name} is already in a care group.')
-                # Check if request came from care group list or detail
+                
                 if request.META.get('HTTP_REFERER', '').endswith('/care-groups/'):
                     return redirect('members:care_group_list')
                 return redirect('members:care_group_detail', group_id=group_id)
-            
-            # Add member to care group
+
             regular_member.group = care_group
             regular_member.save()
-            
-            # Log the activity
+
             ActivityLog.objects.create(
                 user=user,
                 church=user.church,
@@ -1928,8 +1740,7 @@ def care_group_add_member(request, group_id):
             
         except CustomUser.DoesNotExist:
             messages.error(request, 'Selected member not found.')
-    
-    # Check if request came from care group list or detail
+
     if request.META.get('HTTP_REFERER', '').endswith('/care-groups/'):
         return redirect('members:care_group_list')
     return redirect('members:care_group_detail', group_id=group_id)
@@ -1940,8 +1751,7 @@ def care_group_remove_member(request, group_id, member_id):
     """Remove a member from a care group"""
     user = request.user
     care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
-    
-    # Check if user is the leader of this care group or admin
+
     if care_group.leader != user and user.role.name != 'ADMIN':
         messages.error(request, 'Only the group leader or admin can remove members from this care group.')
         return redirect('members:care_group_detail', group_id=group_id)
@@ -1949,12 +1759,10 @@ def care_group_remove_member(request, group_id, member_id):
     try:
         member_user = CustomUser.objects.get(pk=member_id)
         regular_member = RegularMember.objects.get(user=member_user, group=care_group)
-        
-        # Remove member from care group
+
         regular_member.group = None
         regular_member.save()
-        
-        # Log the activity
+
         ActivityLog.objects.create(
             user=user,
             church=user.church,
@@ -1971,33 +1779,28 @@ def care_group_remove_member(request, group_id, member_id):
     return redirect('members:care_group_detail', group_id=group_id)
 
 
-# Role-specific New Friends Views
 @login_required
 def role_new_friends_list(request):
     """List new friends endorsed to the current user (VSL, CSL, CL, CM)"""
     user = request.user
-    
-    # Check if user has permission to access this view
+
     if user.role.name not in ['VSL', 'CSL', 'CL', 'CM']:
         messages.error(request, 'You do not have permission to access this page.')
         return redirect('churches:dashboard')
     
     church = user.church
-    
-    # Get search and filter parameters
+
     search = request.GET.get('search', '')
     follow_up_status = request.GET.get('follow_up_status', '')
     timer_status = request.GET.get('timer_status', '')
-    
-    # Base queryset - Get new friends endorsed to this user
+
     new_friends_users = CustomUser.objects.filter(
         church=church,
         is_active=True,
         is_new_friend=True,
-        new_friend_profile__endorsed_to=user  # Only show new friends endorsed to this user
+        new_friend_profile__endorsed_to=user  
     )
-    
-    # Apply search filters
+
     if search:
         new_friends_users = new_friends_users.filter(
             Q(first_name__icontains=search) |
@@ -2009,18 +1812,15 @@ def role_new_friends_list(request):
     
     if timer_status:
         new_friends_users = new_friends_users.filter(timer_status=timer_status)
-    
-    # Get NewFriend profiles for these users (if they exist)
+
     new_friends = []
     for user_obj in new_friends_users:
         try:
             new_friend_profile = NewFriend.objects.get(user=user_obj)
-            # Add follow-up status filter if specified
             if follow_up_status and new_friend_profile.follow_up_status != follow_up_status:
                 continue
             new_friends.append(new_friend_profile)
         except NewFriend.DoesNotExist:
-            # Create a default NewFriend profile if it doesn't exist
             new_friend_profile = NewFriend.objects.create(
                 user=user_obj,
                 invited_by=None,
@@ -2029,15 +1829,12 @@ def role_new_friends_list(request):
                 is_active=True
             )
             new_friends.append(new_friend_profile)
-    
-    # Apply follow-up status filter to the list
+
     if follow_up_status:
         new_friends = [nf for nf in new_friends if nf.follow_up_status == follow_up_status]
-    
-    # Order by registration date (newest first)
+
     new_friends.sort(key=lambda x: x.registration_date, reverse=True)
-    
-    # Pagination
+
     paginator = Paginator(new_friends, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -2051,20 +1848,18 @@ def role_new_friends_list(request):
         'pending_follow_up': len([nf for nf in new_friends if nf.follow_up_status == 'PENDING']),
         'engaged_count': len([nf for nf in new_friends if nf.follow_up_status == 'ENGAGED']),
         'user_role': user.role.name,
-        'is_role_view': True,  # Flag to indicate this is a role-specific view
+        'is_role_view': True,
     }
     
     return render(request, 'members/role_new_friends_list.html', context)
 
 
-# ==================== PROFILE AND ATTENDANCE VIEWS ====================
 
 @login_required
 def user_profile(request):
     """Display and edit user profile with QR code"""
     user = request.user
-    
-    # Generate QR code if it doesn't exist
+
     if not user.qr_code_image:
         try:
             user.generate_qr_code()
@@ -2079,8 +1874,7 @@ def user_profile(request):
             return redirect('members:user_profile')
     else:
         form = UserProfileForm(instance=user)
-    
-    # Get attendance summary
+
     attendance_summary = Attendance.get_user_attendance_summary(user, days=30)
     
     context = {
@@ -2096,8 +1890,7 @@ def user_profile(request):
 def generate_qr_code(request, user_id):
     """Generate QR code for a user"""
     user = get_object_or_404(CustomUser, id=user_id)
-    
-    # Check permissions
+
     if not (request.user.is_superuser or 
             request.user.role.name in ['ADMIN', 'VSL', 'CSL', 'CL'] or 
             request.user == user):
@@ -2120,13 +1913,12 @@ def qr_scanner(request):
     """QR code scanner for attendance"""
     user = request.user
     church = user.church
-    
-    # Initialize forms
+
     form = QRCodeScanForm()
     manual_form = ManualAttendanceForm(church=church)
     
     if request.method == 'POST':
-        # Check if it's a manual attendance form submission
+
         if 'manual_attendance' in request.POST:
             form = ManualAttendanceForm(request.POST, church=church)
             if form.is_valid():
@@ -2136,8 +1928,7 @@ def qr_scanner(request):
                     time = form.cleaned_data['time']
                     service_type = form.cleaned_data['service_type']
                     notes = form.cleaned_data['notes']
-                    
-                    # Check if already attended on this date for this service type
+
                     existing_attendance = Attendance.objects.filter(
                         user=attendee,
                         date=date,
@@ -2147,23 +1938,20 @@ def qr_scanner(request):
                     if existing_attendance:
                         messages.warning(request, f'{attendee.full_name} has already been marked present for {service_type} on {date}.')
                     else:
-                        # Create attendance record using form data
                         attendance = Attendance.objects.create(
                             user=attendee,
                             church=church,
                             attendance_type=service_type,
                             date=date,
-                            time_in=time,  # Use form time
+                            time_in=time,
                             notes=notes,
                             scanned_by=user,
                             ip_address=request.META.get('REMOTE_ADDR'),
                             user_agent=request.META.get('HTTP_USER_AGENT', '')
                         )
                         
-                        # Update user's last attendance
                         attendee.record_attendance()
                         
-                        # Auto-update new friend timer status for Sunday Service attendance
                         status_update_message = ""
                         if attendee.is_new_friend and service_type == 'SUNDAY':
                             current_status = attendee.timer_status
@@ -2172,8 +1960,8 @@ def qr_scanner(request):
                                 attendee.timer_status = new_status
                                 attendee.save()
                                 status_update_message = f" Status updated to {new_status}{'st' if new_status == 1 else 'nd' if new_status == 2 else 'rd' if new_status == 3 else 'th'} timer."
+                            
                             elif current_status == 5:
-                                # 5th timer attending Sunday Service - transition to regular member with CM role
                                 from members.models import Role
                                 cm_role, created = Role.objects.get_or_create(
                                     name='CM',
@@ -2206,45 +1994,36 @@ def qr_scanner(request):
                         'message': f'Error recording manual attendance: {str(e)}'
                     })
         else:
-            # QR code scanning
             form = QRCodeScanForm(request.POST)
             if form.is_valid():
                 qr_data = form.cleaned_data['qr_data']
                 attendance_type = form.cleaned_data['attendance_type']
                 notes = form.cleaned_data['notes']
-                
-                # Get client-side date and time from the request
+
                 client_date_str = request.POST.get('client_date')
                 client_time_str = request.POST.get('client_time')
-                
-                # Parse client date and time, fallback to server time if not provided
+
                 if client_date_str and client_time_str:
                     try:
                         from datetime import datetime
                         client_date = datetime.strptime(client_date_str, '%Y-%m-%d').date()
                         client_time = datetime.strptime(client_time_str, '%H:%M:%S').time()
                     except ValueError:
-                        # If parsing fails, use server time
                         client_date = timezone.now().date()
                         client_time = timezone.now().time()
                 else:
-                    # Fallback to server time
                     client_date = timezone.now().date()
                     client_time = timezone.now().time()
                 
                 try:
-                    # Parse QR code data
                     if qr_data.startswith('CHURCH_ATTENDANCE:'):
                         parts = qr_data.split(':')
                         if len(parts) >= 3:
                             qr_code_id = parts[1]
                             email = parts[2]
-                            
-                            # Find user by QR code ID (only within the same church)
+
                             try:
                                 attendee = CustomUser.objects.get(qr_code_id=qr_code_id, church=church)
-                                
-                                # Check if already attended on client date for this attendance type
                                 existing_attendance = Attendance.objects.filter(
                                     user=attendee,
                                     date=client_date,
@@ -2258,23 +2037,20 @@ def qr_scanner(request):
                                         'message': 'qr is already scanned'
                                     })
                                 else:
-                                    # Create attendance record using client date and time
                                     attendance = Attendance.objects.create(
                                         user=attendee,
                                         church=church,
                                         attendance_type=attendance_type,
-                                        date=client_date,      # Use client date
-                                        time_in=client_time,   # Use client time
+                                        date=client_date,     
+                                        time_in=client_time, 
                                         notes=notes,
                                         scanned_by=user,
                                         ip_address=request.META.get('REMOTE_ADDR'),
                                         user_agent=request.META.get('HTTP_USER_AGENT', '')
                                     )
-                                    
-                                    # Update user's last attendance
+
                                     attendee.record_attendance()
-                                    
-                                    # Auto-update new friend timer status for Sunday Service attendance
+
                                     status_update_message = ""
                                     if attendee.is_new_friend and attendance_type == 'SUNDAY':
                                         current_status = attendee.timer_status
@@ -2283,8 +2059,8 @@ def qr_scanner(request):
                                             attendee.timer_status = new_status
                                             attendee.save()
                                             status_update_message = f" Status updated to {new_status}{'st' if new_status == 1 else 'nd' if new_status == 2 else 'rd' if new_status == 3 else 'th'} timer."
+                                        
                                         elif current_status == 5:
-                                            # 5th timer attending Sunday Service - transition to regular member with CM role
                                             from members.models import Role
                                             cm_role, created = Role.objects.get_or_create(
                                                 name='CM',
@@ -2334,8 +2110,7 @@ def qr_scanner(request):
                         'success': False,
                         'message': f'Error processing QR code: {str(e)}'
                     })
-    
-    # Get recent attendances
+
     recent_attendances = Attendance.objects.filter(
         church=church,
         date=timezone.now().date()
@@ -2355,8 +2130,7 @@ def attendance_list(request):
     """List attendance records with filtering"""
     user = request.user
     church = user.church
-    
-    # Get filter parameters
+
     form = AttendanceFilterForm(request.GET, church=church)
     attendances = Attendance.objects.filter(church=church).select_related('user', 'scanned_by')
     
@@ -2374,13 +2148,11 @@ def attendance_list(request):
             attendances = attendances.filter(attendance_type=attendance_type)
         if user_filter:
             attendances = attendances.filter(user=user_filter)
-    
-    # Pagination
+
     paginator = Paginator(attendances, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
-    # Get summary statistics
+
     today = timezone.now().date()
     today_attendances = Attendance.objects.filter(church=church, date=today).count()
     this_week = Attendance.objects.filter(
@@ -2412,8 +2184,7 @@ def attendance_export(request):
             date_to = form.cleaned_data.get('date_to')
             attendance_type = form.cleaned_data.get('attendance_type')
             include_qr_codes = form.cleaned_data.get('include_qr_codes', False)
-            
-            # Filter attendances
+
             attendances = Attendance.objects.filter(church=church).select_related('user', 'scanned_by')
             
             if date_from:
@@ -2422,8 +2193,7 @@ def attendance_export(request):
                 attendances = attendances.filter(date__lte=date_to)
             if attendance_type:
                 attendances = attendances.filter(attendance_type=attendance_type)
-            
-            # Create response based on format
+
             if export_format == 'csv':
                 response = HttpResponse(content_type='text/csv')
                 response['Content-Disposition'] = f'attachment; filename="attendance_{church.domain}_{timezone.now().strftime("%Y%m%d")}.csv"'
@@ -2453,12 +2223,10 @@ def attendance_export(request):
                 return response
             
             elif export_format == 'excel':
-                # Excel export would require openpyxl
                 messages.info(request, 'Excel export feature will be implemented soon.')
                 return redirect('members:attendance_export')
             
             elif export_format == 'pdf':
-                # PDF export would require reportlab
                 messages.info(request, 'PDF export feature will be implemented soon.')
                 return redirect('members:attendance_export')
     else:
@@ -2485,15 +2253,13 @@ def profile_export(request):
             include_profile_pictures = form.cleaned_data.get('include_profile_pictures', False)
             member_type = form.cleaned_data.get('member_type', '')
             
-            # Filter users
             users = CustomUser.objects.filter(church=church, is_active=True)
             
             if member_type == 'new_friends':
                 users = users.filter(is_new_friend=True)
             elif member_type == 'regular_members':
                 users = users.filter(is_new_friend=False)
-            
-            # Create response based on format
+
             if export_format == 'csv':
                 response = HttpResponse(content_type='text/csv')
                 response['Content-Disposition'] = f'attachment; filename="profiles_{church.domain}_{timezone.now().strftime("%Y%m%d")}.csv"'
@@ -2552,9 +2318,7 @@ def profile_import(request):
             generate_qr_codes = form.cleaned_data.get('generate_qr_codes', True)
             
             try:
-                # Process the file
                 if file.name.endswith('.csv'):
-                    # CSV processing
                     decoded_file = file.read().decode('utf-8')
                     csv_data = csv.DictReader(io.StringIO(decoded_file))
                     
@@ -2565,12 +2329,10 @@ def profile_import(request):
                         email = row.get('email', '').strip()
                         if not email:
                             continue
-                        
-                        # Check if user exists
                         try:
                             existing_user = CustomUser.objects.get(email=email, church=church)
+                            
                             if update_existing:
-                                # Update existing user
                                 existing_user.first_name = row.get('first_name', existing_user.first_name)
                                 existing_user.last_name = row.get('last_name', existing_user.last_name)
                                 existing_user.phone_number = row.get('phone_number', existing_user.phone_number)
@@ -2583,7 +2345,6 @@ def profile_import(request):
                                 existing_user.save()
                                 updated_count += 1
                         except CustomUser.DoesNotExist:
-                            # Create new user
                             new_user = CustomUser.objects.create(
                                 email=email,
                                 first_name=row.get('first_name', ''),
@@ -2591,7 +2352,7 @@ def profile_import(request):
                                 phone_number=row.get('phone_number', ''),
                                 address=row.get('address', ''),
                                 church=church,
-                                is_new_friend=True,  # Default to new friend
+                                is_new_friend=True,
                                 is_active=True
                             )
                             
@@ -2601,8 +2362,7 @@ def profile_import(request):
                                     new_user.save()
                                 except ValueError:
                                     pass
-                            
-                            # Generate QR code if requested
+
                             if generate_qr_codes:
                                 new_user.generate_qr_code()
                             
@@ -2624,32 +2384,25 @@ def profile_import(request):
     return render(request, 'members/profile_import.html', context)
 
 
-# Care Group Report Views
 
 @login_required
 def care_group_report_list(request):
     """List all care group reports for the user's church"""
     user = request.user
     church = user.church
-    
-    # Check if user has permission to view reports
+
     if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to view care group reports.')
         return redirect('members:dashboard')
-    
-    # Get search parameters
+
     search = request.GET.get('search', '')
     care_group_filter = request.GET.get('care_group', '')
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
-    
-    # Base queryset
+
     reports = CareGroupReport.objects.filter(church=church)
-    
-    # Apply role-based filtering for reports
+
     if user.role.name == 'VSL':
-        # VSL can see reports for their own care groups + care groups of their members (CSL/CL)
-        # Get members under this VSL through the group relationship
         user_groups = Group.objects.filter(leader=user, group_type='CARE')
         member_users = CustomUser.objects.filter(
             regular_member_profile__group__in=user_groups
@@ -2657,11 +2410,9 @@ def care_group_report_list(request):
         
         reports = reports.filter(
             Q(care_group__leader=user) | 
-            Q(care_group__leader__in=member_users)  # Reports for care groups led by members under this VSL
+            Q(care_group__leader__in=member_users)
         ).distinct()
     elif user.role.name == 'CSL':
-        # CSL can see reports for their own care groups + care groups of their members (CL)
-        # Get members under this CSL through the group relationship
         user_groups = Group.objects.filter(leader=user, group_type='CARE')
         member_users = CustomUser.objects.filter(
             regular_member_profile__group__in=user_groups
@@ -2669,16 +2420,14 @@ def care_group_report_list(request):
         
         reports = reports.filter(
             Q(care_group__leader=user) | 
-            Q(care_group__leader__in=member_users)  # Reports for care groups led by members under this CSL
+            Q(care_group__leader__in=member_users)
         ).distinct()
     elif user.role.name == 'CL':
-        # CL can only see reports for care groups they lead
         reports = reports.filter(care_group__leader=user)
+        
     elif user.role.name == 'ADMIN':
-        # Admin can see all reports
         pass
-    
-    # Apply filters
+
     if search:
         reports = reports.filter(
             Q(care_group__name__icontains=search) |
@@ -2694,26 +2443,20 @@ def care_group_report_list(request):
     
     if date_to:
         reports = reports.filter(date_of_cg__lte=date_to)
-    
-    # Order by date
+
     reports = reports.order_by('-date_of_cg', '-created_at')
-    
-    # Pagination
+
     paginator = Paginator(reports, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
-    # Get available care groups for filter (apply same role-based filtering)
+
     care_groups = Group.objects.filter(
         church=church,
         group_type='CARE',
         is_active=True
     )
-    
-    # Apply role-based filtering for care groups dropdown
+
     if user.role.name == 'VSL':
-        # VSL can see their own care groups + care groups of their members (CSL/CL)
-        # Get members under this VSL through the group relationship
         user_groups = Group.objects.filter(leader=user, group_type='CARE')
         member_users = CustomUser.objects.filter(
             regular_member_profile__group__in=user_groups
@@ -2721,11 +2464,10 @@ def care_group_report_list(request):
         
         care_groups = care_groups.filter(
             Q(leader=user) | 
-            Q(leader__in=member_users)  # Care groups led by members under this VSL
+            Q(leader__in=member_users)
         ).distinct()
+        
     elif user.role.name == 'CSL':
-        # CSL can see their own care groups + care groups of their members (CL)
-        # Get members under this CSL through the group relationship
         user_groups = Group.objects.filter(leader=user, group_type='CARE')
         member_users = CustomUser.objects.filter(
             regular_member_profile__group__in=user_groups
@@ -2733,13 +2475,11 @@ def care_group_report_list(request):
         
         care_groups = care_groups.filter(
             Q(leader=user) | 
-            Q(leader__in=member_users)  # Care groups led by members under this CSL
+            Q(leader__in=member_users)  
         ).distinct()
     elif user.role.name == 'CL':
-        # CL can only see care groups they lead
         care_groups = care_groups.filter(leader=user)
     elif user.role.name == 'ADMIN':
-        # Admin can see all care groups
         pass
     
     care_groups = care_groups.order_by('name')
@@ -2763,7 +2503,6 @@ def care_group_report_create(request):
     user = request.user
     church = user.church
     
-    # Check if user has permission to create reports
     if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to create care group reports.')
         return redirect('members:dashboard')
@@ -2776,19 +2515,16 @@ def care_group_report_create(request):
             report.church = church
             report.created_by = user
             report.save()
-            
-            # Redirect to member report form
+
             return redirect('members:care_group_member_report_create', report_id=report.id)
     else:
         form = CareGroupReportForm(user=user)
-        
-        # Pre-select care group if provided in URL
+
         care_group_id = request.GET.get('care_group')
         if care_group_id:
             try:
                 care_group = Group.objects.get(id=care_group_id, church=church, group_type='CARE')
-                
-                # Check if user has permission to create report for this care group
+
                 if user.role.name == 'CL' and care_group.leader != user:
                     messages.error(request, 'You can only create reports for care groups you lead.')
                     return redirect('members:care_group_report_list')
@@ -2810,25 +2546,21 @@ def care_group_member_report_create(request, report_id):
     """Create member reports for a care group report"""
     user = request.user
     report = get_object_or_404(CareGroupReport, id=report_id, church=user.church)
-    
-    # Check if user has permission
+
     if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to create care group reports.')
         return redirect('members:dashboard')
-    
-    # Check role-based access
+
     if user.role.name == 'CL' and report.care_group.leader != user:
         messages.error(request, 'You can only create member reports for care groups you lead.')
         return redirect('members:care_group_report_list')
-    
-    # Get care group members
+
     care_group_members = CustomUser.objects.filter(
         regular_member_profile__group=report.care_group,
         is_active=True
     ).order_by('first_name', 'last_name')
     
     if request.method == 'POST':
-        # Process member reports
         for member in care_group_members:
             member_id = str(member.id)
             status = request.POST.get(f'status_{member_id}', 'ACTIVE')
@@ -2838,7 +2570,6 @@ def care_group_member_report_create(request, report_id):
             follow_ups = int(request.POST.get(f'follow_ups_{member_id}', 0))
             notes = request.POST.get(f'notes_{member_id}', '')
             
-            # Create or update member report
             member_report, created = CareGroupMemberReport.objects.get_or_create(
                 report=report,
                 member=member,
@@ -2864,7 +2595,6 @@ def care_group_member_report_create(request, report_id):
         messages.success(request, f'Care group report for {report.care_group.name} has been created successfully.')
         return redirect('members:care_group_report_detail', report_id=report.id)
     
-    # Get existing member reports
     existing_reports = {
         mr.member.id: mr for mr in report.member_reports.all()
     }
@@ -2883,18 +2613,15 @@ def care_group_report_detail(request, report_id):
     """View care group report details"""
     user = request.user
     report = get_object_or_404(CareGroupReport, id=report_id, church=user.church)
-    
-    # Check if user has permission
+
     if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to view care group reports.')
         return redirect('members:dashboard')
-    
-    # Check role-based access
+
     if user.role.name == 'CL' and report.care_group.leader != user:
         messages.error(request, 'You can only view reports for care groups you lead.')
         return redirect('members:care_group_report_list')
-    
-    # Get member reports
+
     member_reports = report.member_reports.all().order_by('member__first_name', 'member__last_name')
     
     context = {
@@ -2910,18 +2637,15 @@ def care_group_report_print(request, report_id):
     """Print view for care group report"""
     user = request.user
     report = get_object_or_404(CareGroupReport, id=report_id, church=user.church)
-    
-    # Check if user has permission
+
     if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to view care group reports.')
         return redirect('members:dashboard')
-    
-    # Check role-based access
+
     if user.role.name == 'CL' and report.care_group.leader != user:
         messages.error(request, 'You can only print reports for care groups you lead.')
         return redirect('members:care_group_report_list')
-    
-    # Get member reports
+
     member_reports = report.member_reports.all().order_by('member__first_name', 'member__last_name')
     
     context = {
@@ -2937,13 +2661,11 @@ def care_group_report_edit(request, report_id):
     """Edit a care group report"""
     user = request.user
     report = get_object_or_404(CareGroupReport, id=report_id, church=user.church)
-    
-    # Check if user has permission
+
     if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to edit care group reports.')
         return redirect('members:dashboard')
-    
-    # Check role-based access
+
     if user.role.name == 'CL' and report.care_group.leader != user:
         messages.error(request, 'You can only edit reports for care groups you lead.')
         return redirect('members:care_group_report_list')
@@ -2972,13 +2694,11 @@ def care_group_report_delete(request, report_id):
     """Delete a care group report"""
     user = request.user
     report = get_object_or_404(CareGroupReport, id=report_id, church=user.church)
-    
-    # Check if user has permission
+
     if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to delete care group reports.')
         return redirect('members:dashboard')
-    
-    # Check role-based access
+
     if user.role.name == 'CL' and report.care_group.leader != user:
         messages.error(request, 'You can only delete reports for care groups you lead.')
         return redirect('members:care_group_report_list')
@@ -3001,18 +2721,15 @@ def care_group_attendance_tracking(request, group_id):
     """Track care group attendance for members"""
     user = request.user
     care_group = get_object_or_404(Group, id=group_id, church=user.church, group_type='CARE')
-    
-    # Check if user has permission
+
     if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
         messages.error(request, 'You do not have permission to track care group attendance.')
         return redirect('members:dashboard')
-    
-    # Check role-based access
+
     if user.role.name == 'CL' and care_group.leader != user:
         messages.error(request, 'You can only track attendance for care groups you lead.')
         return redirect('members:care_group_list')
-    
-    # Get care group members
+
     care_group_members = CustomUser.objects.filter(
         regular_member_profile__group=care_group,
         is_active=True
@@ -3023,14 +2740,12 @@ def care_group_attendance_tracking(request, group_id):
         if not attendance_date:
             messages.error(request, 'Please select a date.')
             return redirect('members:care_group_attendance_tracking', group_id=group_id)
-        
-        # Process attendance for each member
+
         for member in care_group_members:
             member_id = str(member.id)
             attended = request.POST.get(f'attended_{member_id}') == 'on'
             
             if attended:
-                # Create or update attendance record
                 attendance, created = Attendance.objects.get_or_create(
                     user=member,
                     church=user.church,
@@ -3043,15 +2758,13 @@ def care_group_attendance_tracking(request, group_id):
                 )
                 
                 if not created:
-                    # Update existing attendance
                     attendance.time_in = timezone.now().time()
                     attendance.scanned_by = user
                     attendance.save()
         
         messages.success(request, f'Care group attendance for {care_group.name} has been recorded successfully.')
         return redirect('members:care_group_detail', group_id=group_id)
-    
-    # Get recent attendance records for this care group
+
     recent_attendances = Attendance.objects.filter(
         user__regular_member_profile__group=care_group,
         attendance_type='CARE_GROUP',

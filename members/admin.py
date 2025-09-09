@@ -12,7 +12,6 @@ from .models import (
 )
 
 
-# Import/Export Resources
 class ChurchResource(resources.ModelResource):
     class Meta:
         model = Church
@@ -99,7 +98,6 @@ class AttendanceResource(resources.ModelResource):
         export_order = fields
 
 
-# Admin Classes
 @admin.register(Church)
 class ChurchAdmin(ImportExportModelAdmin):
     resource_class = ChurchResource

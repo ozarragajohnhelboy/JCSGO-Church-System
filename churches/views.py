@@ -141,7 +141,6 @@ def dashboard(request):
     """User dashboard based on role and church"""
     user = request.user
     
-    # Get church-specific data
     new_friends_count = CustomUser.objects.filter(
         church=user.church, 
         is_new_friend=True, 
@@ -155,13 +154,11 @@ def dashboard(request):
     ).count()
     
     total_members = new_friends_count + regulars_count
-    
-    # Get monthly growth data for charts
+
     from datetime import datetime, timedelta
     from django.db.models import Count
     from django.utils import timezone
     
-    # Get date filter for recent activity
     activity_date_filter = request.GET.get('activity_date', '')
     
     # Get recent activity with date filter
