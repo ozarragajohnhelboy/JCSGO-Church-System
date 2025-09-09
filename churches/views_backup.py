@@ -527,10 +527,6 @@ def dashboard(request):
         })
         return render(request, 'churches/member_dashboard.html', context)
 
-
-
-
-
 def super_admin_login(request):
     """Super admin login page"""
     if request.method == 'POST':
