@@ -215,7 +215,7 @@ def ajax_church_dashboard(request, church_domain):
             'active_groups_count': active_groups_count,
         }
         
-        return render(request, 'churches/church_dashboard_modal.html', context)
+        return render(request, 'churches/modals/church_dashboard_modal.html', context)
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

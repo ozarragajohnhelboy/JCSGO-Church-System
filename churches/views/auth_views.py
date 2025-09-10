@@ -39,7 +39,7 @@ def church_selection(request):
         'rizal_sector_churches': rizal_sector_churches,
         'central_sector_churches': central_sector_churches,
     }
-    return render(request, 'churches/church_selection.html', context)
+    return render(request, 'churches/auth/church_selection.html', context)
 
 
 def church_login(request, church_domain):
@@ -67,7 +67,7 @@ def church_login(request, church_domain):
         'form': form,
         'church': church,
     }
-    return render(request, 'churches/church_login.html', context)
+    return render(request, 'churches/auth/church_login.html', context)
 
 
 def church_registration(request, church_domain):
@@ -123,7 +123,7 @@ def church_registration(request, church_domain):
         'form': form,
         'church': church,
     }
-    return render(request, 'churches/church_registration.html', context)
+    return render(request, 'churches/auth/church_registration.html', context)
 
 
 def super_admin_login(request):
@@ -143,7 +143,7 @@ def super_admin_login(request):
         except Exception as e:
             messages.error(request, f'Login failed: {str(e)}')
     
-    return render(request, 'churches/super_admin_login.html')
+    return render(request, 'churches/auth/super_admin_login.html')
 
 
 def custom_logout(request):

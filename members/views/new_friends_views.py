@@ -96,7 +96,7 @@ def new_friend_add(request):
         'title': 'Add New Friend',
         'church': request.user.church
     }
-    return render(request, 'members/new_friend_form.html', context)
+    return render(request, 'members/forms/new_friend_form.html', context)
 
 
 @login_required
@@ -205,7 +205,7 @@ def new_friend_edit(request, new_friend_id):
         'title': 'Edit New Friend',
         'church': request.user.church
     }
-    return render(request, 'members/new_friend_form.html', context)
+    return render(request, 'members/forms/new_friend_form.html', context)
 
 
 @login_required
@@ -333,4 +333,4 @@ def new_friend_import(request):
         'title': 'Import New Friends',
         'church': request.user.church
     }
-    return render(request, 'members/new_friend_import.html', context)
+    return render(request, 'members/forms/new_friend_import.html', context)

@@ -47,7 +47,7 @@ def group_list(request):
         'ministry_groups_count': groups.filter(group_type='MINISTRY').count(),
     }
     
-    return render(request, 'members/group_list.html', context)
+    return render(request, 'members/groups/group_list.html', context)
 
 
 @login_required
@@ -74,4 +74,4 @@ def group_detail(request, pk):
         'is_full': group.is_full,
     }
     
-    return render(request, 'members/group_detail.html', context)
+    return render(request, 'members/groups/group_detail.html', context)

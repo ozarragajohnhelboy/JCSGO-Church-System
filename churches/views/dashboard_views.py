@@ -209,7 +209,7 @@ def dashboard(request):
             'system_months': system_months,
             'system_growth': system_growth,
         })
-        return render(request, 'churches/super_admin_dashboard.html', context)
+        return render(request, 'churches/dashboard/super_admin_dashboard.html', context)
     
     # Church admin dashboard
     elif user.role.name == 'ADMIN':
@@ -326,7 +326,7 @@ def dashboard(request):
             'current_month_transitions': current_month_transitions,
             'transition_rate': transition_rate,
         })
-        return render(request, 'churches/admin_dashboard.html', context)
+        return render(request, 'churches/dashboard/admin_dashboard.html', context)
     
     # Church leader dashboard (VSL, CSL, CL)
     elif user.role.name in ['VSL', 'CSL', 'CL']:
@@ -366,7 +366,7 @@ def dashboard(request):
             'total_group_members': total_group_members,
             'recent_group_activities': recent_group_activities,
         })
-        return render(request, 'churches/leader_dashboard.html', context)
+        return render(request, 'churches/dashboard/leader_dashboard.html', context)
     
     # Regular member dashboard
     else:
@@ -399,4 +399,4 @@ def dashboard(request):
             'user_activities': user_activities,
             'attendance_streak': attendance_streak,
         })
-        return render(request, 'churches/member_dashboard.html', context)
+        return render(request, 'churches/dashboard/member_dashboard.html', context)

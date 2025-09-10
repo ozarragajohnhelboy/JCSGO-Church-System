@@ -73,7 +73,7 @@ def regular_member_add(request):
         'title': 'Add Regular Member',
         'church': request.user.church
     }
-    return render(request, 'members/regular_member_form.html', context)
+    return render(request, 'members/forms/regular_member_form.html', context)
 
 
 @login_required
@@ -129,7 +129,7 @@ def regular_member_edit(request, regular_member_id):
         'title': 'Edit Regular Member',
         'church': request.user.church
     }
-    return render(request, 'members/regular_member_form.html', context)
+    return render(request, 'members/forms/regular_member_form.html', context)
 
 
 @login_required
@@ -266,4 +266,4 @@ def regular_member_import(request):
         'title': 'Import Regular Members',
         'church': request.user.church
     }
-    return render(request, 'members/regular_member_import.html', context)
+    return render(request, 'members/forms/regular_member_import.html', context)

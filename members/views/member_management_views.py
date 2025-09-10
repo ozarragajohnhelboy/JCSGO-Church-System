@@ -59,7 +59,7 @@ def member_list(request):
         'regular_members_count': members.filter(is_new_friend=False).count(),
     }
     
-    return render(request, 'members/member_list.html', context)
+    return render(request, 'members/members/member_list.html', context)
 
 
 @login_required
@@ -122,7 +122,7 @@ def member_detail(request, pk):
         'back_url': back_url,
     }
     
-    return render(request, 'members/member_detail.html', context)
+    return render(request, 'members/members/member_detail.html', context)
 
 
 @login_required
@@ -175,7 +175,7 @@ def new_friends_list(request):
         'total_new_friends': len(new_friends),
     }
     
-    return render(request, 'members/new_friends_list.html', context)
+    return render(request, 'members/members/new_friends_list.html', context)
 
 
 @login_required
@@ -235,4 +235,4 @@ def regular_members_list(request):
         'total_regular_members': len(regular_members),
     }
     
-    return render(request, 'members/regular_members_list.html', context)
+    return render(request, 'members/members/regular_members_list.html', context)

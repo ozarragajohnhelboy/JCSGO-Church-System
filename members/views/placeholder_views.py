@@ -76,12 +76,12 @@ def activity_logs(request):
         'total_activities': activities.count(),
     }
     
-    return render(request, 'members/activity_logs.html', context)
+    return render(request, 'members/logs/activity_logs.html', context)
 
 @login_required  
 def church_statistics(request):
     """Church statistics dashboard"""
-    return render(request, 'members/church_statistics.html', {})
+    return render(request, 'members/reports/church_statistics.html', {})
 
 @csrf_exempt
 @login_required
@@ -379,7 +379,7 @@ def role_management(request):
         'total_users': users.count(),
     }
     
-    return render(request, 'members/role_management.html', context)
+    return render(request, 'members/members/role_management.html', context)
 
 @login_required
 def ajax_update_user_role(request, user_id):
@@ -617,7 +617,7 @@ def care_group_list(request):
         'user_role': user.role.name,
     }
     
-    return render(request, 'members/care_group_list.html', context)
+    return render(request, 'members/groups/care_group_list.html', context)
 
 @login_required
 def care_group_create(request):
@@ -650,7 +650,7 @@ def care_group_create(request):
         'user_role': user.role.name,
     }
     
-    return render(request, 'members/care_group_create.html', context)
+    return render(request, 'members/groups/care_group_create.html', context)
 
 @login_required
 def care_group_detail(request, group_id):
@@ -700,7 +700,7 @@ def care_group_detail(request, group_id):
         'user_role': user.role.name,
     }
     
-    return render(request, 'members/care_group_detail.html', context)
+    return render(request, 'members/groups/care_group_detail.html', context)
 
 @login_required
 def care_group_edit(request, group_id):
@@ -735,7 +735,7 @@ def care_group_edit(request, group_id):
         'user_role': user.role.name,
     }
     
-    return render(request, 'members/care_group_edit.html', context)
+    return render(request, 'members/groups/care_group_edit.html', context)
 
 @login_required
 def care_group_add_member(request, group_id):
@@ -820,17 +820,17 @@ def care_group_remove_member(request, group_id, member_id):
 @login_required
 def role_new_friends_list(request):
     """New friends list for specific roles"""
-    return render(request, 'members/role_new_friends_list.html', {})
+    return render(request, 'members/members/role_new_friends_list.html', {})
 
 @login_required
 def user_profile(request):
     """User profile page"""
-    return render(request, 'members/user_profile.html', {})
+    return render(request, 'members/auth/user_profile.html', {})
 
 @login_required
 def generate_qr_code(request, user_id):
     """Generate QR code"""
-    return render(request, 'members/generate_qr_code.html', {})
+    return render(request, 'members/auth/generate_qr_code.html', {})
 
 @login_required
 def qr_scanner(request):
@@ -1046,7 +1046,7 @@ def qr_scanner(request):
         'recent_attendances': recent_attendances,
     }
     
-    return render(request, 'members/qr_scanner.html', context)
+    return render(request, 'members/attendance/qr_scanner.html', context)
 
 @login_required
 def attendance_list(request):
@@ -1090,7 +1090,7 @@ def attendance_list(request):
         'this_week_attendances': this_week,
     }
     
-    return render(request, 'members/attendance_list.html', context)
+    return render(request, 'members/attendance/attendance_list.html', context)
 
 @login_required
 def attendance_export(request):
@@ -1153,7 +1153,7 @@ def attendance_export(request):
         'form': form,
     }
     
-    return render(request, 'members/attendance_export.html', context)
+    return render(request, 'members/attendance/attendance_export.html', context)
 
 @login_required
 def profile_export(request):
@@ -1271,7 +1271,7 @@ def profile_export(request):
         'form': form,
     }
     
-    return render(request, 'members/profile_export.html', context)
+    return render(request, 'members/reports/profile_export.html', context)
 
 @login_required
 def profile_import(request):
@@ -1354,37 +1354,37 @@ def profile_import(request):
         'form': form,
     }
     
-    return render(request, 'members/profile_import.html', context)
+    return render(request, 'members/reports/profile_import.html', context)
 
 @login_required
 def care_group_report_list(request):
     """Care group reports list"""
-    return render(request, 'members/care_group_report_list.html', {})
+    return render(request, 'members/groups/care_group_report_list.html', {})
 
 @login_required
 def care_group_report_create(request):
     """Create care group report"""
-    return render(request, 'members/care_group_report_create.html', {})
+    return render(request, 'members/groups/care_group_report_create.html', {})
 
 @login_required
 def care_group_member_report_create(request, report_id):
     """Create care group member report"""
-    return render(request, 'members/care_group_member_report_create.html', {})
+    return render(request, 'members/groups/care_group_member_report_create.html', {})
 
 @login_required
 def care_group_report_detail(request, report_id):
     """Care group report detail"""
-    return render(request, 'members/care_group_report_detail.html', {})
+    return render(request, 'members/groups/care_group_report_detail.html', {})
 
 @login_required
 def care_group_report_print(request, report_id):
     """Print care group report"""
-    return render(request, 'members/care_group_report_print.html', {})
+    return render(request, 'members/groups/care_group_report_print.html', {})
 
 @login_required
 def care_group_report_edit(request, report_id):
     """Edit care group report"""
-    return render(request, 'members/care_group_report_edit.html', {})
+    return render(request, 'members/groups/care_group_report_edit.html', {})
 
 @login_required
 def care_group_report_delete(request, report_id):
@@ -1394,4 +1394,4 @@ def care_group_report_delete(request, report_id):
 @login_required
 def care_group_attendance_tracking(request, group_id):
     """Care group attendance tracking"""
-    return render(request, 'members/care_group_attendance_tracking.html', {})
+    return render(request, 'members/attendance/care_group_attendance_tracking.html', {})
