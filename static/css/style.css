@@ -9,11 +9,9 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f8f9fa;
-}
-
-.navbar-brand {
-    font-weight: bold;
-    color: var(--primary-color) !important;
+    margin: 0;
+        padding: 0;
+        overflow-x: hidden;
 }
 
 .card {
@@ -53,70 +51,56 @@ body {
 .church-logo {
     max-width: 150px;
     height: auto;
+    margin-left: 150px;
 }
 
 .stats-card {
     background: linear-gradient(135deg, var(--secondary-color), #2980b9);
     color: white;
+    padding: 1.5rem;
+        border-radius: 15px;
+        text-align: center;
+        height: 100%;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+    
+    .stats-card h3 {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stats-card p {
+        margin-bottom: 0;
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .row.justify-content-between .col-md-2 {
+        flex: 0 0 auto;
+        width: calc(20% - 1rem);
+        margin: 0 0.5rem;
 }
 
-.footer {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 2rem 0;
-    margin-top: auto;
-}
 
-/* Enhanced dropdown styling */
-.dropdown-menu {
-    border: none !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
-}
 
-.dropdown-header {
-    background-color: #f8f9fa;
-    border-radius: 12px 12px 0 0;
-    padding: 1rem;
-}
 
-.dropdown-item:hover {
-    background-color: #f8f9fa;
-}
-
-/* Enhanced alert styling */
-.alert {
-    border: none !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-}
-
-.alert-success {
-    background: linear-gradient(135deg, #d4edda, #c3e6cb);
-    color: #155724;
-}
-
-.alert-danger {
-    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-    color: #721c24;
-}
-
-.alert-warning {
-    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
-    color: #856404;
-}
-
-.alert-info {
-    background: linear-gradient(135deg, #d1ecf1, #bee5eb);
-    color: #0c5460;
-}
-
-/* Form styling */
 .input-group-text {
     background-color: #f8f9fa;
     border-color: #dee2e6;
     color: #6c757d;
 }
 
-/* Form styling */
 .form-select {
     border-radius: 8px;
     border: 1px solid #dee2e6;
@@ -126,4 +110,49 @@ body {
 .form-select:focus {
     border-color: var(--secondary-color);
     box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
-} 
+}
+
+.main-content {
+    margin-left: 0;
+    transition: margin-left 0.3s ease;
+}
+
+.col-md-9.col-lg-10.ms-sm-auto.px-md-4 {
+    min-height: calc(100vh - 76px);
+    margin-left: 16.666667%;
+    padding-top: 0.5rem !important;
+        padding-bottom: 2rem;
+    }
+    
+    .container-fluid {
+        margin-top: 0;
+        padding-top: 0;
+    }
+    
+    .row {
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+    
+    .col-md-3.col-lg-2 {
+        padding: 0;
+        margin: 0;
+    }
+    
+    .row {
+        margin-top: 0;
+    }
+    
+    .container-fluid {
+        padding-top: 0.5rem;
+    
+.container-fluid .row:first-child {
+    margin-top: 0.5rem;
+}
+
+.form-container {
+    padding-top: 0.5rem;
+}
+.content-section {
+    padding-top: 0.5rem;
+}

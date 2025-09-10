@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Care Group - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-plus-circle me-2"></i>
+        Create New Care Group
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'members:care_group_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Care Groups
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-collection me-2"></i>
+                    Care Group Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">
+                                <i class="bi bi-tag me-1"></i>
+                                Group Name *
+                            </label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.max_members.id_for_label }}" class="form-label">
+                                <i class="bi bi-people me-1"></i>
+                                Maximum Members *
+                            </label>
+                            {{ form.max_members }}
+                            <small class="form-text text-muted">Recommended: 8-12 members for effective care groups</small>
+                            {% if form.max_members.errors %}
+                                <div class="text-danger small">{{ form.max_members.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">
+                            <i class="bi bi-file-text me-1"></i>
+                            Description
+                        </label>
+                        {{ form.description }}
+                        <small class="form-text text-muted">Describe the purpose and goals of this care group</small>
+                        {% if form.description.errors %}
+                            <div class="text-danger small">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.meeting_day.id_for_label }}" class="form-label">
+                                <i class="bi bi-calendar me-1"></i>
+                                Meeting Day
+                            </label>
+                            {{ form.meeting_day }}
+                            {% if form.meeting_day.errors %}
+                                <div class="text-danger small">{{ form.meeting_day.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.meeting_time.id_for_label }}" class="form-label">
+                                <i class="bi bi-clock me-1"></i>
+                                Meeting Time
+                            </label>
+                            {{ form.meeting_time }}
+                            {% if form.meeting_time.errors %}
+                                <div class="text-danger small">{{ form.meeting_time.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.meeting_location.id_for_label }}" class="form-label">
+                            <i class="bi bi-geo-alt me-1"></i>
+                            Meeting Location
+                        </label>
+                        {{ form.meeting_location }}
+                        <small class="form-text text-muted">e.g., Church Hall, Member's Home, Online</small>
+                        {% if form.meeting_location.errors %}
+                            <div class="text-danger small">{{ form.meeting_location.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.meeting_schedule.id_for_label }}" class="form-label">
+                            <i class="bi bi-calendar-event me-1"></i>
+                            Meeting Schedule
+                        </label>
+                        {{ form.meeting_schedule }}
+                        <small class="form-text text-muted">e.g., Weekly Bible Study, Bi-weekly Fellowship</small>
+                        {% if form.meeting_schedule.errors %}
+                            <div class="text-danger small">{{ form.meeting_schedule.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.is_active }}
+                            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                Active Group
+                            </label>
+                        </div>
+                        {% if form.is_active.errors %}
+                            <div class="text-danger small">{{ form.is_active.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'members:care_group_list' %}" class="btn btn-outline-secondary me-md-2">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Create Care Group
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Care Group Guidelines
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6 class="text-primary">Purpose of Care Groups</h6>
+                <ul class="small">
+                    <li>Provide spiritual care and support</li>
+                    <li>Foster deeper relationships among members</li>
+                    <li>Facilitate regular Bible study and prayer</li>
+                    <li>Encourage personal and spiritual growth</li>
+                </ul>
+                
+                <h6 class="text-primary mt-3">Best Practices</h6>
+                <ul class="small">
+                    <li><strong>Size:</strong> Keep groups between 8-12 members for effective interaction</li>
+                    <li><strong>Meeting:</strong> Regular weekly or bi-weekly meetings work best</li>
+                    <li><strong>Location:</strong> Consistent meeting place builds familiarity</li>
+                    <li><strong>Leadership:</strong> As a {{ user_role }}, you can mentor and guide group members</li>
+                </ul>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="bi bi-lightbulb me-1"></i>
+                    <strong>Tip:</strong> Members you add to your care group can also create their own care groups if they have VSL, CSL, or CL roles.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: none;
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px 15px 0 0 !important;
+        border-bottom: none;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn {
+        border-radius: 8px;
+    }
+    
+    .alert {
+        border-radius: 10px;
+        border: none;
+    }
+</style>
+{% endblock %} 

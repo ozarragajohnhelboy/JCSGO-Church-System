@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Export Attendance
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2><i class="fas fa-download"></i> Export Attendance Data</h2>
+          <div>
+            <a href="{% url 'members:attendance_list' %}" class="btn btn-outline-primary"><i class="fas fa-list"></i> Back to Attendance List</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="fas fa-cog"></i> Export Settings</h5>
+          </div>
+          <div class="card-body">
+            <form method="post">
+              {% csrf_token %}
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.format.id_for_label }}" class="form-label">Export Format</label>
+                    {{ form.format }}
+                    {% if form.format.errors %}
+                      <div class="text-danger">{{ form.format.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.attendance_type.id_for_label }}" class="form-label">Attendance Type</label>
+                    {{ form.attendance_type }}
+                    {% if form.attendance_type.errors %}
+                      <div class="text-danger">{{ form.attendance_type.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.date_from.id_for_label }}" class="form-label">From Date</label>
+                    {{ form.date_from }}
+                    {% if form.date_from.errors %}
+                      <div class="text-danger">{{ form.date_from.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="{{ form.date_to.id_for_label }}" class="form-label">To Date</label>
+                    {{ form.date_to }}
+                    {% if form.date_to.errors %}
+                      <div class="text-danger">{{ form.date_to.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <div class="form-check">
+                  {{ form.include_qr_codes }}
+                  <label class="form-check-label" for="{{ form.include_qr_codes.id_for_label }}">{{ form.include_qr_codes.label }}</label>
+                  <div class="form-text">{{ form.include_qr_codes.help_text }}</div>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-download"></i> Export Data</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> Export Information</h5>
+          </div>
+          <div class="card-body">
+            <h6>Available Formats:</h6>
+            <ul class="list-unstyled">
+              <li>
+                <i class="fas fa-file-csv text-success"></i> <strong>CSV</strong> - Comma-separated values
+              </li>
+              <li>
+                <i class="fas fa-file-excel text-primary"></i> <strong>Excel</strong> - Microsoft Excel format
+              </li>
+              <li>
+                <i class="fas fa-file-pdf text-danger"></i> <strong>PDF</strong> - Portable Document Format
+              </li>
+            </ul>
+
+            <hr />
+
+            <h6>Export Includes:</h6>
+            <ul class="list-unstyled">
+              <li>
+                <i class="fas fa-check text-success"></i> Date and time
+              </li>
+              <li>
+                <i class="fas fa-check text-success"></i> Member information
+              </li>
+              <li>
+                <i class="fas fa-check text-success"></i> Attendance type
+              </li>
+              <li>
+                <i class="fas fa-check text-success"></i> Scanned by information
+              </li>
+              <li>
+                <i class="fas fa-check text-success"></i> Notes
+              </li>
+              <li>
+                <i class="fas fa-check text-success"></i> QR Code IDs (optional)
+              </li>
+            </ul>
+
+            <hr />
+
+            <div class="alert alert-info">
+              <i class="fas fa-lightbulb"></i>
+              <strong>Tip:</strong> Leave date fields empty to export all attendance records.
+            </div>
+          </div>
+        </div>
+
+        <div class="card mt-3">
+          <div class="card-header">
+            <h5 class="card-title mb-0"><i class="fas fa-chart-bar"></i> Quick Stats</h5>
+          </div>
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-6">
+                <h4 class="text-primary">Today</h4>
+                <p class="text-muted">Recent attendances</p>
+              </div>
+              <div class="col-6">
+                <h4 class="text-success">This Week</h4>
+                <p class="text-muted">Weekly total</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

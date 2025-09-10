@@ -8,11 +8,10 @@ from import_export.widgets import ForeignKeyWidget, DateWidget
 
 from .models import (
     Church, Role, CustomUser, NewFriend, RegularMember, 
-    Group, ActivityLog
+    Group, ActivityLog, Attendance
 )
 
 
-# Import/Export Resources
 class ChurchResource(resources.ModelResource):
     class Meta:
         model = Church
@@ -40,7 +39,8 @@ class CustomUserResource(resources.ModelResource):
             'id', 'email', 'first_name', 'last_name', 'church', 'role',
             'phone_number', 'address', 'birth_date', 'is_new_friend', 
             'timer_status', 'date_joined', 'last_attendance', 'transition_date',
-            'email_verified', 'is_active', 'is_staff', 'is_superuser'
+            'email_verified', 'is_active', 'is_staff', 'is_superuser',
+            'qr_code_id', 'qr_code_image'
         )
         export_order = fields
 
@@ -51,7 +51,7 @@ class NewFriendResource(resources.ModelResource):
     class Meta:
         model = NewFriend
         import_id_fields = ('user',)
-        fields = ('id', 'user', 'registration_date', 'source', 'notes', 'is_active')
+        fields = ('id', 'user', 'registration_date', 'invited_by', 'notes', 'is_active')
         export_order = fields
 
 
@@ -87,7 +87,17 @@ class ActivityLogResource(resources.ModelResource):
         export_order = fields
 
 
-# Admin Classes
+class AttendanceResource(resources.ModelResource):
+    user = Field(column_name='user', attribute='user', widget=ForeignKeyWidget(CustomUser, 'email'))
+    church = Field(column_name='church', attribute='church', widget=ForeignKeyWidget(Church, 'domain'))
+    scanned_by = Field(column_name='scanned_by', attribute='scanned_by', widget=ForeignKeyWidget(CustomUser, 'email'))
+    
+    class Meta:
+        model = Attendance
+        fields = ('id', 'user', 'church', 'attendance_type', 'date', 'time_in', 'time_out', 'notes', 'scanned_by', 'created_at')
+        export_order = fields
+
+
 @admin.register(Church)
 class ChurchAdmin(ImportExportModelAdmin):
     resource_class = ChurchResource
@@ -127,6 +137,7 @@ class CustomUserAdmin(UserAdmin, ImportExportModelAdmin):
         ('Personal Info', {'fields': ('first_name', 'last_name', 'profile_picture', 'phone_number', 'address', 'birth_date')}),
         ('Church & Role', {'fields': ('church', 'role')}),
         ('Member Status', {'fields': ('is_new_friend', 'timer_status', 'last_attendance', 'transition_date')}),
+        ('QR Code', {'fields': ('qr_code_id', 'qr_code_image')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Important Dates', {'fields': ('last_login', 'date_joined')}),
         ('Email', {'fields': ('email_verified',)}),
@@ -210,3 +221,24 @@ class ActivityLogAdmin(ImportExportModelAdmin):
     
     def has_add_permission(self, request):
         return False  # Activity logs should only be created by the system
+
+
+@admin.register(Attendance)
+class AttendanceAdmin(ImportExportModelAdmin):
+    resource_class = AttendanceResource
+    list_display = ('user', 'church', 'attendance_type', 'date', 'time_in', 'scanned_by', 'created_at')
+    list_filter = ('attendance_type', 'date', 'church', 'created_at')
+    search_fields = ('user__first_name', 'user__last_name', 'user__email', 'notes')
+    readonly_fields = ('created_at', 'updated_at')
+    ordering = ('-date', '-time_in')
+    
+    fieldsets = (
+        (None, {'fields': ('user', 'church', 'attendance_type')}),
+        ('Date & Time', {'fields': ('date', 'time_in', 'time_out')}),
+        ('Additional Info', {'fields': ('notes', 'scanned_by')}),
+        ('Metadata', {'fields': ('ip_address', 'user_agent', 'created_at', 'updated_at')}),
+    )
+    
+    def church(self, obj):
+        return obj.church.name if obj.church else '-'
+    church.short_description = 'Church'

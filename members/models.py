@@ -4,6 +4,10 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.db.models import Count, Q
 from django.urls import reverse
+import uuid
+import qrcode
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 
 class CustomUserManager(BaseUserManager):
@@ -170,6 +174,10 @@ class CustomUser(AbstractUser):
     address = models.TextField(blank=True)
     birth_date = models.DateField(null=True, blank=True)
     
+    # QR Code fields
+    qr_code_id = models.UUIDField(null=True, blank=True, unique=True, editable=False)
+    qr_code_image = models.ImageField(upload_to='qr_codes/', null=True, blank=True)
+    
     # Member status fields
     is_new_friend = models.BooleanField(default=True)
     timer_status = models.IntegerField(
@@ -240,13 +248,56 @@ class CustomUser(AbstractUser):
                 defaults={'role_type': self.role.name if self.role else 'CM'}
             )
 
+            # Remove the NewFriend profile since user is no longer a new friend
+            try:
+                if hasattr(self, 'new_friend_profile'):
+                    self.new_friend_profile.delete()
+            except NewFriend.DoesNotExist:
+                pass
+
     def update_timer_status(self, new_status):
         """Update timer status for New Friends"""
         if 1 <= new_status <= 5:
             self.timer_status = new_status
-            if new_status == 5:
-                self.transition_to_regular()
+            # Note: Transition to regular member happens when 5th timer attends Sunday Service
+            # This is handled in the attendance views, not here
             self.save()
+
+    def generate_qr_code(self):
+        """Generate QR code for the user"""
+        if not self.qr_code_image:
+            # Ensure QR code ID exists
+            if not self.qr_code_id:
+                self.qr_code_id = uuid.uuid4()
+                self.save(update_fields=['qr_code_id'])
+            
+            # Create QR code data
+            qr_data = f"CHURCH_ATTENDANCE:{self.qr_code_id}:{self.email}"
+            
+            # Generate QR code with better camera detection settings
+            qr = qrcode.QRCode(
+                version=None,  # Auto-determine version based on data
+                error_correction=qrcode.constants.ERROR_CORRECT_M,  # Medium error correction for better detection
+                box_size=15,  # Larger box size for better camera detection
+                border=6,  # Larger border for better scanning
+            )
+            qr.add_data(qr_data)
+            qr.make(fit=True)
+            
+            # Create image
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Save to BytesIO
+            buffer = BytesIO()
+            img.save(buffer, format='PNG')
+            buffer.seek(0)
+            
+            # Save to model
+            filename = f'qr_code_{self.qr_code_id}.png'
+            self.qr_code_image.save(filename, ContentFile(buffer.getvalue()), save=False)
+            self.save()
+        
+        return self.qr_code_image
 
     def record_attendance(self):
         """Record user attendance"""
@@ -261,6 +312,24 @@ class CustomUser(AbstractUser):
             ip_address='',  # Will be set by middleware
             user_agent=''   # Will be set by middleware
         )
+
+    def save(self, *args, **kwargs):
+        """Override save to automatically generate QR code for new users"""
+        is_new = self.pk is None
+        
+        # Generate QR code ID if it doesn't exist
+        if not self.qr_code_id:
+            self.qr_code_id = uuid.uuid4()
+        
+        super().save(*args, **kwargs)
+        
+        # Generate QR code for new users
+        if is_new and not self.qr_code_image:
+            try:
+                self.generate_qr_code()
+            except Exception as e:
+                # Log error but don't fail user creation
+                print(f"Error generating QR code for {self.email}: {e}")
 
     def get_activity_summary(self, days=30):
         """Get user activity summary for the last N days"""
@@ -301,6 +370,14 @@ class NewFriend(models.Model):
         null=True, 
         blank=True, 
         related_name='invited_new_friends'
+    )
+    endorsed_to = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='endorsed_new_friends',
+        help_text="The VSL, CSL, CL, or CM who will follow up with this new friend"
     )
     follow_up_status = models.CharField(
         max_length=20,
@@ -558,3 +635,247 @@ class ActivityLog(models.Model):
             'by_action': activities.values('action').annotate(count=Count('id')),
             'recent_activities': activities.select_related('user')[:10]
         }
+
+
+class Attendance(models.Model):
+    """Attendance tracking model"""
+    ATTENDANCE_TYPES = [
+        ('SERVICE', 'Church Service'),
+        ('SUNDAY', 'Sunday Service'),
+        ('MIDWEEK', 'Midweek'),
+        ('CHAMP_HARVEST', 'Champ Harvest'),
+        ('CHAMP_YOUTH', 'Champ Youth'),
+        ('CHAMP_YOUNG_ADULT', 'Champ Young Adult'),
+        ('CARE_GROUP', 'Care Group'),
+        ('MINISTRY', 'Ministry Meeting'),
+        ('EVENT', 'Special Event'),
+        ('OTHER', 'Other'),
+    ]
+    
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='attendances')
+    church = models.ForeignKey(Church, on_delete=models.CASCADE, related_name='attendances')
+    attendance_type = models.CharField(max_length=20, choices=ATTENDANCE_TYPES, default='SERVICE')
+    
+    # Date and time fields - REMOVED auto_now_add=True from time_in
+    date = models.DateField()
+    time_in = models.TimeField()  # CHANGED: Removed auto_now_add=True
+    time_out = models.TimeField(null=True, blank=True)
+    
+    # Additional information
+    notes = models.TextField(blank=True)
+    scanned_by = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='scanned_attendances',
+        help_text="User who scanned the QR code"
+    )
+    
+    # Metadata
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Attendance"
+        verbose_name_plural = "Attendances"
+        ordering = ['-date', '-time_in']
+        unique_together = ['user', 'date', 'attendance_type']
+
+    def __str__(self):
+        return f"{self.user.full_name} - {self.date} ({self.get_attendance_type_display()})"
+
+    def save(self, *args, **kwargs):
+        """Override save to set default time_in if not provided"""
+        if not self.time_in:
+            self.time_in = timezone.now().time()
+        super().save(*args, **kwargs)
+
+    @property
+    def duration(self):
+        """Calculate attendance duration if time_out is provided"""
+        if self.time_out:
+            from datetime import datetime, date
+            time_in_dt = datetime.combine(date.today(), self.time_in)
+            time_out_dt = datetime.combine(date.today(), self.time_out)
+            duration = time_out_dt - time_in_dt
+            return duration
+        return None
+
+    @property
+    def day_of_week(self):
+        """Get day of the week"""
+        return self.date.strftime('%A')
+
+    @classmethod
+    def get_church_attendance_summary(cls, church, start_date=None, end_date=None):
+        """Get attendance summary for a church"""
+        if not start_date:
+            from datetime import timedelta
+            start_date = timezone.now().date() - timedelta(days=30)
+        if not end_date:
+            end_date = timezone.now().date()
+        
+        attendances = cls.objects.filter(
+            church=church,
+            date__range=[start_date, end_date]
+        )
+        
+        return {
+            'total_attendances': attendances.count(),
+            'unique_attendees': attendances.values('user').distinct().count(),
+            'by_type': attendances.values('attendance_type').annotate(count=Count('id')),
+            'by_date': attendances.values('date').annotate(count=Count('id')).order_by('date'),
+            'recent_attendances': attendances.select_related('user')[:10]
+        }
+
+    @classmethod
+    def get_user_attendance_summary(cls, user, days=30):
+        """Get attendance summary for a user"""
+        from datetime import timedelta
+        start_date = timezone.now().date() - timedelta(days=days)
+        
+        attendances = cls.objects.filter(
+            user=user,
+            date__gte=start_date
+        )
+        
+        return {
+            'total_attendances': attendances.count(),
+            'by_type': attendances.values('attendance_type').annotate(count=Count('id')),
+            'recent_attendances': attendances.order_by('-date', '-time_in')[:10],
+            'attendance_rate': round((attendances.count() / days) * 100, 2) if days > 0 else 0
+        }
+
+
+class CareGroupReport(models.Model):
+    """Care Group Weekly Report model"""
+    # Report identification
+    care_group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='reports')
+    church = models.ForeignKey(Church, on_delete=models.CASCADE, related_name='care_group_reports')
+    
+    # Leadership information
+    vine_servant_leader = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='vsl_reports',
+        limit_choices_to={'role__name': 'VSL'}
+    )
+    cluster_servant_leader = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='csl_reports',
+        limit_choices_to={'role__name': 'CSL'}
+    )
+    
+    # Care group details
+    care_leader = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='cl_reports',
+        limit_choices_to={'role__name': 'CL'}
+    )
+    contact_number = models.CharField(max_length=15, blank=True)
+    venue_address = models.TextField(blank=True)
+    
+    # Meeting details
+    topic_discussed = models.CharField(max_length=200, blank=True)
+    scripture_used = models.CharField(max_length=200, blank=True)
+    group_day = models.CharField(
+        max_length=10,
+        choices=[
+            ('MONDAY', 'Monday'),
+            ('TUESDAY', 'Tuesday'),
+            ('WEDNESDAY', 'Wednesday'),
+            ('THURSDAY', 'Thursday'),
+            ('FRIDAY', 'Friday'),
+            ('SATURDAY', 'Saturday'),
+            ('SUNDAY', 'Sunday'),
+        ],
+        blank=True
+    )
+    group_time = models.TimeField(null=True, blank=True)
+    date_of_cg = models.DateField()
+    
+    # Report metadata
+    created_by = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='created_reports')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Care Group Report"
+        verbose_name_plural = "Care Group Reports"
+        ordering = ['-date_of_cg', '-created_at']
+        unique_together = ['care_group', 'date_of_cg']
+
+    def __str__(self):
+        return f"{self.care_group.name} - {self.date_of_cg}"
+
+    @property
+    def total_members_reported(self):
+        """Get total number of members in this report"""
+        return self.member_reports.count()
+
+    @property
+    def total_sunday_attendance(self):
+        """Get total Sunday attendance"""
+        return self.member_reports.filter(sunday_attendance=True).count()
+
+    @property
+    def total_group_attendance(self):
+        """Get total group attendance"""
+        return self.member_reports.filter(group_attendance=True).count()
+
+    @property
+    def total_new_disciples_invited(self):
+        """Get total new disciples invited"""
+        return sum(report.new_disciples_invited for report in self.member_reports.all())
+
+    @property
+    def total_follow_ups(self):
+        """Get total follow-ups"""
+        return sum(report.follow_ups for report in self.member_reports.all())
+
+
+class CareGroupMemberReport(models.Model):
+    """Individual member report within a care group report"""
+    STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('INACTIVE', 'Inactive'),
+        ('ABSENT', 'Absent'),
+        ('EXCUSED', 'Excused'),
+    ]
+    
+    report = models.ForeignKey(CareGroupReport, on_delete=models.CASCADE, related_name='member_reports')
+    member = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='care_group_member_reports')
+    
+    # Member status
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='ACTIVE')
+    
+    # Attendance
+    sunday_attendance = models.BooleanField(default=False)
+    group_attendance = models.BooleanField(default=False)
+    
+    # Outreach
+    new_disciples_invited = models.PositiveIntegerField(default=0)
+    follow_ups = models.PositiveIntegerField(default=0)
+    
+    # Additional notes
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name = "Care Group Member Report"
+        verbose_name_plural = "Care Group Member Reports"
+        ordering = ['member__first_name', 'member__last_name']
+        unique_together = ['report', 'member']
+
+    def __str__(self):
+        return f"{self.member.full_name} - {self.report.care_group.name} ({self.report.date_of_cg})"

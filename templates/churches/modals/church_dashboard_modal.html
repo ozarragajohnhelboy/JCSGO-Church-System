@@ -1,0 +1,328 @@
+<!-- Church Dashboard Modal Content -->
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="mb-0">{{ church.name }} Dashboard</h3>
+          <p class="text-muted mb-0">Church Overview</p>
+        </div>
+        <div class="text-end">
+          <span class="badge bg-primary fs-6">Admin View</span>
+          <span class="badge bg-info ms-2 fs-6">{{ church.name }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="row mb-3">
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card stats-card">
+        <div class="card-body py-3">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title text-white mb-1">Total Members</h6>
+              <h3 class="text-white mb-0">{{ total_members }}</h3>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-people fs-2 text-white-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card stats-card">
+        <div class="card-body py-3">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title text-white mb-1">New Friends</h6>
+              <h3 class="text-white mb-0">{{ new_friends_count }}</h3>
+              <small class="text-white-50">1st-5th Timer</small>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-person-plus fs-2 text-white-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card stats-card">
+        <div class="card-body py-3">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title text-white mb-1">Regular Members</h6>
+              <h3 class="text-white mb-0">{{ regulars_count }}</h3>
+              <small class="text-white-50">VSL, CSL, CL, CM</small>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-person-check fs-2 text-white-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-3">
+      <div class="card stats-card">
+        <div class="card-body py-3">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h6 class="card-title text-white mb-1">Active Groups</h6>
+              <h3 class="text-white mb-0">{{ active_groups_count|default:"0" }}</h3>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-collection fs-2 text-white-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row mb-3">
+    <!-- Monthly Member Growth -->
+    <div class="col-lg-8 mb-3">
+      <div class="card">
+        <div class="card-header py-2">
+          <h6 class="card-title mb-0"><i class="bi bi-graph-up"></i> Monthly Member Growth</h6>
+        </div>
+        <div class="card-body py-2">
+          <canvas id="modalMemberGrowthChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Role Distribution Chart -->
+    <div class="col-lg-4 mb-3">
+      <div class="card">
+        <div class="card-header py-2">
+          <h6 class="card-title mb-0"><i class="bi bi-pie-chart"></i> Role Distribution</h6>
+        </div>
+        <div class="card-body py-2">
+          <canvas id="modalRoleDistributionChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detailed Statistics Row -->
+  <div class="row mb-3">
+    <!-- Role Distribution Details -->
+    <div class="col-lg-6 mb-3">
+      <div class="card">
+        <div class="card-header py-2">
+          <h6 class="card-title mb-0"><i class="bi bi-people-fill"></i> Role Breakdown</h6>
+        </div>
+        <div class="card-body py-2">
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Vine Servant Leader (VSL)</span>
+              <span class="fw-bold">{{ vsl_count }} ({{ vsl_percentage }}%)</span>
+            </div>
+            <div class="progress" style="height: 20px;">
+              <div class="progress-bar bg-primary" style="width: {{ vsl_percentage }}%"></div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Cluster Servant Leader (CSL)</span>
+              <span class="fw-bold">{{ csl_count }} ({{ csl_percentage }}%)</span>
+            </div>
+            <div class="progress" style="height: 20px;">
+              <div class="progress-bar bg-success" style="width: {{ csl_percentage }}%"></div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Care Leader (CL)</span>
+              <span class="fw-bold">{{ cl_count }} ({{ cl_percentage }}%)</span>
+            </div>
+            <div class="progress" style="height: 20px;">
+              <div class="progress-bar bg-warning" style="width: {{ cl_percentage }}%"></div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Care Member (CM)</span>
+              <span class="fw-bold">{{ cm_count }} ({{ cm_percentage }}%)</span>
+            </div>
+            <div class="progress" style="height: 20px;">
+              <div class="progress-bar bg-info" style="width: {{ cm_percentage }}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Group Capacity Overview -->
+    <div class="col-lg-6 mb-3">
+      <div class="card">
+        <div class="card-header py-2">
+          <h6 class="card-title mb-0"><i class="bi bi-collection-fill"></i> Group Capacity Overview</h6>
+        </div>
+        <div class="card-body py-2">
+          <div class="scrollable-container" style="max-height: 200px; overflow-y: auto;">
+          {% for group in group_capacity_data %}
+            <div class="mb-3">
+              <div class="d-flex justify-content-between mb-2">
+                <span>{{ group.name }}</span>
+                <span class="fw-bold">{{ group.current }}/{{ group.max }}</span>
+              </div>
+              <div class="progress" style="height: 15px;">
+                <div class="progress-bar {% if group.percentage >= 80 %}bg-danger{% elif group.percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                     style="width: {{ group.percentage }}%"></div>
+              </div>
+              <small class="text-muted">{{ group.percentage }}% capacity</small>
+            </div>
+          {% empty %}
+            <p class="text-muted text-center mb-0">No groups data available</p>
+          {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Transition Statistics Row -->
+  <div class="row mb-3">
+    <!-- Monthly Transitions Chart -->
+    <div class="col-lg-8 mb-3">
+      <div class="card">
+        <div class="card-header py-2">
+          <h6 class="card-title mb-0"><i class="bi bi-arrow-up-circle"></i> Monthly Transitions (New Friends → Regular Members)</h6>
+        </div>
+        <div class="card-body py-2">
+          <canvas id="modalMonthlyTransitionsChart" width="400" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transition Summary -->
+    <div class="col-lg-4 mb-3">
+      <div class="card">
+        <div class="card-header py-2">
+          <h6 class="card-title mb-0"><i class="bi bi-graph-up-arrow"></i> Transition Summary</h6>
+        </div>
+        <div class="card-body py-2">
+          <div class="text-center mb-3">
+            <div class="h2 text-success">{{ current_month_transitions }}</div>
+            <div class="text-muted">Transitions This Month</div>
+          </div>
+          
+          <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Transition Rate</span>
+              <span class="fw-bold">{{ transition_rate }}%</span>
+            </div>
+            <div class="progress" style="height: 15px;">
+              <div class="progress-bar bg-success" style="width: {{ transition_rate }}%"></div>
+            </div>
+            <small class="text-muted">% of new friends who became regular members</small>
+          </div>
+          
+          <div class="mt-3">
+            <div class="row text-center">
+              <div class="col-6">
+                <div class="h6 text-primary">{{ new_friends_count }}</div>
+                <small class="text-muted">Current New Friends</small>
+              </div>
+              <div class="col-6">
+                <div class="h6 text-success">{{ regulars_count }}</div>
+                <small class="text-muted">Total Regular Members</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header py-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0"><i class="bi bi-activity"></i> Recent Activity</h6>
+            <div class="d-flex align-items-center gap-2">
+              <label for="modal_activity_date" class="form-label mb-0" style="font-size: 0.8rem;">Date:</label>
+              <input type="date" class="form-control form-control-sm" id="modal_activity_date" name="activity_date" value="{{ activity_date_filter|default:'' }}" style="width: auto;">
+              <button type="button" class="btn btn-primary btn-sm" onclick="filterModalActivity()"><i class="bi bi-funnel"></i></button>
+              {% if activity_date_filter %}<button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearModalDateFilter()"><i class="bi bi-x"></i></button>{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="card-body py-2">
+          <div class="scrollable-container" style="max-height: 200px; overflow-y: auto;">
+            {% if recent_activity %}
+              <div class="list-group list-group-flush">
+                {% for activity in recent_activity %}
+                  <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+                    <div>
+                      <strong>{{ activity.user.full_name }}</strong>
+                      <span class="text-muted">{{ activity.get_action_display }}</span>
+                      <small class="text-muted d-block">{{ activity.description }}</small>
+                    </div>
+                    <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="text-muted text-center mb-0">No recent activity</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden data for chart initialization -->
+<div id="modalChartData" style="display: none;">
+  <div data-months='[{% for month in months %}"{{ month }}"{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
+  <div data-new-friends='[{% for count in new_friends_monthly %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
+  <div data-regulars='[{% for count in regulars_monthly %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
+  <div data-transition-months='[{% for month in transition_months %}"{{ month }}"{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
+  <div data-transition-counts='[{% for count in transition_counts %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
+  <div data-vsl='{{ vsl_count }}'></div>
+  <div data-csl='{{ csl_count }}'></div>
+  <div data-cl='{{ cl_count }}'></div>
+  <div data-cm='{{ cm_count }}'></div>
+</div>
+
+<script>
+// Modal Activity Filtering Functions
+function filterModalActivity() {
+    const dateFilter = document.getElementById('modal_activity_date').value;
+    const churchDomain = '{{ church.domain }}';
+    
+    // Reload modal content with date filter
+    fetch(`/ajax/church-dashboard/${churchDomain}/?activity_date=${dateFilter}`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('churchDetailsContent').innerHTML = html;
+            // Trigger chart initialization from parent
+            if (window.initializeModalCharts) {
+                window.initializeModalCharts();
+            }
+        })
+        .catch(error => {
+            console.error('Error filtering modal activity:', error);
+        });
+}
+
+function clearModalDateFilter() {
+    document.getElementById('modal_activity_date').value = '';
+    filterModalActivity();
+}
+</script>

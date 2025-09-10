@@ -129,6 +129,9 @@ python manage.py createsuperuser
 # Setup initial data
 python manage.py setup_initial_data
 
+# Set up admins role per church
+python manage.py update_roles_and_create_admins
+
 # Run development server
 python manage.py runserver
 ```
@@ -163,6 +166,9 @@ HB/
 ```bash
 # Setup initial data (churches, roles, superuser)
 python manage.py setup_initial_data
+
+# Set up admin per church
+python manage.py update_roles_and_create_admins
 
 # Update church locations
 python manage.py update_church_locations

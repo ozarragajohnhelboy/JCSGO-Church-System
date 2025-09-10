@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Member Reports - {{ report.care_group.name }}
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title mb-0"><i class="fas fa-users me-2"></i>Care Group Member Reports</h3>
+            <p class="text-muted mb-0">{{ report.care_group.name }} - {{ report.date_of_cg|date:'M d, Y' }}</p>
+          </div>
+
+          <div class="card-body">
+            <form method="post">
+              {% csrf_token %}
+
+              <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                  <thead class="table-dark">
+                    <tr>
+                      <th>Names</th>
+                      <th>Status</th>
+                      <th colspan="2" class="text-center">ATTENDANCE</th>
+                      <th>Total New Disc. Invite</th>
+                      <th>Total Follow-up</th>
+                      <th>Notes</th>
+                    </tr>
+                    <tr>
+                      <th></th>
+                      <th></th>
+                      <th class="text-center">Sunday</th>
+                       <th class="text-center">Care Group</th>
+                      <th></th>
+                      <th></th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                     {% for member in care_group_members %}
+                       {% for existing_report in existing_reports %}
+                         {% if existing_report.member.id == member.id %}
+                           {% with member_report=existing_report %}
+                             <tr>
+                               <td>
+                                 <strong>{{ member.full_name }}</strong>
+                                 <br />
+                                 <small class="text-muted">{{ member.role.get_name_display }}</small>
+                               </td>
+
+                               <td>
+                                 <select name="status_{{ member.id }}" class="form-select form-select-sm">
+                                   <option value="ACTIVE" {% if member_report.status == 'ACTIVE' %}selected{% endif %}>Active</option>
+                                   <option value="INACTIVE" {% if member_report.status == 'INACTIVE' %}selected{% endif %}>Inactive</option>
+                                   <option value="ABSENT" {% if member_report.status == 'ABSENT' %}selected{% endif %}>Absent</option>
+                                   <option value="EXCUSED" {% if member_report.status == 'EXCUSED' %}selected{% endif %}>Excused</option>
+                                 </select>
+                               </td>
+
+                               <td class="text-center">
+                                 <div class="form-check d-flex justify-content-center">
+                                   <input type="checkbox" name="sunday_attendance_{{ member.id }}" class="form-check-input" {% if member_report.sunday_attendance %}checked{% endif %} />
+                                 </div>
+                               </td>
+
+                               <td class="text-center">
+                                 <div class="form-check d-flex justify-content-center">
+                                   <input type="checkbox" name="group_attendance_{{ member.id }}" class="form-check-input" {% if member_report.group_attendance %}checked{% endif %} />
+                                 </div>
+                               </td>
+
+                               <td>
+                                 <input type="number" name="new_disciples_invited_{{ member.id }}" class="form-control form-control-sm" min="0" value="{{ member_report.new_disciples_invited }}" />
+                               </td>
+
+                               <td>
+                                 <input type="number" name="follow_ups_{{ member.id }}" class="form-control form-control-sm" min="0" value="{{ member_report.follow_ups }}" />
+                               </td>
+
+                               <td>
+                                 <textarea name="notes_{{ member.id }}" class="form-control form-control-sm" rows="2" placeholder="Notes...">{{ member_report.notes }}</textarea>
+                               </td>
+                             </tr>
+                           {% endwith %}
+                         {% endif %}
+                       {% empty %}
+                         <tr>
+                           <td>
+                             <strong>{{ member.full_name }}</strong>
+                             <br />
+                             <small class="text-muted">{{ member.role.get_name_display }}</small>
+                           </td>
+
+                           <td>
+                             <select name="status_{{ member.id }}" class="form-select form-select-sm">
+                               <option value="ACTIVE" selected>Active</option>
+                               <option value="INACTIVE">Inactive</option>
+                               <option value="ABSENT">Absent</option>
+                               <option value="EXCUSED">Excused</option>
+                             </select>
+                           </td>
+
+                           <td class="text-center">
+                             <div class="form-check d-flex justify-content-center">
+                               <input type="checkbox" name="sunday_attendance_{{ member.id }}" class="form-check-input" />
+                             </div>
+                           </td>
+
+                           <td class="text-center">
+                             <div class="form-check d-flex justify-content-center">
+                               <input type="checkbox" name="group_attendance_{{ member.id }}" class="form-check-input" />
+                             </div>
+                           </td>
+
+                           <td>
+                             <input type="number" name="new_disciples_invited_{{ member.id }}" class="form-control form-control-sm" min="0" value="0" />
+                           </td>
+
+                           <td>
+                             <input type="number" name="follow_ups_{{ member.id }}" class="form-control form-control-sm" min="0" value="0" />
+                           </td>
+
+                           <td>
+                             <textarea name="notes_{{ member.id }}" class="form-control form-control-sm" rows="2" placeholder="Notes..."></textarea>
+                           </td>
+                         </tr>
+                       {% endfor %}
+                    {% empty %}
+                      <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                          <i class="fas fa-users fa-2x mb-2"></i>
+                          <br />No members found in this care group.
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Form Actions -->
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-between">
+                    <a href="{% url 'members:care_group_report_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i>Back to Reports</a>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i>Save Member Reports</button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .table th {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .table td {
+      vertical-align: middle;
+    }
+    .form-control-sm,
+    .form-select-sm {
+      font-size: 0.875rem;
+    }
+  </style>
+{% endblock %}

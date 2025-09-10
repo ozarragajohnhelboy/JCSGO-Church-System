@@ -1,0 +1,501 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Care Group Report - {{ report.care_group.name }}
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <h3 class="card-title mb-0"><i class="fas fa-file-alt me-2"></i>Care Group Report Details</h3>
+            <div class="btn-group">
+              <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#printModal"><i class="fas fa-print me-1"></i>Print Report</button>
+              <a href="{% url 'members:care_group_report_edit' report.id %}" class="btn btn-warning"><i class="fas fa-edit me-1"></i>Edit Report</a>
+              <a href="{% url 'members:care_group_report_delete' report.id %}" class="btn btn-danger"><i class="fas fa-trash me-1"></i>Delete Report</a>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <!-- Report Information -->
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <h5 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Report Information</h5>
+                <table class="table table-borderless">
+                  <tr>
+                    <td>
+                      <strong>Care Group:</strong>
+                    </td>
+                    <td>{{ report.care_group.name }}</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <strong>Date:</strong>
+                    </td>
+                    <td>{{ report.date_of_cg|date:'M d, Y' }}</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <strong>Created By:</strong>
+                    </td>
+                    <td>{{ report.created_by.full_name }}</td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <strong>Created On:</strong>
+                    </td>
+                    <td>{{ report.created_at|date:'M d, Y H:i' }}</td>
+                  </tr>
+                </table>
+              </div>
+
+              <div class="col-md-6">
+                <h5 class="text-primary mb-3"><i class="fas fa-crown me-2"></i>Leadership</h5>
+                <table class="table table-borderless">
+                  {% if report.vine_servant_leader %}
+                    <tr>
+                      <td>
+                        <strong>Vine Servant Leader:</strong>
+                      </td>
+                      <td>{{ report.vine_servant_leader.full_name }}</td>
+                    </tr>
+                  {% endif %}
+                  {% if report.cluster_servant_leader %}
+                    <tr>
+                      <td>
+                        <strong>Cluster Servant Leader:</strong>
+                      </td>
+                      <td>{{ report.cluster_servant_leader.full_name }}</td>
+                    </tr>
+                  {% endif %}
+                  {% if report.care_leader %}
+                    <tr>
+                      <td>
+                        <strong>Care Leader:</strong>
+                      </td>
+                      <td>{{ report.care_leader.full_name }}</td>
+                    </tr>
+                  {% endif %}
+                  <tr>
+                    <td>
+                      <strong>Contact Number:</strong>
+                    </td>
+                    <td>{{ report.contact_number|default:'Not specified' }}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <!-- Meeting Details -->
+            <div class="row mb-4">
+              <div class="col-12">
+                <h5 class="text-primary mb-3"><i class="fas fa-calendar-alt me-2"></i>Meeting Details</h5>
+                <div class="row">
+                  <div class="col-md-6">
+                    <table class="table table-borderless">
+                      <tr>
+                        <td>
+                          <strong>Topic Discussed:</strong>
+                        </td>
+                        <td>{{ report.topic_discussed|default:'Not specified' }}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Scripture Used:</strong>
+                        </td>
+                        <td>{{ report.scripture_used|default:'Not specified' }}</td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div class="col-md-6">
+                    <table class="table table-borderless">
+                      <tr>
+                        <td>
+                          <strong>Group Day:</strong>
+                        </td>
+                        <td>{{ report.get_group_day_display|default:'Not specified' }}</td>
+                      </tr>
+                      <tr>
+                        <td>
+                          <strong>Group Time:</strong>
+                        </td>
+                        <td>{{ report.group_time|default:'Not specified' }}</td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+                {% if report.venue_address %}
+                  <div class="row">
+                    <div class="col-12">
+                      <p>
+                        <strong>Venue Address:</strong> {{ report.venue_address }}
+                      </p>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Member Reports -->
+            <div class="row">
+              <div class="col-12">
+                <h5 class="text-primary mb-3"><i class="fas fa-users me-2"></i>Member Reports</h5>
+
+                {% if member_reports %}
+                  <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                      <thead class="table-dark">
+                        <tr>
+                          <th>Member Name</th>
+                          <th>Role</th>
+                          <th>Status</th>
+                          <th class="text-center">Sunday</th>
+                          <th class="text-center">Care Group</th>
+                          <th class="text-center">New Disciples</th>
+                          <th class="text-center">Follow-ups</th>
+                          <th>Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for member_report in member_reports %}
+                          <tr>
+                            <td>
+                              <strong>{{ member_report.member.full_name }}</strong>
+                            </td>
+                            <td>
+                              <span class="badge bg-secondary">{{ member_report.member.role.get_name_display }}</span>
+                            </td>
+                            <td>
+                              {% if member_report.status == 'ACTIVE' %}
+                                <span class="badge bg-success">Active</span>
+                              {% elif member_report.status == 'INACTIVE' %}
+                                <span class="badge bg-warning">Inactive</span>
+                              {% elif member_report.status == 'ABSENT' %}
+                                <span class="badge bg-danger">Absent</span>
+                              {% elif member_report.status == 'EXCUSED' %}
+                                <span class="badge bg-info">Excused</span>
+                              {% endif %}
+                            </td>
+                            <td class="text-center">
+                              {% if member_report.sunday_attendance %}
+                                <span class="badge bg-success">Attended</span>
+                              {% else %}
+                                <span class="badge bg-danger">Absent</span>
+                              {% endif %}
+                            </td>
+                            <td class="text-center">
+                              {% if member_report.group_attendance %}
+                                <span class="badge bg-success">Attended</span>
+                              {% else %}
+                                <span class="badge bg-danger">Absent</span>
+                              {% endif %}
+                            </td>
+                            <td class="text-center">
+                              <span class="badge bg-primary">{{ member_report.new_disciples_invited }}</span>
+                            </td>
+                            <td class="text-center">
+                              <span class="badge bg-info">{{ member_report.follow_ups }}</span>
+                            </td>
+                            <td>
+                              {% if member_report.notes %}
+                                <small>{{ member_report.notes|truncatechars:50 }}</small>
+                              {% else %}
+                                <small class="text-muted">No notes</small>
+                              {% endif %}
+                            </td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Summary Statistics -->
+                  <div class="row mt-4">
+                    <div class="col-12">
+                      <div class="card bg-light">
+                        <div class="card-body">
+                          <h6 class="card-title">Report Summary</h6>
+                          <div class="row text-center">
+                            <div class="col-md-2">
+                              <div class="border-end">
+                                <h4 class="text-primary mb-0">{{ report.total_members_reported }}</h4>
+                                <small class="text-muted">Total Members</small>
+                              </div>
+                            </div>
+                            <div class="col-md-2">
+                              <div class="border-end">
+                                <h4 class="text-success mb-0">{{ report.total_sunday_attendance }}</h4>
+                                <small class="text-muted">Sunday Attendance</small>
+                              </div>
+                            </div>
+                            <div class="col-md-2">
+                              <div class="border-end">
+                                <h4 class="text-info mb-0">{{ report.total_group_attendance }}</h4>
+                                <small class="text-muted">Group Attendance</small>
+                              </div>
+                            </div>
+                            <div class="col-md-3">
+                              <div class="border-end">
+                                <h4 class="text-warning mb-0">{{ report.total_new_disciples_invited }}</h4>
+                                <small class="text-muted">New Disciples Invited</small>
+                              </div>
+                            </div>
+                            <div class="col-md-3">
+                              <h4 class="text-secondary mb-0">{{ report.total_follow_ups }}</h4>
+                              <small class="text-muted">Total Follow-ups</small>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% else %}
+                  <div class="text-center py-4">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No member reports found</h5>
+                    <p class="text-muted">This report doesn't have any member data yet.</p>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Back Button -->
+            <div class="row mt-4">
+              <div class="col-12">
+                <a href="{% url 'members:care_group_report_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i>Back to Reports</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Modal -->
+  <div class="modal fade" id="printModal" tabindex="-1" aria-labelledby="printModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="printModalLabel">Care Group Report - Print Preview</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Print View Content -->
+          <div class="print-container" style="background: white; padding: 20px; font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; line-height: 1.4;">
+            <!-- Header with Logo -->
+            <div style="display: flex; align-items: center; margin-bottom: 30px;">
+              <div style="flex: 0 0 100px;">
+                <img src="{% static 'image/JCSGO_logo.png' %}" alt="JCSGO Logo" style="width: 80px; height: 80px; object-fit: contain;" />
+              </div>
+              <div style="flex: 1; text-align: center;">
+                <h1 style="font-weight: bold; margin: 0; color: #333; font-size: 24px;">JESUS CHRIST SAVES GLOBAL OUTREACH</h1>
+                <h2 style="font-weight: bold; margin: 10px 0 0 0; color: #333; font-size: 20px;">Care Group Weekly Report</h2>
+              </div>
+            </div>
+
+            <!-- Leadership Information - Show based on role -->
+            {% if report.created_by.role.name == 'CSL' %}
+              <div style="margin-bottom: 25px;">
+                {% if report.vine_servant_leader %}
+                  <div style="margin-bottom: 10px;">
+                    <span style="font-weight: bold;">Vine Servant Leader:</span>
+                    <span style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; margin-left: 10px; padding-bottom: 2px;">{{ report.vine_servant_leader.full_name|default:'' }}</span>
+                  </div>
+                {% endif %}
+              </div>
+            {% elif report.created_by.role.name == 'CL' %}
+              <div style="margin-bottom: 25px;">
+                {% if report.vine_servant_leader %}
+                  <div style="margin-bottom: 10px;">
+                    <span style="font-weight: bold;">Vine Servant Leader:</span>
+                    <span style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; margin-left: 10px; padding-bottom: 2px;">{{ report.vine_servant_leader.full_name|default:'' }}</span>
+                  </div>
+                {% endif %}
+                {% if report.cluster_servant_leader %}
+                  <div style="margin-bottom: 10px;">
+                    <span style="font-weight: bold;">Cluster Servant Leader:</span>
+                    <span style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; margin-left: 10px; padding-bottom: 2px;">{{ report.cluster_servant_leader.full_name|default:'' }}</span>
+                  </div>
+                {% endif %}
+              </div>
+            {% elif report.created_by.role.name == 'ADMIN' %}
+              <div style="margin-bottom: 25px;">
+                {% if report.vine_servant_leader %}
+                  <div style="margin-bottom: 10px;">
+                    <span style="font-weight: bold;">Vine Servant Leader:</span>
+                    <span style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; margin-left: 10px; padding-bottom: 2px;">{{ report.vine_servant_leader.full_name|default:'' }}</span>
+                  </div>
+                {% endif %}
+                {% if report.cluster_servant_leader %}
+                  <div style="margin-bottom: 10px;">
+                    <span style="font-weight: bold;">Cluster Servant Leader:</span>
+                    <span style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; margin-left: 10px; padding-bottom: 2px;">{{ report.cluster_servant_leader.full_name|default:'' }}</span>
+                  </div>
+                {% endif %}
+              </div>
+            {% endif %}
+
+            <!-- Care Group Details - First Row -->
+            <table style="width: 100%; margin-bottom: 20px; border-collapse: collapse;">
+              <tr>
+                <td style="width: 30%; padding-right: 15px; vertical-align: top;">
+                  <div style="margin-bottom: 5px;">
+                    <span style="font-weight: bold;">
+                      {% if report.created_by.role.name == 'VSL' %}
+                        Vine Servant Leader
+                      {% elif report.created_by.role.name == 'CSL' %}
+                        Cluster Servant Leader
+                      {% else %}
+                        Care Leader
+                      {% endif %}
+                    </span>
+                  </div>
+                  <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">
+                    {% if report.created_by.role.name == 'VSL' %}
+                      {{ report.vine_servant_leader.full_name|default:'' }}
+                    {% elif report.created_by.role.name == 'CSL' %}
+                      {{ report.cluster_servant_leader.full_name|default:'' }}
+                    {% else %}
+                      {{ report.care_leader.full_name|default:'' }}
+                    {% endif %}
+                  </div>
+                </td>
+                <td style="width: 25%; padding-right: 15px; vertical-align: top;">
+                  <div style="margin-bottom: 5px;">
+                    <span style="font-weight: bold;">Contact No.</span>
+                  </div>
+                  <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.contact_number|default:'' }}</div>
+                </td>
+                <td style="width: 45%; vertical-align: top;">
+                  <div style="margin-bottom: 5px;">
+                    <span style="font-weight: bold;">Venue Address:</span>
+                  </div>
+                  <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.venue_address|default:'' }}</div>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Meeting Details - Second Row -->
+            <table style="width: 100%; margin-bottom: 20px; border-collapse: collapse;">
+              <tr>
+                <td style="width: 25%; padding-right: 15px; vertical-align: top;">
+                  <div style="margin-bottom: 5px;">
+                    <span style="font-weight: bold;">Topic Discussed</span>
+                  </div>
+                  <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.topic_discussed|default:'' }}</div>
+                </td>
+                <td style="width: 25%; padding-right: 15px; vertical-align: top;">
+                  <div style="margin-bottom: 5px;">
+                    <span style="font-weight: bold;">Scripture Used:</span>
+                  </div>
+                  <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.scripture_used|default:'' }}</div>
+                </td>
+                <td style="width: 15%; padding-right: 10px; vertical-align: top;">
+                  <div style="margin-bottom: 5px;">
+                    <span style="font-weight: bold;">Group Day:</span>
+                  </div>
+                  <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.get_group_day_display|default:'' }}</div>
+                </td>
+                <td style="width: 15%; padding-right: 10px; vertical-align: top;">
+                  <div style="margin-bottom: 5px;">
+                    <span style="font-weight: bold;">Group Time:</span>
+                  </div>
+                  <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.group_time|default:'' }}</div>
+                </td>
+                <td style="width: 20%; vertical-align: top;">
+                  <div style="margin-bottom: 5px;">
+                    <span style="font-weight: bold;">Date of CG:</span>
+                  </div>
+                  <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.date_of_cg|date:'M d, Y' }}</div>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Member Reports Table -->
+            <div style="margin-top: 30px;">
+              <h3 style="text-align: center; font-weight: bold; margin-bottom: 20px; font-size: 18px;">CARE LEADER'S GROUP PROFILE</h3>
+
+              <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 12px;">
+                <thead>
+                  <tr>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background-color: #f5f5f5; width: 30%;">Names</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background-color: #f5f5f5; width: 15%;">Status</th>
+                    <th colspan="2" style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background-color: #f5f5f5; width: 20%;">ATTENDANCE</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background-color: #f5f5f5; width: 17.5%;">Total New Disc. Invite</th>
+                    <th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background-color: #f5f5f5; width: 17.5%;">Total Follow-up</th>
+                  </tr>
+                  <tr>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;"></th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;"></th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;">Sunday</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;">Group</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;"></th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for member_report in member_reports %}
+                    <tr>
+                      <td style="border: 1px solid #000; padding: 8px; vertical-align: top;">
+                        <strong>{{ member_report.member.full_name }}</strong>
+                        <br />
+                        <small style="color: #666;">{{ member_report.member.role.get_name_display }}</small>
+                      </td>
+                      <td style="border: 1px solid #000; padding: 8px; text-align: center; vertical-align: top;">{{ member_report.get_status_display }}</td>
+                      <td style="border: 1px solid #000; padding: 8px; text-align: center; vertical-align: top;">
+                        {% if member_report.sunday_attendance %}
+                          ✓
+                        {% else %}
+                          ✗
+                        {% endif %}
+                      </td>
+                      <td style="border: 1px solid #000; padding: 8px; text-align: center; vertical-align: top;">
+                        {% if member_report.group_attendance %}
+                          ✓
+                        {% else %}
+                          ✗
+                        {% endif %}
+                      </td>
+                      <td style="border: 1px solid #000; padding: 8px; text-align: center; vertical-align: top;">{{ member_report.new_disciples_invited }}</td>
+                      <td style="border: 1px solid #000; padding: 8px; text-align: center; vertical-align: top;">{{ member_report.follow_ups }}</td>
+                    </tr>
+                  {% empty %}
+                    {% for i in 12345678 %}
+                      <tr>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                      </tr>
+                    {% endfor %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" onclick="printModal()">Print</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function printModal() {
+      var printContent = document.querySelector('.print-container').innerHTML
+      var originalContent = document.body.innerHTML
+    
+      document.body.innerHTML = printContent
+      window.print()
+      document.body.innerHTML = originalContent
+      location.reload()
+    }
+  </script>
+{% endblock %}

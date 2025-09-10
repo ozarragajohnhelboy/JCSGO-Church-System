@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}QR Code Scanner{% endblock %}
+
+{% block extra_css %}
+  <link href="{% static 'css/pages/qr_scanner.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-qrcode"></i> QR Code Scanner</h2>
+                <div>
+                    <a href="{% url 'members:attendance_list' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-list"></i> View Attendance List
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- QR Scanner -->
+        <div class="col-lg-8">
+            <!-- QR Code Scanner Section -->
+            <div class="scanner-container mb-4">
+                <div class="text-center mb-4">
+                    <h3><i class="fas fa-camera"></i> Automatic QR Scanner</h3>
+                    <p class="mb-4">Point your camera at a member's QR code - attendance will be recorded automatically!</p>
+                </div>
+
+                <!-- Camera Access -->
+                <div class="text-center">
+                    <div class="row justify-content-center mb-3">
+                        <div class="col-md-6">
+                            <label for="event-select" class="form-label text-white">Select Church Event</label>
+                            <select id="event-select" class="form-select">
+                                <option value="" selected disabled>-- Choose an event --</option>
+                                <option value="SUNDAY">Sunday Service</option>
+                                <option value="MIDWEEK">Midweek</option>
+                                <option value="CHAMP_HARVEST">Champ Harvest</option>
+                                <option value="CHAMP_YOUTH">Champ Youth</option>
+                                <option value="CHAMP_YOUNG_ADULT">Champ Young Adult</option>
+                                <option value="OTHER">Other Event</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="start-camera" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-camera"></i> Start Automatic Scanner
+                    </button>
+                    <button id="stop-camera" class="btn btn-outline-warning btn-lg" style="display: none;">
+                        <i class="fas fa-stop"></i> Stop Scanner
+                    </button>
+                    <button id="debug-camera" class="btn btn-outline-info btn-sm ms-2" style="display: none;">
+                        <i class="fas fa-bug"></i> Debug
+                    </button>
+                    <div class="mt-3">
+                        <video id="video" style="display: none; width: 100%; max-width: 500px; border-radius: 10px; border: 3px solid #fff;"></video>
+                        <canvas id="canvas" style="display: none;"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <div id="scanner-status" class="text-white-50">
+                            <i class="fas fa-info-circle"></i> 
+                            Camera will automatically record attendance when QR code is detected
+                        </div>
+                        <div class="text-white-50 mt-1" style="font-size: 0.8em;">
+                            <i class="fas fa-qrcode"></i> 
+                        </div>
+                        <div id="debug-info" class="text-white-50 mt-2" style="font-size: 0.8em; display: none;">
+                            <div>Video: <span id="video-info">Not ready</span></div>
+                            <div>Canvas: <span id="canvas-info">Not ready</span></div>
+                            <div>Scanning: <span id="scan-info">Not active</span></div>
+                            <div>Stream: <span id="stream-info">Not active</span></div>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden form for automatic submission -->
+                <form id="qr-scan-form" method="post" style="display: none;">
+                    {% csrf_token %}
+                    <input type="hidden" name="qr_data" id="hidden-qr-data">
+                    <input type="hidden" name="attendance_type" id="hidden-attendance-type" value="SERVICE">
+                    <input type="hidden" name="notes" value="Auto-recorded via QR scanner">
+                </form>
+            </div>
+
+            <!-- Manual Attendance Section -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit"></i> Manual Attendance Entry
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="manual-attendance-form" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="manual_attendance" value="1">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.date.id_for_label }}" class="form-label">Date</label>
+                                    {{ manual_form.date }}
+                                    {% if manual_form.date.errors %}
+                                        <div class="text-danger">{{ manual_form.date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.time.id_for_label }}" class="form-label">Time</label>
+                                    {{ manual_form.time }}
+                                    {% if manual_form.time.errors %}
+                                        <div class="text-danger">{{ manual_form.time.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.member.id_for_label }}" class="form-label">Member Name</label>
+                                    {{ manual_form.member }}
+                                    {% if manual_form.member.errors %}
+                                        <div class="text-danger">{{ manual_form.member.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">{{ manual_form.member.help_text }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.role_status.id_for_label }}" class="form-label">Role/Status</label>
+                                    {{ manual_form.role_status }}
+                                    {% if manual_form.role_status.errors %}
+                                        <div class="text-danger">{{ manual_form.role_status.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">{{ manual_form.role_status.help_text }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.service_type.id_for_label }}" class="form-label">Service Type</label>
+                                    {{ manual_form.service_type }}
+                                    {% if manual_form.service_type.errors %}
+                                        <div class="text-danger">{{ manual_form.service_type.errors }}</div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">{{ manual_form.service_type.help_text }}</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ manual_form.notes.id_for_label }}" class="form-label">Notes (Optional)</label>
+                                    {{ manual_form.notes }}
+                                    {% if manual_form.notes.errors %}
+                                        <div class="text-danger">{{ manual_form.notes.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-plus"></i> Record Manual Attendance
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Attendances -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock"></i> Today's Attendances
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_attendances %}
+                        {% for attendance in recent_attendances %}
+                            <div class="attendance-card p-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1">{{ attendance.user.full_name }}</h6>
+                                        <small class="text-muted">{{ attendance.get_attendance_type_display }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <small class="text-success">{{ attendance.time_in|time:"g:i A" }}</small>
+                                        {% if attendance.user.role %}
+                                            <br><small class="text-info">{{ attendance.user.role.get_name_display }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No attendances recorded today</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success/Error Messages -->
+<div id="message-container" style="position: fixed; top: 20px; right: 20px; z-index: 1050; max-width: 400px;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="{% static 'js/pages/qr_scanner.js' %}"></script>
+{% endblock %}

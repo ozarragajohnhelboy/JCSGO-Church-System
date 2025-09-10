@@ -1,0 +1,548 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ member.full_name }} - Member Details - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Member Details</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url back_url %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.print()">
+                <i class="bi bi-printer"></i> Print
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Member Profile Card -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if member.profile_picture %}
+                <img src="{{ member.profile_picture.url }}" alt="Profile" class="rounded-circle mb-3" width="120" height="120">
+                {% else %}
+                <div class="bg-secondary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 120px; height: 120px;">
+                    <i class="bi bi-person text-white" style="font-size: 3rem;"></i>
+                </div>
+                {% endif %}
+                
+                <h4 class="card-title">{{ member.full_name }}</h4>
+                <p class="text-muted">{{ member.email }}</p>
+                
+                {% if member.role %}
+                <span class="badge bg-primary fs-6">{{ member.role.get_name_display }}</span>
+                {% endif %}
+                
+                <div class="mt-3">
+                    {% if member.is_new_friend %}
+                    <span class="badge bg-warning text-dark fs-6">
+                        New Friend ({{ member.timer_status }}{% if member.timer_status == 1 %}st{% elif member.timer_status == 2 %}nd{% elif member.timer_status == 3 %}rd{% else %}th{% endif %} timer)
+                    </span>
+                    {% else %}
+                    <span class="badge bg-success fs-6">Regular Member</span>
+                    {% endif %}
+                </div>
+                
+                <hr>
+                
+                <div class="text-start">
+                    <p><strong>Church:</strong> {{ member.church.name }}</p>
+                    <p><strong>Joined:</strong> {{ member.date_joined|date:"M d, Y" }}</p>
+                    <p><strong>Status:</strong> 
+                        {% if member.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-danger">Inactive</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                {% if member.is_new_friend %}
+                {% if user.is_superuser or user.role.name == 'ADMIN' %}
+                <button type="button" class="btn btn-outline-secondary btn-sm w-100 mb-2" 
+                        data-user-id="{{ member.pk }}"
+                        data-timer-status="{{ member.timer_status }}"
+                        data-full-name="{{ member.full_name }}"
+                        onclick="openTimerOrRegularModalFromBtn(this)">
+                    <i class="bi bi-clock-history"></i> Update Timer / Make Regular
+                </button>
+                {% endif %}
+                {% endif %}
+                
+                <button type="button" class="btn btn-success btn-sm w-100 mb-2" 
+                        onclick="recordAttendance({{ member.pk }})">
+                    <i class="bi bi-check-circle"></i> Record Attendance
+                </button>
+                
+                {% if member.is_new_friend and new_friend_profile %}
+                <button type="button" class="btn btn-info btn-sm w-100 mb-2" 
+                        onclick="updateFollowUp({{ new_friend_profile.pk }})">
+                    <i class="bi bi-chat-dots"></i> Update Follow-up
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Member Details -->
+    <div class="col-md-8">
+        <!-- Personal Information -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">Personal Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>First Name:</strong> {{ member.first_name }}</p>
+                        <p><strong>Last Name:</strong> {{ member.last_name }}</p>
+                        <p><strong>Email:</strong> <a href="mailto:{{ member.email }}">{{ member.email }}</a></p>
+                        <p><strong>Phone:</strong> 
+                            {% if member.phone_number %}
+                            <a href="tel:{{ member.phone_number }}">{{ member.phone_number }}</a>
+                            {% else %}
+                            <span class="text-muted">Not provided</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Birth Date:</strong> 
+                            {% if member.birth_date %}
+                            {{ member.birth_date|date:"M d, Y" }}
+                            {% if member.age %}
+                            ({{ member.age }} years old)
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted">Not provided</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Address:</strong> 
+                            {% if member.address %}
+                            {{ member.address }}
+                            {% else %}
+                            <span class="text-muted">Not provided</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Membership Duration:</strong> {{ member.membership_duration }} days</p>
+                        <p><strong>Last Attendance:</strong> 
+                            {% if member.last_attendance %}
+                            {{ member.last_attendance|date:"M d, Y" }}
+                            {% if member.days_since_last_attendance %}
+                            ({{ member.days_since_last_attendance }} days ago)
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted">Never</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- New Friend Profile -->
+        {% if new_friend_profile %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">New Friend Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Registration Date:</strong> {{ new_friend_profile.registration_date|date:"M d, Y" }}</p>
+                        <p><strong>Invited By:</strong> 
+                            {% if new_friend_profile.invited_by %}
+                            {{ new_friend_profile.invited_by.full_name }}
+                            {% else %}
+                            <span class="text-muted">Not specified</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Endorsed To:</strong> 
+                            {% if new_friend_profile.endorsed_to %}
+                            <span class="badge bg-info">{{ new_friend_profile.endorsed_to.full_name }}</span>
+                            <br><small class="text-muted">{{ new_friend_profile.endorsed_to.role.get_name_display }}</small>
+                            {% else %}
+                            <span class="text-muted">Not assigned</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Days Since Registration:</strong> {{ new_friend_profile.days_since_registration }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Follow-up Status:</strong> 
+                            <span class="badge bg-{% if new_friend_profile.follow_up_status == 'PENDING' %}warning{% elif new_friend_profile.follow_up_status == 'ENGAGED' %}success{% elif new_friend_profile.follow_up_status == 'NOT_INTERESTED' %}danger{% else %}info{% endif %}">
+                                {{ new_friend_profile.get_follow_up_status_display }}
+                            </span>
+                        </p>
+                        <p><strong>Last Follow-up:</strong> 
+                            {% if new_friend_profile.last_follow_up %}
+                            {{ new_friend_profile.last_follow_up|date:"M d, Y" }}
+                            {% if new_friend_profile.days_since_last_follow_up %}
+                            ({{ new_friend_profile.days_since_last_follow_up }} days ago)
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted">Never</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if new_friend_profile.notes %}
+                <hr>
+                <p><strong>Notes:</strong></p>
+                <p class="text-muted">{{ new_friend_profile.notes }}</p>
+                {% endif %}
+                
+                {% if new_friend_profile.follow_up_notes %}
+                <hr>
+                <p><strong>Follow-up Notes:</strong></p>
+                <p class="text-muted">{{ new_friend_profile.follow_up_notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Regular Member Profile -->
+        {% if regular_member_profile %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">Regular Member Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Role Type:</strong> 
+                            <span class="badge bg-primary">{{ regular_member_profile.get_role_type_display }}</span>
+                        </p>
+                        <p><strong>Group:</strong> 
+                            {% if regular_member_profile.group %}
+                            <a href="{% url 'members:group_detail' regular_member_profile.group.pk %}">
+                                {{ regular_member_profile.group.name }}
+                            </a>
+                            {% else %}
+                            <span class="text-muted">No group assigned</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Availability:</strong> 
+                            <span class="badge bg-{% if regular_member_profile.availability == 'AVAILABLE' %}success{% elif regular_member_profile.availability == 'LIMITED' %}warning{% else %}danger{% endif %}">
+                                {{ regular_member_profile.get_availability_display }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Baptism Date:</strong> 
+                            {% if regular_member_profile.baptism_date %}
+                            {{ regular_member_profile.baptism_date|date:"M d, Y" }}
+                            {% else %}
+                            <span class="text-muted">Not provided</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Membership Date:</strong> 
+                            {% if regular_member_profile.membership_date %}
+                            {{ regular_member_profile.membership_date|date:"M d, Y" }}
+                            {% if regular_member_profile.membership_years %}
+                            ({{ regular_member_profile.membership_years }} years)
+                            {% endif %}
+                            {% else %}
+                            <span class="text-muted">Not provided</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if regular_member_profile.ministry_involvement %}
+                <hr>
+                <p><strong>Ministry Involvement:</strong></p>
+                <p class="text-muted">{{ regular_member_profile.ministry_involvement }}</p>
+                {% endif %}
+                
+                {% if regular_member_profile.skills %}
+                <hr>
+                <p><strong>Skills:</strong></p>
+                <p class="text-muted">{{ regular_member_profile.skills }}</p>
+                {% endif %}
+                
+                {% if regular_member_profile.spiritual_gifts %}
+                <hr>
+                <p><strong>Spiritual Gifts:</strong></p>
+                <p class="text-muted">{{ regular_member_profile.spiritual_gifts }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Recent Activity</h6>
+            </div>
+            <div class="card-body">
+                {% if recent_activity %}
+                <div class="list-group list-group-flush">
+                    {% for activity in recent_activity %}
+                    <div class="list-group-item d-flex justify-content-between align-items-start">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold">{{ activity.get_action_display }}</div>
+                            <small class="text-muted">{{ activity.description }}</small>
+                        </div>
+                        <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center">No recent activity</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Update Follow-up -->
+<div class="modal fade" id="followUpModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-chat-dots me-2"></i>Update Follow-up Status</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="fuNewFriendId" />
+        <div class="mb-3">
+          <label class="form-label">Follow-up Status</label>
+          <select id="fuStatus" class="form-select">
+            <option value="PENDING">Pending</option>
+            <option value="CONTACTED">Contacted</option>
+            <option value="FOLLOWED_UP">Followed Up</option>
+            <option value="ENGAGED">Engaged</option>
+            <option value="NOT_INTERESTED">Not Interested</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Follow-up Notes</label>
+          <textarea id="fuNotes" class="form-control" rows="3" placeholder="Enter any additional notes about the follow-up..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="submitFollowUp()">
+          <i class="bi bi-check-circle me-1"></i>Update Follow-up
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Update Timer or Make Regular -->
+<div class="modal fade" id="timerRegularModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i><span id="trModalTitle">Update Status</span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="trUserId" />
+        <div class="mb-3">
+          <label class="form-label">Action</label>
+          <select id="trAction" class="form-select">
+            <option value="TIMER">Update timer status</option>
+            <option value="REGULAR">Regular member</option>
+          </select>
+        </div>
+        <div id="trTimerSection" class="mb-3">
+          <label class="form-label">Timer Status</label>
+          <select id="trTimer" class="form-select">
+            <option value="1">1st Timer</option>
+            <option value="2">2nd Timer</option>
+            <option value="3">3rd Timer</option>
+            <option value="4">4th Timer</option>
+            <option value="5">5th Timer</option>
+          </select>
+        </div>
+        <div id="trRegularSection" class="mb-3" style="display:none;">
+          <label class="form-label">Assign Role</label>
+          <select id="trRole" class="form-select">
+            <option value="VSL">VSL</option>
+            <option value="CSL">CSL</option>
+            <option value="CL">CL</option>
+            <option value="CM">CM</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="submitTimerOrRegular()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+function openTimerOrRegularModalFromBtn(button) {
+    const userId = button.dataset.userId;
+    const currentStatus = button.dataset.timerStatus;
+    const fullName = button.dataset.fullName;
+    openTimerOrRegularModal(userId, currentStatus, fullName);
+}
+
+function openTimerOrRegularModal(userId, currentStatus, fullName) {
+    document.getElementById('trUserId').value = userId;
+    document.getElementById('trTimer').value = String(currentStatus || 1);
+    document.getElementById('trAction').value = 'TIMER';
+    document.getElementById('trTimerSection').style.display = '';
+    document.getElementById('trRegularSection').style.display = 'none';
+    document.getElementById('trModalTitle').innerText = `Update ${fullName}`;
+    const modal = new bootstrap.Modal(document.getElementById('timerRegularModal'));
+    modal.show();
+}
+
+// Event listener for action change
+document.addEventListener('DOMContentLoaded', function() {
+    const actionSelect = document.getElementById('trAction');
+    if (actionSelect) {
+        actionSelect.addEventListener('change', function() {
+            const isRegular = this.value === 'REGULAR';
+            document.getElementById('trTimerSection').style.display = isRegular ? 'none' : '';
+            document.getElementById('trRegularSection').style.display = isRegular ? '' : 'none';
+        });
+    }
+});
+
+function submitTimerOrRegular() {
+    const userId = document.getElementById('trUserId').value;
+    const action = document.getElementById('trAction').value;
+
+    if (action === 'REGULAR') {
+        const role = document.getElementById('trRole').value;
+        $.ajax({
+            url: `/members/ajax/update-user-role/${userId}/`,
+            method: 'POST',
+            data: {
+                role: role,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('timerRegularModal'));
+                    modal.hide();
+                    
+                    // Show success message and reload
+                    showSuccess('Member status updated successfully');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showError('Failed to update member status');
+                }
+            },
+            error: function() {
+                showError('Failed to update member status');
+            }
+        });
+    } else {
+        const timerStatus = document.getElementById('trTimer').value;
+        $.ajax({
+            url: `/members/ajax/update-timer-status/${userId}/`,
+            method: 'POST',
+            data: {
+                timer_status: timerStatus,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('timerRegularModal'));
+                    modal.hide();
+                    
+                    // Show success message and reload
+                    showSuccess('Timer status updated successfully');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showError('Failed to update timer status');
+                }
+            },
+            error: function() {
+                showError('Failed to update timer status');
+            }
+        });
+    }
+}
+
+function recordAttendance(userId) {
+    if (confirm('Record attendance for this member?')) {
+        $.ajax({
+            url: `/members/ajax/record-attendance/${userId}/`,
+            method: 'POST',
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    showSuccess('Attendance recorded successfully');
+                    location.reload();
+                } else {
+                    showError('Failed to record attendance');
+                }
+            },
+            error: function() {
+                showError('Failed to record attendance');
+            }
+        });
+    }
+}
+
+function updateFollowUp(newFriendId) {
+    // Set the new friend ID for the modal
+    document.getElementById('fuNewFriendId').value = newFriendId;
+    
+    // Show the follow-up modal
+    const modal = new bootstrap.Modal(document.getElementById('followUpModal'));
+    modal.show();
+}
+
+function submitFollowUp() {
+    const newFriendId = document.getElementById('fuNewFriendId').value;
+    const status = document.getElementById('fuStatus').value;
+    const notes = document.getElementById('fuNotes').value;
+    
+    $.ajax({
+        url: `/members/ajax/update-follow-up/${newFriendId}/`,
+        method: 'POST',
+        data: {
+            status: status,
+            notes: notes || '',
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        success: function(response) {
+            if (response.success) {
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('followUpModal'));
+                modal.hide();
+                
+                // Show success message and reload
+                showSuccess('Follow-up status updated successfully');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showError('Failed to update follow-up status');
+            }
+        },
+        error: function() {
+            showError('Failed to update follow-up status');
+        }
+    });
+}
+</script>
+{% endblock %} 

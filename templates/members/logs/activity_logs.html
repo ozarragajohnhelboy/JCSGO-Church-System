@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Activity Logs - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Activity Logs</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'admin:members_activitylog_changelist' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-gear"></i> Admin View
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="stats-card">
+            <h3>{{ total_activities }}</h3>
+            <p>Total Activities</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <h3>{{ activity_summary.unique_users }}</h3>
+            <p>Unique Users</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <h3>{{ activity_summary.total_activities }}</h3>
+            <p>This Month</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <h3>{{ page_obj.paginator.count }}</h3>
+            <p>Showing</p>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filter Form -->
+<div class="search-form">
+    <form method="get" class="row g-3">
+        <div class="col-md-2">
+            <label for="action" class="form-label">Action</label>
+            <select class="form-select" id="action" name="action">
+                <option value="">All Actions</option>
+                <option value="LOGIN" {% if action_filter == 'LOGIN' %}selected{% endif %}>User Login</option>
+                <option value="LOGOUT" {% if action_filter == 'LOGOUT' %}selected{% endif %}>User Logout</option>
+                <option value="REGISTER" {% if action_filter == 'REGISTER' %}selected{% endif %}>User Registration</option>
+                <option value="PROFILE_UPDATE" {% if action_filter == 'PROFILE_UPDATE' %}selected{% endif %}>Profile Update</option>
+                <option value="ROLE_CHANGE" {% if action_filter == 'ROLE_CHANGE' %}selected{% endif %}>Role Change</option>
+                <option value="STATUS_CHANGE" {% if action_filter == 'STATUS_CHANGE' %}selected{% endif %}>Status Change</option>
+                <option value="GROUP_JOIN" {% if action_filter == 'GROUP_JOIN' %}selected{% endif %}>Group Join</option>
+                <option value="GROUP_LEAVE" {% if action_filter == 'GROUP_LEAVE' %}selected{% endif %}>Group Leave</option>
+                <option value="ATTENDANCE" {% if action_filter == 'ATTENDANCE' %}selected{% endif %}>Attendance Recorded</option>
+                <option value="NEW_FRIEND_ADDED" {% if action_filter == 'NEW_FRIEND_ADDED' %}selected{% endif %}>New Friend Added</option>
+                <option value="REGULAR_MEMBER_TRANSITION" {% if action_filter == 'REGULAR_MEMBER_TRANSITION' %}selected{% endif %}>Transitioned to Regular Member</option>
+                <option value="FOLLOW_UP" {% if action_filter == 'FOLLOW_UP' %}selected{% endif %}>Follow Up Activity</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="user" class="form-label">User</label>
+            <select class="form-select" id="user" name="user">
+                <option value="">All Users</option>
+                {% for user in users %}
+                <option value="{{ user.id }}" {% if user_filter == user.id|stringformat:"s" %}selected{% endif %}>
+                    {{ user.full_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="date_from" class="form-label">From Date</label>
+            <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+        </div>
+        <div class="col-md-2">
+            <label for="date_to" class="form-label">To Date</label>
+            <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">&nbsp;</label>
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search"></i> Filter
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Activity Logs Table -->
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>User</th>
+                <th>Action</th>
+                <th>Description</th>
+                <th>IP Address</th>
+                <th>Timestamp</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activity in page_obj %}
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        {% if activity.user.profile_picture %}
+                        <img src="{{ activity.user.profile_picture.url }}" alt="Profile" class="rounded-circle me-2" width="32" height="32">
+                        {% else %}
+                        <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                            <i class="bi bi-person text-white"></i>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <strong>{{ activity.user.full_name }}</strong>
+                            {% if activity.user.church %}
+                            <br><small class="text-muted">{{ activity.user.church.name }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge bg-{% if activity.action == 'LOGIN' %}success{% elif activity.action == 'LOGOUT' %}secondary{% elif activity.action == 'REGISTER' %}primary{% elif activity.action == 'ATTENDANCE' %}info{% else %}warning{% endif %}">
+                        {{ activity.get_action_display }}
+                    </span>
+                </td>
+                <td>
+                    <div class="text-truncate" style="max-width: 200px;" title="{{ activity.description }}">
+                        {{ activity.description }}
+                    </div>
+                </td>
+                <td>
+                    {% if activity.ip_address %}
+                    <small class="text-muted">{{ activity.ip_address }}</small>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <small>{{ activity.timestamp|date:"M d, Y" }}</small>
+                    <br>
+                    <small class="text-muted">{{ activity.timestamp|time:"g:i A" }}</small>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-info" 
+                            onclick="showActivityDetails({{ activity.pk }})"
+                            data-bs-toggle="tooltip" title="View Details">
+                        <i class="bi bi-info-circle"></i>
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" class="text-center py-4">
+                    <div class="text-muted">
+                        <i class="bi bi-activity display-4"></i>
+                        <p class="mt-2">No activity logs found matching your criteria.</p>
+                        <p>Try adjusting your search or filters.</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination Info -->
+<div class="d-flex justify-content-between align-items-center mt-4 mb-2">
+    <div class="text-muted">
+        Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} activities
+    </div>
+    <div class="text-muted">
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav aria-label="Activity logs pagination" class="mt-2">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1{% if action_filter %}&action={{ action_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                <i class="bi bi-chevron-double-left"></i>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+        </li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ num }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">{{ num }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">
+                <i class="bi bi-chevron-double-right"></i>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<!-- Activity Details Modal -->
+<div class="modal fade" id="activityDetailsModal" tabindex="-1" aria-labelledby="activityDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="activityDetailsModalLabel">Activity Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="activityDetailsContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+function showActivityDetails(activityId) {
+    // You can implement AJAX call to get detailed activity information
+    // For now, we'll show a simple alert
+    alert('Detailed activity information will be displayed here for activity ID: ' + activityId);
+    
+    // Example of how you could implement this:
+    /*
+    $.ajax({
+        url: `/members/ajax/activity-details/${activityId}/`,
+        method: 'GET',
+        success: function(response) {
+            $('#activityDetailsContent').html(response.html);
+            $('#activityDetailsModal').modal('show');
+        },
+        error: function() {
+            showError('Failed to load activity details');
+        }
+    });
+    */
+}
+</script>
+{% endblock %} 

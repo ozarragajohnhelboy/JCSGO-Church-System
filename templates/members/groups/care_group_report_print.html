@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Care Group Report - Print View
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <!-- Print Button -->
+        <div class="d-print-none mb-3">
+          <button onclick="window.print()" class="btn btn-primary"><i class="fas fa-print me-1"></i>Print Report</button>
+          <a href="{% url 'members:care_group_report_detail' report.id %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i>Back to Report</a>
+        </div>
+
+        <!-- Print View -->
+        <div class="print-container" style="background: white; padding: 20px; font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; line-height: 1.4;">
+          <!-- Header with Logo -->
+          <div style="display: flex; align-items: center; margin-bottom: 30px;">
+            <div style="flex: 0 0 100px;">
+              <img src="{% static 'image/JCSGO_logo.png' %}" alt="JCSGO Logo" style="width: 80px; height: 80px; object-fit: contain;" />
+            </div>
+            <div style="flex: 1; text-align: center;">
+              <h1 style="font-weight: bold; margin: 0; color: #333; font-size: 24px;">JESUS CHRIST SAVES GLOBAL OUTREACH</h1>
+              <h2 style="font-weight: bold; margin: 10px 0 0 0; color: #333; font-size: 20px;">Care Group Weekly Report</h2>
+            </div>
+          </div>
+
+          <!-- Leadership Information - Show based on role -->
+          {% if report.created_by.role.name == 'CSL' %}
+            <div style="margin-bottom: 25px;">
+              {% if report.vine_servant_leader %}
+                <div style="margin-bottom: 10px;">
+                  <span style="font-weight: bold;">Vine Servant Leader:</span>
+                  <span style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; margin-left: 10px; padding-bottom: 2px;">{{ report.vine_servant_leader.full_name|default:'' }}</span>
+                </div>
+              {% endif %}
+            </div>
+          {% elif report.created_by.role.name == 'CL' %}
+            <div style="margin-bottom: 25px;">
+              {% if report.vine_servant_leader %}
+                <div style="margin-bottom: 10px;">
+                  <span style="font-weight: bold;">Vine Servant Leader:</span>
+                  <span style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; margin-left: 10px; padding-bottom: 2px;">{{ report.vine_servant_leader.full_name|default:'' }}</span>
+                </div>
+              {% endif %}
+              {% if report.cluster_servant_leader %}
+                <div style="margin-bottom: 10px;">
+                  <span style="font-weight: bold;">Cluster Servant Leader:</span>
+                  <span style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; margin-left: 10px; padding-bottom: 2px;">{{ report.cluster_servant_leader.full_name|default:'' }}</span>
+                </div>
+              {% endif %}
+            </div>
+          {% elif report.created_by.role.name == 'ADMIN' %}
+            <div style="margin-bottom: 25px;">
+              {% if report.vine_servant_leader %}
+                <div style="margin-bottom: 10px;">
+                  <span style="font-weight: bold;">Vine Servant Leader:</span>
+                  <span style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; margin-left: 10px; padding-bottom: 2px;">{{ report.vine_servant_leader.full_name|default:'' }}</span>
+                </div>
+              {% endif %}
+              {% if report.cluster_servant_leader %}
+                <div style="margin-bottom: 10px;">
+                  <span style="font-weight: bold;">Cluster Servant Leader:</span>
+                  <span style="border-bottom: 1px solid #000; display: inline-block; min-width: 250px; margin-left: 10px; padding-bottom: 2px;">{{ report.cluster_servant_leader.full_name|default:'' }}</span>
+                </div>
+              {% endif %}
+            </div>
+          {% endif %}
+
+          <!-- Care Group Details - First Row -->
+          <table style="width: 100%; margin-bottom: 20px; border-collapse: collapse;">
+            <tr>
+              <td style="width: 30%; padding-right: 15px; vertical-align: top;">
+                <div style="margin-bottom: 5px;">
+                  <span style="font-weight: bold;">
+                    {% if report.created_by.role.name == 'VSL' %}
+                      Vine Servant Leader
+                    {% elif report.created_by.role.name == 'CSL' %}
+                      Cluster Servant Leader
+                    {% else %}
+                      Care Leader
+                    {% endif %}
+                  </span>
+                </div>
+                <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">
+                  {% if report.created_by.role.name == 'VSL' %}
+                    {{ report.vine_servant_leader.full_name|default:'' }}
+                  {% elif report.created_by.role.name == 'CSL' %}
+                    {{ report.cluster_servant_leader.full_name|default:'' }}
+                  {% else %}
+                    {{ report.care_leader.full_name|default:'' }}
+                  {% endif %}
+                </div>
+              </td>
+              <td style="width: 25%; padding-right: 15px; vertical-align: top;">
+                <div style="margin-bottom: 5px;">
+                  <span style="font-weight: bold;">Contact No.</span>
+                </div>
+                <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.contact_number|default:'' }}</div>
+              </td>
+              <td style="width: 45%; vertical-align: top;">
+                <div style="margin-bottom: 5px;">
+                  <span style="font-weight: bold;">Venue Address:</span>
+                </div>
+                <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.venue_address|default:'' }}</div>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Meeting Details - Second Row -->
+          <table style="width: 100%; margin-bottom: 20px; border-collapse: collapse;">
+            <tr>
+              <td style="width: 25%; padding-right: 15px; vertical-align: top;">
+                <div style="margin-bottom: 5px;">
+                  <span style="font-weight: bold;">Topic Discussed</span>
+                </div>
+                <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.topic_discussed|default:'' }}</div>
+              </td>
+              <td style="width: 25%; padding-right: 15px; vertical-align: top;">
+                <div style="margin-bottom: 5px;">
+                  <span style="font-weight: bold;">Scripture Used:</span>
+                </div>
+                <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.scripture_used|default:'' }}</div>
+              </td>
+              <td style="width: 15%; padding-right: 10px; vertical-align: top;">
+                <div style="margin-bottom: 5px;">
+                  <span style="font-weight: bold;">Group Day:</span>
+                </div>
+                <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.get_group_day_display|default:'' }}</div>
+              </td>
+              <td style="width: 15%; padding-right: 10px; vertical-align: top;">
+                <div style="margin-bottom: 5px;">
+                  <span style="font-weight: bold;">Group Time:</span>
+                </div>
+                <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.group_time|default:'' }}</div>
+              </td>
+              <td style="width: 20%; vertical-align: top;">
+                <div style="margin-bottom: 5px;">
+                  <span style="font-weight: bold;">Date of CG:</span>
+                </div>
+                <div style="border-bottom: 1px solid #000; min-height: 20px; padding: 3px 0;">{{ report.date_of_cg|date:'M d, Y' }}</div>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Member Reports Table -->
+          <div style="margin-top: 30px;">
+            <h3 style="text-align: center; font-weight: bold; margin-bottom: 20px; font-size: 18px;">CARE LEADER'S GROUP PROFILE</h3>
+
+            <table style="width: 100%; border-collapse: collapse; border: 1px solid #000; font-size: 12px;">
+              <thead>
+                <tr>
+                  <th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background-color: #f5f5f5; width: 30%;">Names</th>
+                  <th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background-color: #f5f5f5; width: 15%;">Status</th>
+                  <th colspan="2" style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background-color: #f5f5f5; width: 20%;">ATTENDANCE</th>
+                  <th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background-color: #f5f5f5; width: 17.5%;">Total New Disc. Invite</th>
+                  <th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold; background-color: #f5f5f5; width: 17.5%;">Total Follow-up</th>
+                </tr>
+                <tr>
+                  <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;"></th>
+                  <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;"></th>
+                  <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;">Sunday</th>
+                  <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;">Group</th>
+                  <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;"></th>
+                  <th style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; background-color: #f5f5f5;"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for member_report in member_reports %}
+                  <tr>
+                    <td style="border: 1px solid #000; padding: 8px; vertical-align: top;">
+                      <strong>{{ member_report.member.full_name }}</strong>
+                      <br />
+                      <small style="color: #666;">{{ member_report.member.role.get_name_display }}</small>
+                    </td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center; vertical-align: top;">{{ member_report.get_status_display }}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center; vertical-align: top;">
+                      {% if member_report.sunday_attendance %}
+                        ✓
+                      {% else %}
+                        ✗
+                      {% endif %}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center; vertical-align: top;">
+                      {% if member_report.group_attendance %}
+                        ✓
+                      {% else %}
+                        ✗
+                      {% endif %}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center; vertical-align: top;">{{ member_report.new_disciples_invited }}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center; vertical-align: top;">{{ member_report.follow_ups }}</td>
+                  </tr>
+                {% empty %}
+                  {% for i in 12345678 %}
+                    <tr>
+                      <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                      <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                      <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                      <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                      <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                      <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                    </tr>
+                  {% endfor %}
+                {% endfor %}
+
+                <!-- Add empty rows if needed to reach 8 rows -->
+                {% if member_reports|length < 8 %}
+                  {% for i in 12345678 %}
+                    {% if forloop.counter > member_reports|length %}
+                      <tr>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                        <td style="border: 1px solid #000; padding: 8px; height: 40px; vertical-align: top;"></td>
+                      </tr>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Summary Information -->
+          <div class="row mt-4">
+            <div class="col-12">
+              <p style="margin: 0; font-size: 12px; color: #666;">
+                <strong>Report Summary:</strong>
+                Total Members: {{ report.total_members_reported }} | Sunday Attendance: {{ report.total_sunday_attendance }} | Group Attendance: {{ report.total_group_attendance }} | New Disciples Invited: {{ report.total_new_disciples_invited }} | Follow-ups: {{ report.total_follow_ups }}
+              </p>
+              <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Generated on: {{ report.created_at|date:'M d, Y H:i' }} by {{ report.created_by.full_name }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    @media print {
+      .d-print-none {
+        display: none !important;
+      }
+    
+      .print-container {
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+      }
+    
+      body {
+        background: white !important;
+      }
+    
+      .container-fluid {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+    }
+    
+    .print-container {
+      max-width: 8.5in;
+      margin: 0 auto;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    table {
+      font-size: 12px;
+    }
+    
+    th,
+    td {
+      font-size: 12px;
+    }
+  </style>
+{% endblock %}
