@@ -54,6 +54,7 @@ urlpatterns = [
     
     # Export functionality
     path('export/', views.export_members, name='export_members'),
+    path('export-role-data/', views.export_role_data, name='export_role_data'),
     
     # Church Statistics
     path('statistics/', views.church_statistics, name='church_statistics'),

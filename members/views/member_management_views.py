@@ -72,15 +72,25 @@ def member_detail(request, pk):
         messages.error(request, 'You do not have permission to view this member.')
         return redirect('members:member_list')
     
-    back_url = 'members:member_list'
+    from_page = request.GET.get('from', '')
     
-    if user.role.name in ['VSL', 'CSL', 'CL'] and member.is_new_friend:
-        try:
-            new_friend_profile = member.new_friend_profile
-            if new_friend_profile.endorsed_to == user:
-                back_url = 'members:role_new_friends_list'
-        except NewFriend.DoesNotExist:
-            pass
+    if from_page == 'new_friends':
+        back_url = 'members:new_friends_list'
+    elif from_page == 'regular_members':
+        back_url = 'members:regular_members_list'
+    elif from_page == 'role_new_friends':
+        back_url = 'members:role_new_friends_list'
+    else:
+        # Default behavior - determine by member type and user role
+        back_url = 'members:member_list'
+        
+        if user.role.name in ['VSL', 'CSL', 'CL'] and member.is_new_friend:
+            try:
+                new_friend_profile = member.new_friend_profile
+                if new_friend_profile.endorsed_to == user:
+                    back_url = 'members:role_new_friends_list'
+            except NewFriend.DoesNotExist:
+                pass
     
     new_friend_profile = None
     regular_member_profile = None

@@ -16,9 +16,14 @@
                 <i class="bi bi-upload"></i> Import
             </a>
             {% endif %}
-            <a href="{% url 'members:export_members' %}?format=csv&status=new_friends" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-download"></i> Export CSV
-            </a>
+            <div class="btn-group">
+                <a href="{% url 'members:export_members' %}?format=csv&status=new_friends" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-download"></i> Export CSV
+                </a>
+                <a href="{% url 'members:export_members' %}?format=xlsx&status=new_friends" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-file-earmark-excel"></i> Export Excel
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -162,7 +167,7 @@
                 </td>
                 <td>
                     <div class="btn-group" role="group">
-                        <a href="{% url 'members:member_detail' new_friend.user.pk %}" class="btn btn-sm btn-outline-primary btn-action" 
+                        <a href="{% url 'members:member_detail' new_friend.user.pk %}?from=new_friends" class="btn btn-sm btn-outline-primary btn-action" 
                            data-bs-toggle="tooltip" title="View Details">
                             <i class="bi bi-eye"></i>
                         </a>

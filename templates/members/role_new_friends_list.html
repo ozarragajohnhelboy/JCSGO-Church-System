@@ -143,7 +143,7 @@
                 </td>
                 <td>
                     <div class="btn-group" role="group">
-                        <a href="{% url 'members:member_detail' new_friend.user.pk %}" class="btn btn-sm btn-outline-primary btn-action" 
+                        <a href="{% url 'members:member_detail' new_friend.user.pk %}?from=role_new_friends" class="btn btn-sm btn-outline-primary btn-action" 
                            data-bs-toggle="tooltip" title="View Details">
                             <i class="bi bi-eye"></i>
                         </a>

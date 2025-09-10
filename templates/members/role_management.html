@@ -658,9 +658,14 @@
       const search = document.getElementById('search').value;
       const roleFilter = document.getElementById('role_filter').value;
       
-      let url = '/members/members/export/?format=csv';
-      if (search) url += `&search=${encodeURIComponent(search)}`;
-      if (roleFilter) url += `&role=${encodeURIComponent(roleFilter)}`;
+      let url = '/members/export-role-data/';
+      const params = [];
+      if (search) params.push(`search=${encodeURIComponent(search)}`);
+      if (roleFilter) params.push(`role=${encodeURIComponent(roleFilter)}`);
+      
+      if (params.length > 0) {
+        url += '?' + params.join('&');
+      }
       
       window.location.href = url;
     }

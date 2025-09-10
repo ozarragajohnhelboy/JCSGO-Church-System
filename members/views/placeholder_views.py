@@ -6,11 +6,11 @@ while we organize the views systematically
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
@@ -122,7 +122,207 @@ def ajax_remove_from_group(request, user_id, group_id):
 @login_required
 def export_members(request):
     """Export members data"""
-    return render(request, 'members/export_members.html', {})
+    user = request.user
+    church = user.church
+    
+    if not user.is_staff and not user.role.name in ['SUPER_ADMIN', 'ADMIN']:
+        messages.error(request, 'You do not have permission to export data.')
+        return redirect('members:member_list')
+    
+    export_format = request.GET.get('format', 'csv')
+    status = request.GET.get('status', '')
+    search = request.GET.get('search', '')
+    role_filter = request.GET.get('role', '')
+    
+    # Start with base queryset
+    members = CustomUser.objects.filter(church=church, is_active=True)
+    
+    # Apply status filter
+    if status == 'new_friends':
+        members = members.filter(is_new_friend=True)
+        filename_prefix = "new_friends"
+    elif status == 'regular_members':
+        members = members.filter(is_new_friend=False)
+        filename_prefix = "regular_members"
+    else:
+        filename_prefix = "members"
+    
+    # Apply search filter (same logic as role_management view)
+    if search:
+        members = members.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search)
+        )
+    
+    # Apply role filter
+    if role_filter:
+        members = members.filter(role__name=role_filter)
+    
+    # Order results
+    members = members.order_by('role__name', 'first_name', 'last_name')
+    
+    from django.http import HttpResponse
+    import csv
+    
+    # Prepare data for export
+    data = []
+    for member in members:
+        data.append({
+            'First Name': member.first_name,
+            'Last Name': member.last_name,
+            'Email': member.email,
+            'Phone': member.phone_number or '',
+            'Role': member.role.get_name_display() if member.role else '',
+            'Member Type': 'New Friend' if member.is_new_friend else 'Regular Member',
+            'Date Joined': member.date_joined.strftime('%Y-%m-%d'),
+            'Last Attendance': member.last_attendance.strftime('%Y-%m-%d %H:%M') if member.last_attendance else ''
+        })
+    
+    if export_format == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="{filename_prefix}_{church.domain}_{timezone.now().strftime("%Y%m%d")}.csv"'
+        
+        writer = csv.writer(response)
+        headers = ['First Name', 'Last Name', 'Email', 'Phone', 'Role', 'Member Type', 'Date Joined', 'Last Attendance']
+        writer.writerow(headers)
+        
+        for row_data in data:
+            row = [row_data[header] for header in headers]
+            writer.writerow(row)
+        
+        return response
+    
+    elif export_format == 'xlsx':
+        import pandas as pd
+        from io import BytesIO
+        
+        # Create DataFrame from data
+        df = pd.DataFrame(data)
+        
+        # Create in-memory output file for Excel
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Members')
+            
+            # Get the workbook and worksheet to apply formatting
+            workbook = writer.book
+            worksheet = writer.sheets['Members']
+            
+            # Auto-adjust column widths
+            for column in worksheet.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                worksheet.column_dimensions[column_letter].width = adjusted_width
+        
+        # Set response content
+        output.seek(0)
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename_prefix}_{church.domain}_{timezone.now().strftime("%Y%m%d")}.xlsx"'
+        return response
+    
+    else:
+        # Default to CSV if other format requested
+        return redirect(f'{request.path}?format=csv&status={status}&search={search}&role={role_filter}')
+    
+    return response
+
+@login_required
+def export_role_data(request):
+    """Export role management specific data"""
+    user = request.user
+    church = user.church
+    
+    if not user.is_staff and not user.role.name in ['SUPER_ADMIN', 'ADMIN']:
+        messages.error(request, 'You do not have permission to export data.')
+        return redirect('members:role_management')
+    
+    search = request.GET.get('search', '')
+    role_filter = request.GET.get('role', '')
+    
+    # Get role statistics
+    roles = Role.objects.all()
+    role_stats = {}
+    
+    for role in roles:
+        count = CustomUser.objects.filter(church=church, role=role, is_active=True).count()
+        total_users = CustomUser.objects.filter(church=church, is_active=True).count()
+        percentage = round((count / total_users * 100) if total_users > 0 else 0, 1)
+        
+        role_stats[role.name] = {
+            'name': role.get_name_display(),
+            'count': count,
+            'percentage': percentage
+        }
+    
+    # Get users with role information
+    users = CustomUser.objects.filter(church=church, is_active=True).select_related('role')
+    
+    # Apply filters (same as role_management view)
+    if search:
+        users = users.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search)
+        )
+    
+    if role_filter:
+        users = users.filter(role__name=role_filter)
+    
+    users = users.order_by('role__name', 'first_name', 'last_name')
+    
+    # Create CSV response
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="role_management_{church.domain}_{timezone.now().strftime("%Y%m%d")}.csv"'
+    
+    writer = csv.writer(response)
+    
+    # Write role statistics first
+    writer.writerow(['ROLE STATISTICS'])
+    writer.writerow(['Role', 'Count', 'Percentage'])
+    for role_name, stats in role_stats.items():
+        writer.writerow([stats['name'], stats['count'], f"{stats['percentage']}%"])
+    
+    writer.writerow([])  # Empty row separator
+    
+    # Write user role details
+    writer.writerow(['USER ROLE DETAILS'])
+    headers = ['Full Name', 'Email', 'Phone', 'Current Role', 'Member Status', 'Date Joined', 'Last Activity', 'Timer Status']
+    writer.writerow(headers)
+    
+    for user_item in users:
+        # Get last attendance
+        last_attendance = Attendance.objects.filter(user=user_item).order_by('-time_in').first()
+        last_activity = last_attendance.time_in.strftime('%Y-%m-%d %H:%M') if last_attendance else 'Never'
+        
+        # Timer status for new friends
+        timer_status = ''
+        if user_item.is_new_friend and hasattr(user_item, 'timer_status'):
+            timer_status = f"{user_item.timer_status}{'st' if user_item.timer_status == 1 else 'nd' if user_item.timer_status == 2 else 'rd' if user_item.timer_status == 3 else 'th'} Timer"
+        
+        row = [
+            user_item.get_full_name(),
+            user_item.email,
+            user_item.phone_number or '',
+            user_item.role.get_name_display() if user_item.role else 'No Role',
+            'New Friend' if user_item.is_new_friend else 'Regular Member',
+            user_item.date_joined.strftime('%Y-%m-%d'),
+            last_activity,
+            timer_status
+        ]
+        writer.writerow(row)
+    
+    return response
 
 @login_required
 def role_management(request):
@@ -957,13 +1157,204 @@ def attendance_export(request):
 
 @login_required
 def profile_export(request):
-    """Export profiles"""
-    return render(request, 'members/profile_export.html', {})
+    """Export user profiles with QR codes"""
+    user = request.user
+    church = user.church
+    
+    if request.method == 'POST':
+        form = ProfileExportForm(request.POST)
+        if form.is_valid():
+            export_format = form.cleaned_data['format']
+            include_qr_codes = form.cleaned_data.get('include_qr_codes', False)
+            include_profile_pictures = form.cleaned_data.get('include_profile_pictures', False)
+            member_type = form.cleaned_data.get('member_type', '')
+            
+            users = CustomUser.objects.filter(church=church, is_active=True)
+            
+            if member_type == 'new_friends':
+                users = users.filter(is_new_friend=True)
+            elif member_type == 'regular_members':
+                users = users.filter(is_new_friend=False)
+
+            if export_format == 'csv':
+                from django.http import HttpResponse
+                import csv
+                
+                response = HttpResponse(content_type='text/csv')
+                response['Content-Disposition'] = f'attachment; filename="profiles_{church.domain}_{timezone.now().strftime("%Y%m%d")}.csv"'
+                
+                writer = csv.writer(response)
+                headers = ['Name', 'Email', 'Phone', 'Address', 'Birth Date', 'Role', 'Member Type', 'Date Joined']
+                if include_qr_codes:
+                    headers.append('QR Code ID')
+                writer.writerow(headers)
+                
+                for user_obj in users:
+                    row = [
+                        user_obj.full_name,
+                        user_obj.email,
+                        user_obj.phone_number,
+                        user_obj.address,
+                        user_obj.birth_date.strftime('%Y-%m-%d') if user_obj.birth_date else '',
+                        user_obj.role.get_name_display() if user_obj.role else '',
+                        'New Friend' if user_obj.is_new_friend else 'Regular Member',
+                        user_obj.date_joined.strftime('%Y-%m-%d')
+                    ]
+                    if include_qr_codes:
+                        row.append(str(user_obj.qr_code_id))
+                    writer.writerow(row)
+                
+                return response
+            
+            elif export_format == 'excel':
+                import pandas as pd
+                from io import BytesIO
+                
+                # Prepare data for export
+                data = []
+                for user_obj in users:
+                    row_data = {
+                        'Name': user_obj.full_name,
+                        'Email': user_obj.email,
+                        'Phone': user_obj.phone_number,
+                        'Address': user_obj.address,
+                        'Birth Date': user_obj.birth_date.strftime('%Y-%m-%d') if user_obj.birth_date else '',
+                        'Role': user_obj.role.get_name_display() if user_obj.role else '',
+                        'Member Type': 'New Friend' if user_obj.is_new_friend else 'Regular Member',
+                        'Date Joined': user_obj.date_joined.strftime('%Y-%m-%d')
+                    }
+                    if include_qr_codes:
+                        row_data['QR Code ID'] = str(user_obj.qr_code_id)
+                    data.append(row_data)
+                
+                # Create DataFrame from data
+                df = pd.DataFrame(data)
+                
+                # Create in-memory output file for Excel
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    df.to_excel(writer, index=False, sheet_name='Profiles')
+                    
+                    # Get the workbook and worksheet to apply formatting
+                    workbook = writer.book
+                    worksheet = writer.sheets['Profiles']
+                    
+                    # Auto-adjust column widths
+                    for column in worksheet.columns:
+                        max_length = 0
+                        column_letter = column[0].column_letter
+                        for cell in column:
+                            try:
+                                if len(str(cell.value)) > max_length:
+                                    max_length = len(str(cell.value))
+                            except:
+                                pass
+                        adjusted_width = min(max_length + 2, 50)
+                        worksheet.column_dimensions[column_letter].width = adjusted_width
+                
+                # Set response content
+                output.seek(0)
+                response = HttpResponse(
+                    output.read(),
+                    content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                )
+                response['Content-Disposition'] = f'attachment; filename="profiles_{church.domain}_{timezone.now().strftime("%Y%m%d")}.xlsx"'
+                return response
+            
+            elif export_format == 'pdf':
+                messages.info(request, 'PDF export feature will be implemented soon.')
+                return redirect('members:profile_export')
+    else:
+        form = ProfileExportForm()
+    
+    context = {
+        'form': form,
+    }
+    
+    return render(request, 'members/profile_export.html', context)
 
 @login_required
 def profile_import(request):
-    """Import profiles"""
-    return render(request, 'members/profile_import.html', {})
+    """Import user profiles"""
+    user = request.user
+    church = user.church
+    
+    if request.method == 'POST':
+        form = ProfileImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            file = form.cleaned_data['file']
+            update_existing = form.cleaned_data.get('update_existing', False)
+            generate_qr_codes = form.cleaned_data.get('generate_qr_codes', True)
+            
+            try:
+                if file.name.endswith('.csv'):
+                    import csv
+                    import io
+                    from datetime import datetime
+                    
+                    decoded_file = file.read().decode('utf-8')
+                    csv_data = csv.DictReader(io.StringIO(decoded_file))
+                    
+                    imported_count = 0
+                    updated_count = 0
+                    
+                    for row in csv_data:
+                        email = row.get('email', '').strip()
+                        if not email:
+                            continue
+                        try:
+                            existing_user = CustomUser.objects.get(email=email, church=church)
+                            
+                            if update_existing:
+                                existing_user.first_name = row.get('first_name', existing_user.first_name)
+                                existing_user.last_name = row.get('last_name', existing_user.last_name)
+                                existing_user.phone_number = row.get('phone_number', existing_user.phone_number)
+                                existing_user.address = row.get('address', existing_user.address)
+                                if row.get('birth_date'):
+                                    try:
+                                        existing_user.birth_date = datetime.strptime(row['birth_date'], '%Y-%m-%d').date()
+                                    except ValueError:
+                                        pass
+                                existing_user.save()
+                                updated_count += 1
+                        except CustomUser.DoesNotExist:
+                            new_user = CustomUser.objects.create(
+                                email=email,
+                                first_name=row.get('first_name', ''),
+                                last_name=row.get('last_name', ''),
+                                phone_number=row.get('phone_number', ''),
+                                address=row.get('address', ''),
+                                church=church,
+                                is_new_friend=True,
+                                is_active=True
+                            )
+                            
+                            if row.get('birth_date'):
+                                try:
+                                    new_user.birth_date = datetime.strptime(row['birth_date'], '%Y-%m-%d').date()
+                                    new_user.save()
+                                except ValueError:
+                                    pass
+
+                            if generate_qr_codes:
+                                new_user.generate_qr_code()
+                            
+                            imported_count += 1
+                    
+                    messages.success(request, f'Import completed: {imported_count} new users imported, {updated_count} users updated.')
+                else:
+                    messages.info(request, 'Excel import feature will be implemented soon.')
+                
+            except Exception as e:
+                messages.error(request, f'Error importing file: {str(e)}')
+    else:
+        form = ProfileImportForm()
+    
+    context = {
+        'form': form,
+    }
+    
+    return render(request, 'members/profile_import.html', context)
 
 @login_required
 def care_group_report_list(request):
