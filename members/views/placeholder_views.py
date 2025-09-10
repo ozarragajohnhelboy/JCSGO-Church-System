@@ -1553,39 +1553,7 @@ def care_group_report_list(request):
 @login_required
 def care_group_report_create(request):
     """Create care group report"""
-    user = request.user
-    church = user.church
-
-    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
-        messages.error(request, 'You do not have permission to create care group reports.')
-        return redirect('churches:dashboard')
-
-    if request.method == 'POST':
-        form = CareGroupReportForm(request.POST, user=user)
-        if form.is_valid():
-            care_group_report = form.save(commit=False)
-            care_group_report.church = church
-            care_group_report.created_by = user
-            care_group_report.save()
-
-            ActivityLog.objects.create(
-                user=user,
-                church=user.church,
-                action='REPORT_CREATED',
-                description=f'Created care group report: {care_group_report.care_group.name} - {care_group_report.date_of_cg}'
-            )
-            
-            messages.success(request, f'Care group report created successfully!')
-            return redirect('members:care_group_report_detail', report_id=care_group_report.pk)
-    else:
-        form = CareGroupReportForm(user=user)
-    
-    context = {
-        'form': form,
-        'user_role': user.role.name,
-    }
-    
-    return render(request, 'members/groups/care_group_report_create.html', context)
+    return render(request, 'members/groups/care_group_report_create.html', {})
 
 @login_required
 def care_group_member_report_create(request, report_id):
