@@ -87,7 +87,36 @@ def church_statistics(request):
 @login_required
 def ajax_get_available_members(request, group_id):
     """AJAX endpoint to get available members for a group"""
-    return JsonResponse({'members': []})
+    try:
+        group = get_object_or_404(Group, pk=group_id)
+        
+        # Check if user has permission to add members to this group
+        if group.leader != request.user and request.user.role.name != 'ADMIN':
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        # Get available members (regular members not in any group)
+        available_members = CustomUser.objects.filter(
+            church=group.church,
+            is_active=True,
+            is_new_friend=False,
+            role__name__in=['VSL', 'CSL', 'CL', 'CM']
+        ).exclude(
+            regular_member_profile__group__isnull=False
+        ).order_by('first_name', 'last_name')
+        
+        members_data = []
+        for member in available_members:
+            members_data.append({
+                'id': member.id,
+                'name': member.full_name,
+                'email': member.email,
+                'role': member.role.name if member.role else 'No Role'
+            })
+        
+        return JsonResponse({'members': members_data})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
 @login_required
@@ -796,8 +825,9 @@ def care_group_remove_member(request, group_id, member_id):
         return redirect('members:care_group_detail', group_id=group_id)
     
     try:
-        regular_member = get_object_or_404(RegularMember, pk=member_id, group=care_group)
-        member_user = regular_member.user
+        # member_id is actually the user's ID, not the RegularMember's ID
+        member_user = get_object_or_404(CustomUser, pk=member_id, church=care_group.church)
+        regular_member = get_object_or_404(RegularMember, user=member_user, group=care_group)
 
         regular_member.group = None
         regular_member.save()
@@ -1523,7 +1553,39 @@ def care_group_report_list(request):
 @login_required
 def care_group_report_create(request):
     """Create care group report"""
-    return render(request, 'members/groups/care_group_report_create.html', {})
+    user = request.user
+    church = user.church
+
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to create care group reports.')
+        return redirect('churches:dashboard')
+
+    if request.method == 'POST':
+        form = CareGroupReportForm(request.POST, user=user)
+        if form.is_valid():
+            care_group_report = form.save(commit=False)
+            care_group_report.church = church
+            care_group_report.created_by = user
+            care_group_report.save()
+
+            ActivityLog.objects.create(
+                user=user,
+                church=user.church,
+                action='REPORT_CREATED',
+                description=f'Created care group report: {care_group_report.care_group.name} - {care_group_report.date_of_cg}'
+            )
+            
+            messages.success(request, f'Care group report created successfully!')
+            return redirect('members:care_group_report_detail', report_id=care_group_report.pk)
+    else:
+        form = CareGroupReportForm(user=user)
+    
+    context = {
+        'form': form,
+        'user_role': user.role.name,
+    }
+    
+    return render(request, 'members/groups/care_group_report_create.html', context)
 
 @login_required
 def care_group_member_report_create(request, report_id):

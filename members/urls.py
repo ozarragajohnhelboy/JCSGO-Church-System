@@ -24,7 +24,7 @@ urlpatterns = [
     
     # Groups (Admin access)
     path('groups/', views.group_list, name='group_list'),
-    path('groups/<int:group_id>/', views.group_detail, name='group_detail'),
+    path('groups/<int:pk>/', views.group_detail, name='group_detail'),
     
     # Care Groups (Leadership access - VSL, CSL, CL)
     path('care-groups/', views.care_group_list, name='care_group_list'),

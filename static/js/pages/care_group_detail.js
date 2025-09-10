@@ -41,11 +41,43 @@ function showAlert(type, title, message) {
 }
 
 function showAddMemberModal() {
-    if (window.availableMembers) {
-        new bootstrap.Modal(document.getElementById('addMemberModal')).show();
-    } else {
-        showAlert('info', 'No Available Members', 'All members are already in care groups. There are no available members to add at this time.');
-    }
+    // First, fetch available members via AJAX
+    fetch(`/members/ajax/get-available-members/${window.groupId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showAlert('danger', 'Error', data.error);
+                return;
+            }
+
+            const memberSelect = document.getElementById('member_select');
+            if (!memberSelect) {
+                showAlert('danger', 'Error', 'Member select element not found');
+                return;
+            }
+
+            // Clear existing options except the first one
+            memberSelect.innerHTML = '<option value="">Choose a member...</option>';
+
+            if (data.members && data.members.length > 0) {
+                // Add available members to the select
+                data.members.forEach(member => {
+                    const option = document.createElement('option');
+                    option.value = member.id;
+                    option.textContent = `${member.name} (${member.role})`;
+                    memberSelect.appendChild(option);
+                });
+
+                // Show the modal
+                new bootstrap.Modal(document.getElementById('addMemberModal')).show();
+            } else {
+                showAlert('info', 'No Available Members', 'All members are already in care groups. There are no available members to add at this time.');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching available members:', error);
+            showAlert('danger', 'Error', 'Failed to load available members. Please try again.');
+        });
 }
 
 function removeMember(memberId, memberName) {

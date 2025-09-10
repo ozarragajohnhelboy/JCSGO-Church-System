@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Create Care Group Report - {{ block.super }}
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+      <i class="bi bi-plus-circle me-2"></i>
+      Create Care Group Report
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+      <div class="btn-group me-2">
+        <a href="{% url 'members:care_group_report_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left"></i> Back to Reports</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-file-text me-2"></i>
+            Care Group Report Information
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="post">
+            {% csrf_token %}
+
+            <div class="row">
+              <!-- Care Group Selection -->
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.care_group.id_for_label }}" class="form-label">
+                  <i class="bi bi-people me-1"></i>
+                  Care Group *
+                </label>
+                {{ form.care_group }}
+                {% if form.care_group.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.care_group.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Date of Care Group -->
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.date_of_cg.id_for_label }}" class="form-label">
+                  <i class="bi bi-calendar me-1"></i>
+                  Date of CG *
+                </label>
+                {{ form.date_of_cg }}
+                {% if form.date_of_cg.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.date_of_cg.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <hr class="my-4" />
+
+            <!-- Leadership Information -->
+            <h5 class="mb-3"><i class="bi bi-crown me-2"></i>Leadership Information</h5>
+
+            <div class="row">
+              {% if form.vine_servant_leader %}
+                <div class="col-md-6 mb-3">
+                  <label for="{{ form.vine_servant_leader.id_for_label }}" class="form-label">
+                    <i class="bi bi-person-badge me-1"></i>
+                    {{ form.vine_servant_leader.label }}
+                  </label>
+                  {{ form.vine_servant_leader }}
+                  {% if form.vine_servant_leader.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.vine_servant_leader.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              {% if form.cluster_servant_leader %}
+                <div class="col-md-6 mb-3">
+                  <label for="{{ form.cluster_servant_leader.id_for_label }}" class="form-label">
+                    <i class="bi bi-person-badge me-1"></i>
+                    {{ form.cluster_servant_leader.label }}
+                  </label>
+                  {{ form.cluster_servant_leader }}
+                  {% if form.cluster_servant_leader.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.cluster_servant_leader.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              {% if form.care_leader %}
+                <div class="col-md-6 mb-3">
+                  <label for="{{ form.care_leader.id_for_label }}" class="form-label">
+                    <i class="bi bi-person-badge me-1"></i>
+                    {{ form.care_leader.label }}
+                  </label>
+                  {{ form.care_leader }}
+                  {% if form.care_leader.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.care_leader.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.contact_number.id_for_label }}" class="form-label">
+                  <i class="bi bi-telephone me-1"></i>
+                  Contact No.
+                </label>
+                {{ form.contact_number }}
+                {% if form.contact_number.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.contact_number.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-12 mb-3">
+                <label for="{{ form.venue_address.id_for_label }}" class="form-label">
+                  <i class="bi bi-geo-alt me-1"></i>
+                  Venue Address
+                </label>
+                {{ form.venue_address }}
+                {% if form.venue_address.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.venue_address.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <hr class="my-4" />
+
+            <!-- Meeting Details -->
+            <h5 class="mb-3"><i class="bi bi-calendar-event me-2"></i>Meeting Details</h5>
+
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.topic_discussed.id_for_label }}" class="form-label">
+                  <i class="bi bi-chat-dots me-1"></i>
+                  Topic Discussed
+                </label>
+                {{ form.topic_discussed }}
+                {% if form.topic_discussed.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.topic_discussed.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.scripture_used.id_for_label }}" class="form-label">
+                  <i class="bi bi-book me-1"></i>
+                  Scripture Used
+                </label>
+                {{ form.scripture_used }}
+                {% if form.scripture_used.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.scripture_used.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.group_day.id_for_label }}" class="form-label">
+                  <i class="bi bi-calendar-day me-1"></i>
+                  Group Day
+                </label>
+                {{ form.group_day }}
+                {% if form.group_day.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.group_day.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+
+              <div class="col-md-4 mb-3">
+                <label for="{{ form.group_time.id_for_label }}" class="form-label">
+                  <i class="bi bi-clock me-1"></i>
+                  Group Time
+                </label>
+                {{ form.group_time }}
+                {% if form.group_time.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.group_time.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+              <a href="{% url 'members:care_group_report_list' %}" class="btn btn-outline-secondary me-md-2">
+                <i class="bi bi-x-circle me-1"></i>
+                Cancel
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-circle me-1"></i>
+                Create Report
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">
+            <i class="bi bi-info-circle me-2"></i>
+            Report Guidelines
+          </h5>
+        </div>
+        <div class="card-body">
+          <h6 class="text-primary">Care Group Report Purpose</h6>
+          <ul class="small">
+            <li>Track care group activities and attendance</li>
+            <li>Monitor member participation and growth</li>
+            <li>Document spiritual discussions and topics</li>
+            <li>Record new disciples and follow-ups</li>
+          </ul>
+
+          <h6 class="text-primary mt-3">Best Practices</h6>
+          <ul class="small">
+            <li>
+              <strong>Accuracy:</strong> Ensure all information is accurate and up-to-date
+            </li>
+            <li>
+              <strong>Completeness:</strong> Fill in all relevant fields for better tracking
+            </li>
+            <li>
+              <strong>Timeliness:</strong> Submit reports promptly after each care group meeting
+            </li>
+            <li>
+              <strong>Consistency:</strong> Use consistent format and terminology
+            </li>
+          </ul>
+
+          <div class="alert alert-info mt-3">
+            <i class="bi bi-lightbulb me-1"></i>
+            <strong>Tip:</strong> After creating the report, you can add individual member reports to track each member's participation and progress.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_css %}
+  <style>
+    .card {
+      border-radius: 15px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border: none;
+    }
+    
+    .card-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 15px 15px 0 0 !important;
+      border-bottom: none;
+    }
+    
+    .form-label {
+      font-weight: 600;
+      color: #495057;
+    }
+    
+    .form-control,
+    .form-select {
+      border-radius: 8px;
+      border: 1px solid #dee2e6;
+    }
+    
+    .form-control:focus,
+    .form-select:focus {
+      border-color: #667eea;
+      box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    
+    .btn {
+      border-radius: 8px;
+    }
+    
+    .alert {
+      border-radius: 10px;
+      border: none;
+    }
+  </style>
+{% endblock %}

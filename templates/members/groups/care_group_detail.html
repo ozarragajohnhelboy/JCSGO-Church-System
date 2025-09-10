@@ -301,9 +301,6 @@
                         <label for="member_select" class="form-label">Select Member</label>
                         <select class="form-select" id="member_select" name="member_id" required>
                             <option value="">Choose a member...</option>
-                            {% for member in available_members %}
-                            <option value="{{ member.pk }}">{{ member.full_name }} ({{ member.get_role_display }})</option>
-                            {% endfor %}
                         </select>
                         <small class="form-text text-muted">Only members not in any care group are shown</small>
                     </div>
@@ -328,7 +325,6 @@
 <script src="{% static 'js/pages/care_group_detail.js' %}"></script>
 <script>
     // Pass Django template data to JavaScript
-    window.availableMembers = {{ available_members|yesno:"true,false" }};
     window.groupId = {{ group.pk }};
     window.removeMemberUrl = "{% url 'members:care_group_remove_member' group.pk 0 %}";
 </script>
