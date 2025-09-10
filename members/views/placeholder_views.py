@@ -825,12 +825,65 @@ def role_new_friends_list(request):
 @login_required
 def user_profile(request):
     """User profile page"""
-    return render(request, 'members/auth/user_profile.html', {})
+    from members.forms import UserProfileForm
+    from members.models import Attendance
+    from django.db.models import Count
+    from datetime import datetime, timedelta
+    
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('members:user_profile')
+    else:
+        form = UserProfileForm(instance=request.user)
+    
+    # Calculate attendance summary for last 30 days
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    recent_attendances = Attendance.objects.filter(
+        user=request.user,
+        date__gte=thirty_days_ago
+    ).order_by('-date')
+    
+    total_attendances = recent_attendances.count()
+    attendance_rate = (total_attendances / 30) * 100 if total_attendances > 0 else 0
+    
+    attendance_summary = {
+        'total_attendances': total_attendances,
+        'attendance_rate': round(attendance_rate, 1),
+        'recent_attendances': recent_attendances[:10]
+    }
+    
+    context = {
+        'form': form,
+        'attendance_summary': attendance_summary,
+    }
+    
+    return render(request, 'members/auth/user_profile.html', context)
 
 @login_required
 def generate_qr_code(request, user_id):
-    """Generate QR code"""
-    return render(request, 'members/auth/generate_qr_code.html', {})
+    """Generate QR code for a user"""
+    from django.core.exceptions import PermissionDenied
+    
+    user = get_object_or_404(CustomUser, id=user_id)
+
+    if not (request.user.is_superuser or 
+            request.user.role.name in ['ADMIN', 'VSL', 'CSL', 'CL'] or 
+            request.user == user):
+        raise PermissionDenied("You don't have permission to generate QR codes for this user.")
+    
+    try:
+        qr_image = user.generate_qr_code()
+        messages.success(request, f'QR code generated successfully for {user.full_name}')
+    except Exception as e:
+        messages.error(request, f'Error generating QR code: {str(e)}')
+    
+    if request.user == user:
+        return redirect('members:user_profile')
+    else:
+        return redirect('members:member_detail', pk=user_id)
 
 @login_required
 def qr_scanner(request):
@@ -1358,8 +1411,114 @@ def profile_import(request):
 
 @login_required
 def care_group_report_list(request):
-    """Care group reports list"""
-    return render(request, 'members/groups/care_group_report_list.html', {})
+    """List all care group reports for the user's church"""
+    user = request.user
+    church = user.church
+
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to view care group reports.')
+        return redirect('churches:dashboard')
+
+    search = request.GET.get('search', '')
+    care_group_filter = request.GET.get('care_group', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+
+    reports = CareGroupReport.objects.filter(church=church)
+
+    if user.role.name == 'VSL':
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        reports = reports.filter(
+            Q(care_group__leader=user) | 
+            Q(care_group__leader__in=member_users)
+        ).distinct()
+    elif user.role.name == 'CSL':
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        reports = reports.filter(
+            Q(care_group__leader=user) | 
+            Q(care_group__leader__in=member_users)
+        ).distinct()
+    elif user.role.name == 'CL':
+        reports = reports.filter(care_group__leader=user)
+        
+    elif user.role.name == 'ADMIN':
+        pass
+
+    if search:
+        reports = reports.filter(
+            Q(care_group__name__icontains=search) |
+            Q(topic_discussed__icontains=search) |
+            Q(scripture_used__icontains=search)
+        )
+    
+    if care_group_filter:
+        reports = reports.filter(care_group_id=care_group_filter)
+    
+    if date_from:
+        reports = reports.filter(date_of_cg__gte=date_from)
+    
+    if date_to:
+        reports = reports.filter(date_of_cg__lte=date_to)
+
+    reports = reports.order_by('-date_of_cg', '-created_at')
+
+    paginator = Paginator(reports, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    care_groups = Group.objects.filter(
+        church=church,
+        group_type='CARE',
+        is_active=True
+    )
+
+    if user.role.name == 'VSL':
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        care_groups = care_groups.filter(
+            Q(leader=user) | 
+            Q(leader__in=member_users)
+        ).distinct()
+        
+    elif user.role.name == 'CSL':
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        care_groups = care_groups.filter(
+            Q(leader=user) | 
+            Q(leader__in=member_users)  
+        ).distinct()
+    elif user.role.name == 'CL':
+        care_groups = care_groups.filter(leader=user)
+    elif user.role.name == 'ADMIN':
+        pass
+    
+    care_groups = care_groups.order_by('name')
+    
+    context = {
+        'page_obj': page_obj,
+        'search': search,
+        'care_group_filter': care_group_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        'care_groups': care_groups,
+        'total_reports': reports.count(),
+    }
+    
+    return render(request, 'members/groups/care_group_report_list.html', context)
 
 @login_required
 def care_group_report_create(request):
@@ -1374,7 +1533,43 @@ def care_group_member_report_create(request, report_id):
 @login_required
 def care_group_report_detail(request, report_id):
     """Care group report detail"""
-    return render(request, 'members/groups/care_group_report_detail.html', {})
+    user = request.user
+    church = user.church
+
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to view care group reports.')
+        return redirect('churches:dashboard')
+
+    try:
+        report = CareGroupReport.objects.get(id=report_id, church=church)
+    except CareGroupReport.DoesNotExist:
+        messages.error(request, 'Care group report not found.')
+        return redirect('members:care_group_report_list')
+
+    # Check permissions
+    if user.role.name == 'CL' and report.care_group.leader != user:
+        messages.error(request, 'You can only view reports for your own care groups.')
+        return redirect('members:care_group_report_list')
+    elif user.role.name in ['VSL', 'CSL']:
+        # Check if user can access this report based on their leadership hierarchy
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        if not (report.care_group.leader == user or report.care_group.leader in member_users):
+            messages.error(request, 'You can only view reports for care groups under your leadership.')
+            return redirect('members:care_group_report_list')
+
+    member_reports = report.member_reports.select_related('member').order_by('member__first_name', 'member__last_name')
+    
+    context = {
+        'report': report,
+        'member_reports': member_reports,
+        'user_role': user.role.name,
+    }
+    
+    return render(request, 'members/groups/care_group_report_detail.html', context)
 
 @login_required
 def care_group_report_print(request, report_id):
@@ -1384,7 +1579,49 @@ def care_group_report_print(request, report_id):
 @login_required
 def care_group_report_edit(request, report_id):
     """Edit care group report"""
-    return render(request, 'members/groups/care_group_report_edit.html', {})
+    user = request.user
+    church = user.church
+
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to edit care group reports.')
+        return redirect('churches:dashboard')
+
+    try:
+        report = CareGroupReport.objects.get(id=report_id, church=church)
+    except CareGroupReport.DoesNotExist:
+        messages.error(request, 'Care group report not found.')
+        return redirect('members:care_group_report_list')
+
+    # Check permissions - admin can edit all reports, others can only edit their own
+    if user.role.name != 'ADMIN' and report.created_by != user:
+        messages.error(request, 'You can only edit reports you created.')
+        return redirect('members:care_group_report_detail', report_id=report_id)
+
+    if request.method == 'POST':
+        # Handle form submission
+        form = CareGroupReportForm(request.POST, instance=report, user=user)
+        if form.is_valid():
+            updated_report = form.save()
+            
+            ActivityLog.objects.create(
+                user=user,
+                church=user.church,
+                action='REPORT_UPDATED',
+                description=f'Updated care group report: {updated_report.care_group.name} - {updated_report.date_of_cg}'
+            )
+            
+            messages.success(request, f'Care group report updated successfully!')
+            return redirect('members:care_group_report_detail', report_id=report_id)
+    else:
+        form = CareGroupReportForm(instance=report, user=user)
+    
+    context = {
+        'form': form,
+        'report': report,
+        'user_role': user.role.name,
+    }
+    
+    return render(request, 'members/groups/care_group_report_edit.html', context)
 
 @login_required
 def care_group_report_delete(request, report_id):
@@ -1395,3 +1632,290 @@ def care_group_report_delete(request, report_id):
 def care_group_attendance_tracking(request, group_id):
     """Care group attendance tracking"""
     return render(request, 'members/attendance/care_group_attendance_tracking.html', {})
+
+@login_required
+def care_group_report_export(request):
+    """Export care group reports to CSV or Excel"""
+    user = request.user
+    church = user.church
+
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to export care group reports.')
+        return redirect('churches:dashboard')
+
+    format_type = request.GET.get('format', 'csv')
+    care_group_id = request.GET.get('care_group', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+
+    reports = CareGroupReport.objects.filter(church=church).select_related(
+        'care_group', 'vine_servant_leader', 'cluster_servant_leader', 'care_leader', 'created_by'
+    ).prefetch_related('member_reports__member')
+
+    if user.role.name == 'VSL':
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        reports = reports.filter(
+            Q(care_group__leader=user) | 
+            Q(care_group__leader__in=member_users)
+        ).distinct()
+    elif user.role.name == 'CSL':
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        reports = reports.filter(
+            Q(care_group__leader=user) | 
+            Q(care_group__leader__in=member_users)
+        ).distinct()
+    elif user.role.name == 'CL':
+        reports = reports.filter(care_group__leader=user)
+
+    if care_group_id:
+        reports = reports.filter(care_group_id=care_group_id)
+    
+    if date_from:
+        reports = reports.filter(date_of_cg__gte=date_from)
+    
+    if date_to:
+        reports = reports.filter(date_of_cg__lte=date_to)
+
+    reports = reports.order_by('-date_of_cg', '-created_at')
+
+    if format_type == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="care_group_reports_{church.name}_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+        
+        writer = csv.writer(response)
+        
+        # Write header
+        writer.writerow([
+            'Report ID', 'Care Group', 'Date of CG', 'Topic Discussed', 'Scripture Used',
+            'Group Day', 'Group Time', 'Venue Address', 'Contact Number',
+            'Vine Servant Leader', 'Cluster Servant Leader', 'Care Leader',
+            'Total Members Reported', 'Total Sunday Attendance', 'Total Group Attendance',
+            'Total New Disciples Invited', 'Total Follow-ups', 'Created By', 'Created At'
+        ])
+        
+        # Write data
+        for report in reports:
+            writer.writerow([
+                report.id,
+                report.care_group.name,
+                report.date_of_cg,
+                report.topic_discussed,
+                report.scripture_used,
+                report.get_group_day_display() if report.group_day else '',
+                report.group_time.strftime('%H:%M') if report.group_time else '',
+                report.venue_address,
+                report.contact_number,
+                report.vine_servant_leader.full_name if report.vine_servant_leader else '',
+                report.cluster_servant_leader.full_name if report.cluster_servant_leader else '',
+                report.care_leader.full_name if report.care_leader else '',
+                report.total_members_reported,
+                report.total_sunday_attendance,
+                report.total_group_attendance,
+                report.total_new_disciples_invited,
+                report.total_follow_ups,
+                report.created_by.full_name,
+                report.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            ])
+        
+        return response
+    
+    elif format_type == 'excel':
+        try:
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill, Alignment
+        except ImportError:
+            messages.error(request, 'Excel export requires openpyxl package. Please install it.')
+            return redirect('members:care_group_report_list')
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Care Group Reports"
+        
+        # Header styling
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+        
+        # Write header
+        headers = [
+            'Report ID', 'Care Group', 'Date of CG', 'Topic Discussed', 'Scripture Used',
+            'Group Day', 'Group Time', 'Venue Address', 'Contact Number',
+            'Vine Servant Leader', 'Cluster Servant Leader', 'Care Leader',
+            'Total Members Reported', 'Total Sunday Attendance', 'Total Group Attendance',
+            'Total New Disciples Invited', 'Total Follow-ups', 'Created By', 'Created At'
+        ]
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+        
+        # Write data
+        for row, report in enumerate(reports, 2):
+            ws.cell(row=row, column=1, value=report.id)
+            ws.cell(row=row, column=2, value=report.care_group.name)
+            ws.cell(row=row, column=3, value=report.date_of_cg)
+            ws.cell(row=row, column=4, value=report.topic_discussed)
+            ws.cell(row=row, column=5, value=report.scripture_used)
+            ws.cell(row=row, column=6, value=report.get_group_day_display() if report.group_day else '')
+            ws.cell(row=row, column=7, value=report.group_time.strftime('%H:%M') if report.group_time else '')
+            ws.cell(row=row, column=8, value=report.venue_address)
+            ws.cell(row=row, column=9, value=report.contact_number)
+            ws.cell(row=row, column=10, value=report.vine_servant_leader.full_name if report.vine_servant_leader else '')
+            ws.cell(row=row, column=11, value=report.cluster_servant_leader.full_name if report.cluster_servant_leader else '')
+            ws.cell(row=row, column=12, value=report.care_leader.full_name if report.care_leader else '')
+            ws.cell(row=row, column=13, value=report.total_members_reported)
+            ws.cell(row=row, column=14, value=report.total_sunday_attendance)
+            ws.cell(row=row, column=15, value=report.total_group_attendance)
+            ws.cell(row=row, column=16, value=report.total_new_disciples_invited)
+            ws.cell(row=row, column=17, value=report.total_follow_ups)
+            ws.cell(row=row, column=18, value=report.created_by.full_name)
+            ws.cell(row=row, column=19, value=report.created_at.strftime('%Y-%m-%d %H:%M:%S'))
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="care_group_reports_{church.name}_{timezone.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        
+        wb.save(response)
+        return response
+    
+    else:
+        messages.error(request, 'Invalid format specified.')
+        return redirect('members:care_group_report_list')
+
+@login_required
+def care_group_member_report_export(request, report_id):
+    """Export individual care group member reports to CSV or Excel"""
+    user = request.user
+    church = user.church
+
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to export care group member reports.')
+        return redirect('churches:dashboard')
+
+    try:
+        report = CareGroupReport.objects.get(id=report_id, church=church)
+    except CareGroupReport.DoesNotExist:
+        messages.error(request, 'Care group report not found.')
+        return redirect('members:care_group_report_list')
+
+    # Check permissions
+    if user.role.name == 'CL' and report.care_group.leader != user:
+        messages.error(request, 'You can only export reports for your own care groups.')
+        return redirect('members:care_group_report_list')
+
+    format_type = request.GET.get('format', 'csv')
+    member_reports = report.member_reports.select_related('member').order_by('member__first_name', 'member__last_name')
+
+    if format_type == 'csv':
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="care_group_member_reports_{report.care_group.name}_{report.date_of_cg}_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+        
+        writer = csv.writer(response)
+        
+        # Write header
+        writer.writerow([
+            'Member Name', 'Status', 'Sunday Attendance', 'Group Attendance',
+            'New Disciples Invited', 'Follow-ups', 'Notes'
+        ])
+        
+        # Write data
+        for member_report in member_reports:
+            writer.writerow([
+                member_report.member.full_name,
+                member_report.get_status_display(),
+                'Yes' if member_report.sunday_attendance else 'No',
+                'Yes' if member_report.group_attendance else 'No',
+                member_report.new_disciples_invited,
+                member_report.follow_ups,
+                member_report.notes
+            ])
+        
+        return response
+    
+    elif format_type == 'excel':
+        try:
+            import openpyxl
+            from openpyxl.styles import Font, PatternFill, Alignment
+        except ImportError:
+            messages.error(request, 'Excel export requires openpyxl package. Please install it.')
+            return redirect('members:care_group_report_detail', report_id=report_id)
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"Member Reports - {report.care_group.name}"
+        
+        # Header styling
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+        
+        # Write header
+        headers = [
+            'Member Name', 'Status', 'Sunday Attendance', 'Group Attendance',
+            'New Disciples Invited', 'Follow-ups', 'Notes'
+        ]
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+        
+        # Write data
+        for row, member_report in enumerate(member_reports, 2):
+            ws.cell(row=row, column=1, value=member_report.member.full_name)
+            ws.cell(row=row, column=2, value=member_report.get_status_display())
+            ws.cell(row=row, column=3, value='Yes' if member_report.sunday_attendance else 'No')
+            ws.cell(row=row, column=4, value='Yes' if member_report.group_attendance else 'No')
+            ws.cell(row=row, column=5, value=member_report.new_disciples_invited)
+            ws.cell(row=row, column=6, value=member_report.follow_ups)
+            ws.cell(row=row, column=7, value=member_report.notes)
+        
+        # Auto-adjust column widths
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="care_group_member_reports_{report.care_group.name}_{report.date_of_cg}_{timezone.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        
+        wb.save(response)
+        return response
+    
+    else:
+        messages.error(request, 'Invalid format specified.')
+        return redirect('members:care_group_report_detail', report_id=report_id)

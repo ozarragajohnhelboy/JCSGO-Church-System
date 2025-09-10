@@ -330,8 +330,9 @@ def dashboard(request):
     
     # Church leader dashboard (VSL, CSL, CL)
     elif user.role.name in ['VSL', 'CSL', 'CL']:
+        from members.models import Group, RegularMember
+        
         # Get care groups led by this user
-        from members.models import Group
         led_groups = Group.objects.filter(
             leader=user,
             church=user.church,
@@ -339,32 +340,151 @@ def dashboard(request):
             is_active=True
         )
         
-        # Get group statistics
+        # Get direct care group members
+        direct_members = CustomUser.objects.filter(
+            regular_member_profile__group__in=led_groups,
+            church=user.church,
+            is_active=True
+        ).distinct()
+        
+        # Get nested members (members of their members' groups)
+        nested_members = CustomUser.objects.none()
+        if user.role.name in ['VSL', 'CSL']:
+            # Get members who are leaders of other care groups
+            member_leaders = CustomUser.objects.filter(
+                regular_member_profile__group__in=led_groups,
+                church=user.church,
+                is_active=True
+            ).exclude(id=user.id)
+            
+            # Get care groups led by these member leaders
+            nested_groups = Group.objects.filter(
+                leader__in=member_leaders,
+                church=user.church,
+                group_type='CARE',
+                is_active=True
+            )
+            
+            # Get members of these nested groups
+            nested_members = CustomUser.objects.filter(
+                regular_member_profile__group__in=nested_groups,
+                church=user.church,
+                is_active=True
+            ).distinct()
+        
+        # Calculate member counts
+        direct_members_count = direct_members.count()
+        nested_members_count = nested_members.count()
+        total_care_group_members = direct_members_count + nested_members_count
+        
+        # Get role distribution of members under this leader only
+        role_distribution = []
+        
+        # Get all member IDs under this leader (direct + nested)
+        direct_member_ids = list(direct_members.values_list('id', flat=True))
+        nested_member_ids = list(nested_members.values_list('id', flat=True))
+        all_leader_member_ids = list(set(direct_member_ids + nested_member_ids))
+        total_leader_members = len(all_leader_member_ids)
+        
+        # Add self to the count
+        self_count = 1
+        role_distribution.append({
+            'role': user.role.get_name_display(),
+            'count': self_count,
+            'percentage': round((self_count / (total_leader_members + 1) * 100) if (total_leader_members + 1) > 0 else 0, 1)
+        })
+        
+        # Get role distributions of members under this leader
+        roles = Role.objects.filter(name__in=['VSL', 'CSL', 'CL', 'CM', 'NEW_FRIEND'])
+        for role in roles:
+            if role.name != user.role.name:
+                count = CustomUser.objects.filter(
+                    id__in=all_leader_member_ids,
+                    role=role,
+                    church=user.church,
+                    is_active=True
+                ).count()
+                if count > 0:
+                    role_distribution.append({
+                        'role': role.get_name_display(),
+                        'count': count,
+                        'percentage': round((count / (total_leader_members + 1) * 100) if (total_leader_members + 1) > 0 else 0, 1)
+                    })
+        
+        # Get care group growth over time (last 6 months)
+        care_group_growth_months = []
+        care_group_growth_counts = []
+        
+        for i in range(6):
+            date = timezone.now() - timedelta(days=30*i)
+            month_start = date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            month_end = month_start + timedelta(days=32)
+            month_end = month_end.replace(day=1) - timedelta(seconds=1)
+            
+            care_group_growth_months.append(month_start.strftime('%b %Y'))
+            
+            # Count new members in care groups for this month
+            month_new_members = CustomUser.objects.filter(
+                church=user.church,
+                regular_member_profile__group__in=led_groups,
+                date_joined__gte=month_start,
+                date_joined__lte=month_end,
+                is_active=True
+            ).count()
+            care_group_growth_counts.append(month_new_members)
+        
+        care_group_growth_months.reverse()
+        care_group_growth_counts.reverse()
+        
+        # Get group statistics with enhanced data
         group_stats = []
         total_group_members = 0
         
         for group in led_groups:
             member_count = group.member_count
             total_group_members += member_count
+            
+            # Get recent activities for this group
+            recent_group_activities = ActivityLog.objects.filter(
+                user__regular_member_profile__group=group,
+                action__in=['GROUP_JOIN', 'GROUP_LEAVE', 'ATTENDANCE'],
+                timestamp__gte=timezone.now() - timedelta(days=7)
+            ).select_related('user')[:3]
+            
             group_stats.append({
                 'group': group,
                 'member_count': member_count,
                 'capacity_percentage': group.capacity_percentage,
-                'is_full': group.is_full
+                'is_full': group.is_full,
+                'recent_activities': recent_group_activities
             })
         
         # Get recent group activities
         recent_group_activities = ActivityLog.objects.filter(
             user__church=user.church,
-            action__in=['GROUP_JOIN', 'GROUP_LEAVE'],
+            action__in=['GROUP_JOIN', 'GROUP_LEAVE', 'ATTENDANCE'],
             timestamp__gte=timezone.now() - timedelta(days=7)
-        ).select_related('user')[:5]
+        ).select_related('user')[:10]
+        
+        # Get care group reports for this leader
+        from members.models import CareGroupReport
+        recent_reports = CareGroupReport.objects.filter(
+            care_group__leader=user,
+            church=user.church
+        ).order_by('-date_of_cg')[:5]
         
         context.update({
             'led_groups': led_groups,
             'group_stats': group_stats,
             'total_group_members': total_group_members,
+            'direct_members_count': direct_members_count,
+            'nested_members_count': nested_members_count,
+            'total_care_group_members': total_care_group_members,
+            'role_distribution': role_distribution,
+            'care_group_growth_months': care_group_growth_months,
+            'care_group_growth_counts': care_group_growth_counts,
             'recent_group_activities': recent_group_activities,
+            'recent_reports': recent_reports,
         })
         return render(request, 'churches/dashboard/leader_dashboard.html', context)
     

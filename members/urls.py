@@ -80,6 +80,8 @@ urlpatterns = [
     path('care-group-reports/<int:report_id>/print/', views.care_group_report_print, name='care_group_report_print'),
     path('care-group-reports/<int:report_id>/edit/', views.care_group_report_edit, name='care_group_report_edit'),
     path('care-group-reports/<int:report_id>/delete/', views.care_group_report_delete, name='care_group_report_delete'),
+    path('care-group-reports/export/', views.care_group_report_export, name='care_group_report_export'),
+    path('care-group-reports/<int:report_id>/export/', views.care_group_member_report_export, name='care_group_member_report_export'),
     
     # Care Group Attendance Tracking
     path('care-groups/<int:group_id>/attendance/', views.care_group_attendance_tracking, name='care_group_attendance_tracking'),

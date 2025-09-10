@@ -63,7 +63,9 @@ from .placeholder_views import (
     care_group_report_print,
     care_group_report_edit,
     care_group_report_delete,
-    care_group_attendance_tracking
+    care_group_attendance_tracking,
+    care_group_report_export,
+    care_group_member_report_export
 )
 
 # Make all views available when importing from members.views
@@ -126,5 +128,8 @@ __all__ = [
     'care_group_report_detail',
     'care_group_report_print',
     'care_group_report_edit',
-    'care_group_report_delete'
+    'care_group_report_delete',
+    'care_group_attendance_tracking',
+    'care_group_report_export',
+    'care_group_member_report_export'
 ]

@@ -102,6 +102,12 @@
             My New Friends
           </a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'care_group_report_list' %}active{% endif %}" href="{% url 'members:care_group_report_list' %}">
+            <i class="bi bi-file-text me-2"></i>
+            Care Group Reports
+          </a>
+        </li>
       {% elif user.role.name == 'CM' %}
         <li class="nav-item">
           <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'churches:dashboard' %}">
