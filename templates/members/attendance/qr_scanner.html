@@ -51,25 +51,25 @@
                     <button id="start-camera" class="btn btn-outline-light btn-lg">
                         <i class="fas fa-camera"></i> Start Automatic Scanner
                     </button>
-                    <button id="stop-camera" class="btn btn-outline-warning btn-lg" style="display: none;">
+                    <button id="stop-camera" class="btn btn-outline-warning btn-lg d-none">
                         <i class="fas fa-stop"></i> Stop Scanner
                     </button>
-                    <button id="debug-camera" class="btn btn-outline-info btn-sm ms-2" style="display: none;">
+                    <button id="debug-camera" class="btn btn-outline-info btn-sm ms-2 d-none">
                         <i class="fas fa-bug"></i> Debug
                     </button>
                     <div class="mt-3">
-                        <video id="video" style="display: none; width: 100%; max-width: 500px; border-radius: 10px; border: 3px solid #fff;"></video>
-                        <canvas id="canvas" style="display: none;"></canvas>
+                        <video id="video" class="d-none w-100"></video>
+                        <canvas id="canvas" class="d-none"></canvas>
                     </div>
                     <div class="mt-3">
                         <div id="scanner-status" class="text-white-50">
                             <i class="fas fa-info-circle"></i> 
                             Camera will automatically record attendance when QR code is detected
                         </div>
-                        <div class="text-white-50 mt-1" style="font-size: 0.8em;">
+                        <div class="text-white-50 mt-1">
                             <i class="fas fa-qrcode"></i> 
                         </div>
-                        <div id="debug-info" class="text-white-50 mt-2" style="font-size: 0.8em; display: none;">
+                        <div id="debug-info" class="text-white-50 mt-2 d-none">
                             <div>Video: <span id="video-info">Not ready</span></div>
                             <div>Canvas: <span id="canvas-info">Not ready</span></div>
                             <div>Scanning: <span id="scan-info">Not active</span></div>
@@ -80,7 +80,7 @@
                 </div>
 
                 <!-- Hidden form for automatic submission -->
-                <form id="qr-scan-form" method="post" style="display: none;">
+                <form id="qr-scan-form" method="post" class="d-none">
                     {% csrf_token %}
                     <input type="hidden" name="qr_data" id="hidden-qr-data">
                     <input type="hidden" name="attendance_type" id="hidden-attendance-type" value="SERVICE">
@@ -215,7 +215,7 @@
 </div>
 
 <!-- Success/Error Messages -->
-<div id="message-container" style="position: fixed; top: 20px; right: 20px; z-index: 1050; max-width: 400px;"></div>
+<div id="message-container" class="position-fixed"></div>
 {% endblock %}
 
 {% block extra_js %}

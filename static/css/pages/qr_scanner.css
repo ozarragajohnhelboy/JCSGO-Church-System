@@ -43,3 +43,27 @@
     padding: 1rem;
     margin-bottom: 1rem;
 }
+
+/* Video and canvas styles */
+#video {
+    max-width: 500px;
+    border-radius: 10px;
+    border: 3px solid #fff;
+}
+
+/* Debug info styles */
+.text-white-50.mt-1 {
+    font-size: 0.8em;
+}
+
+#debug-info {
+    font-size: 0.8em;
+}
+
+/* Message container styles */
+#message-container {
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    max-width: 400px;
+}
