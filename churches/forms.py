@@ -208,13 +208,31 @@ class ChurchRegistrationForm(UserCreationForm):
 
 class ChurchForm(forms.ModelForm):
     """Form for adding/editing churches"""
+    sector_choice = forms.ChoiceField(
+        choices=[],  # Will be populated in __init__
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'sector-choice'}),
+        label='Sector'
+    )
+    new_sector_name = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter new sector name',
+            'id': 'new-sector-name',
+            'style': 'display: none;'
+        }),
+        label='New Sector Name'
+    )
+    
     class Meta:
         model = Church
-        fields = ['name', 'location', 'domain', 'logo', 'is_active']
+        fields = ['name', 'location', 'domain', 'sector', 'logo', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter church name'}),
             'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter church location'}),
             'domain': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter unique domain (e.g., church-name)'}),
+            'sector': forms.HiddenInput(),  # Hidden field to store the actual sector value
             'logo': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
@@ -225,6 +243,38 @@ class ChurchForm(forms.ModelForm):
         self.fields['location'].required = True
         self.fields['domain'].required = True
         self.fields['is_active'].initial = True
+        
+        # Get existing sectors from all churches
+        existing_sectors = Church.objects.values_list('sector', flat=True).distinct().order_by('sector')
+        
+        # Create choices for sector dropdown
+        sector_choices = [('', 'Select a sector...')]
+        for sector in existing_sectors:
+            if sector:  # Skip empty sectors
+                sector_choices.append((sector, sector))
+        sector_choices.append(('__new__', 'Add New Sector'))
+        
+        self.fields['sector_choice'].choices = sector_choices
+        
+        # Set initial value for editing
+        if self.instance.pk and self.instance.sector:
+            self.fields['sector_choice'].initial = self.instance.sector
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        sector_choice = cleaned_data.get('sector_choice')
+        new_sector_name = cleaned_data.get('new_sector_name')
+        
+        if sector_choice == '__new__':
+            if not new_sector_name:
+                raise forms.ValidationError('Please enter a name for the new sector.')
+            # Set the sector field to the new sector name
+            cleaned_data['sector'] = new_sector_name.strip()
+        elif sector_choice:
+            # Set the sector field to the selected existing sector
+            cleaned_data['sector'] = sector_choice
+        
+        return cleaned_data
     
     def clean_domain(self):
         domain = self.cleaned_data.get('domain')

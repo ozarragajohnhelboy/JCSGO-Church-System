@@ -23,6 +23,7 @@ def church_list(request):
     # Get search and filter parameters
     search = request.GET.get('search', '')
     status_filter = request.GET.get('status', '')
+    sector_filter = request.GET.get('sector', '')
     sort_by = request.GET.get('sort', 'name')
     
     # Get all churches
@@ -41,6 +42,10 @@ def church_list(request):
         churches = churches.filter(is_active=True)
     elif status_filter == 'inactive':
         churches = churches.filter(is_active=False)
+    
+    # Apply sector filter
+    if sector_filter:
+        churches = churches.filter(sector=sector_filter)
     
     # Apply sorting
     if sort_by == 'location':
@@ -61,6 +66,9 @@ def church_list(request):
     # Calculate active churches count
     active_churches_count = Church.objects.filter(is_active=True).count()
     
+    # Get all unique sectors for the filter dropdown
+    sectors = Church.objects.values_list('sector', flat=True).distinct().order_by('sector')
+    
     context = {
         'page_obj': page_obj,
         'churches': page_obj,
@@ -68,7 +76,9 @@ def church_list(request):
         'active_churches_count': active_churches_count,
         'search': search,
         'status_filter': status_filter,
+        'sector_filter': sector_filter,
         'sort_by': sort_by,
+        'sectors': sectors,
     }
     return render(request, 'churches/church_management/church_list.html', context)
 

@@ -24,18 +24,24 @@ def church_selection(request):
     # Get all active churches
     all_churches = Church.objects.filter(is_active=True).order_by('name')
     
-    # Organize churches by sectors
-    rizal_sector_churches = all_churches.filter(
-        domain__in=['kasiglahan', 'sanjose', 'christinville', 'tabak']
-    ).order_by('name')
+    # Get all unique sectors
+    sectors = Church.objects.filter(is_active=True).values_list('sector', flat=True).distinct().order_by('sector')
     
-    central_sector_churches = all_churches.filter(
-        domain__in=['10amfamily', '3pmfamily']
-    ).order_by('name')
+    # Organize churches by sectors dynamically
+    churches_by_sector = {}
+    for sector in sectors:
+        if sector:  # Skip empty sectors
+            churches_by_sector[sector] = all_churches.filter(sector=sector).order_by('name')
+    
+    # Keep backward compatibility with hardcoded sector names
+    rizal_sector_churches = churches_by_sector.get('Rizal Sector', Church.objects.none())
+    central_sector_churches = churches_by_sector.get('Central Sector', Church.objects.none())
     
     context = {
         'form': form,
         'all_churches': all_churches,
+        'sectors': sectors,
+        'churches_by_sector': churches_by_sector,
         'rizal_sector_churches': rizal_sector_churches,
         'central_sector_churches': central_sector_churches,
     }

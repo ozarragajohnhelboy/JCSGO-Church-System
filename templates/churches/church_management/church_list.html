@@ -94,7 +94,7 @@
             <input type="text" class="form-control" id="search" name="search" 
                    value="{{ search }}" placeholder="Search by name, location, or domain...">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label for="status" class="form-label">Status</label>
             <select class="form-select" id="status" name="status">
                 <option value="">All Churches</option>
@@ -102,7 +102,16 @@
                 <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
+            <label for="sector" class="form-label">Sector</label>
+            <select class="form-select" id="sector" name="sector">
+                <option value="">All Sectors</option>
+                {% for sector in sectors %}
+                    <option value="{{ sector }}" {% if sector_filter == sector %}selected{% endif %}>{{ sector }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
             <label for="sort" class="form-label">Sort By</label>
             <select class="form-select" id="sort" name="sort">
                 <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
@@ -129,6 +138,7 @@
             <tr>
                 <th>Church</th>
                 <th>Location</th>
+                <th>Sector</th>
                 <th>Domain</th>
                 <th>Members</th>
                 <th>Status</th>
@@ -156,6 +166,9 @@
                     </div>
                 </td>
                 <td>{{ church.location }}</td>
+                <td>
+                    <span class="badge bg-primary">{{ church.sector }}</span>
+                </td>
                 <td><code>{{ church.domain }}</code></td>
                 <td>
                     <span class="badge bg-info">{{ church.total_members }}</span>

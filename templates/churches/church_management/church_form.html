@@ -93,6 +93,37 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Sector Selection -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.sector_choice.id_for_label }}" class="form-label">
+                            <i class="bi bi-diagram-3 me-2"></i>Sector *
+                        </label>
+                        {{ form.sector_choice }}
+                        <div class="form-text">
+                            Select an existing sector or create a new one
+                        </div>
+                        {% if form.sector_choice.errors %}
+                            <div class="text-danger small">{{ form.sector_choice.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6" id="new-sector-container" style="display: none;">
+                        <label for="{{ form.new_sector_name.id_for_label }}" class="form-label">
+                            <i class="bi bi-plus-circle me-2"></i>New Sector Name *
+                        </label>
+                        {{ form.new_sector_name }}
+                        <div class="form-text">
+                            Enter the name for the new sector
+                        </div>
+                        {% if form.new_sector_name.errors %}
+                            <div class="text-danger small">{{ form.new_sector_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Hidden sector field -->
+                {{ form.sector }}
             
                 <!-- Logo Upload -->
                 <div class="mb-3">
@@ -215,13 +246,31 @@
       }
     });
     
+    // Sector selection dynamic behavior
+    document.getElementById('{{ form.sector_choice.id_for_label }}').addEventListener('change', function(e) {
+      const newSectorContainer = document.getElementById('new-sector-container');
+      const newSectorInput = document.getElementById('{{ form.new_sector_name.id_for_label }}');
+      
+      if (e.target.value === '__new__') {
+        newSectorContainer.style.display = 'block';
+        newSectorInput.required = true;
+        newSectorInput.focus();
+      } else {
+        newSectorContainer.style.display = 'none';
+        newSectorInput.required = false;
+        newSectorInput.value = '';
+      }
+    });
+    
     // Form validation
     document.getElementById('churchForm').addEventListener('submit', function(e) {
       const name = document.getElementById('{{ form.name.id_for_label }}').value.trim();
       const location = document.getElementById('{{ form.location.id_for_label }}').value.trim();
       const domain = document.getElementById('{{ form.domain.id_for_label }}').value.trim();
+      const sectorChoice = document.getElementById('{{ form.sector_choice.id_for_label }}').value;
+      const newSectorName = document.getElementById('{{ form.new_sector_name.id_for_label }}').value.trim();
       
-      if (!name || !location || !domain) {
+      if (!name || !location || !domain || !sectorChoice) {
         e.preventDefault();
         showAlert('danger', 'Error', 'Please fill in all required fields.');
         return;
@@ -230,6 +279,12 @@
       if (domain.length < 3) {
         e.preventDefault();
         showAlert('danger', 'Error', 'Domain must be at least 3 characters long.');
+        return;
+      }
+      
+      if (sectorChoice === '__new__' && !newSectorName) {
+        e.preventDefault();
+        showAlert('danger', 'Error', 'Please enter a name for the new sector.');
         return;
       }
     });
