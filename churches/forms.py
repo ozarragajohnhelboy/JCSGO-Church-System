@@ -206,6 +206,43 @@ class ChurchRegistrationForm(UserCreationForm):
         return user
 
 
+class ChurchForm(forms.ModelForm):
+    """Form for adding/editing churches"""
+    class Meta:
+        model = Church
+        fields = ['name', 'location', 'domain', 'logo', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter church name'}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter church location'}),
+            'domain': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter unique domain (e.g., church-name)'}),
+            'logo': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].required = True
+        self.fields['location'].required = True
+        self.fields['domain'].required = True
+        self.fields['is_active'].initial = True
+    
+    def clean_domain(self):
+        domain = self.cleaned_data.get('domain')
+        if domain:
+            # Convert to lowercase and replace spaces with hyphens
+            domain = domain.lower().replace(' ', '-')
+            
+            # Check if domain already exists (excluding current instance if editing)
+            queryset = Church.objects.filter(domain=domain)
+            if self.instance.pk:
+                queryset = queryset.exclude(pk=self.instance.pk)
+            
+            if queryset.exists():
+                raise forms.ValidationError('A church with this domain already exists.')
+        
+        return domain
+
+
 class ProfileUpdateForm(forms.ModelForm):
     """Form for updating user profile"""
     class Meta:

@@ -659,8 +659,8 @@
     }
 
     function showChurchModal() {
-      // Show add church modal (to be implemented)
-      alert('Add Church functionality will be implemented in Phase 4');
+      // Redirect to church management
+      window.location.href = "{% url 'churches:church_list' %}";
     }
   </script>
 {% endblock %}
