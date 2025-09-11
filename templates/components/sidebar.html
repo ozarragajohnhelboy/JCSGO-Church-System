@@ -1,7 +1,43 @@
 <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar" id="sidebar">
   <div class="position-sticky pt-3">
     <ul class="nav flex-column">
-      {% if user.is_superuser or user.role.name == 'ADMIN' %}
+      {% if user.is_superuser %}
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'churches:dashboard' %}">
+            <i class="bi bi-speedometer2 me-2"></i>
+            Super Admin Dashboard
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase"><span>Quick Actions</span></h6>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'admin:index' %}">
+            <i class="bi bi-gear me-2"></i>
+            Django Admin
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{% url 'members:export_members' %}?format=csv">
+            <i class="bi bi-download me-2"></i>
+            Export All Data
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#" onclick="showChurchModal()">
+            <i class="bi bi-plus-circle me-2"></i>
+            Add New Church
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">
+            <i class="bi bi-graph-up me-2"></i>
+            System Reports
+          </a>
+        </li>
+      {% elif user.role.name == 'ADMIN' %}
         <li class="nav-item">
           <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'churches:dashboard' %}">
             <i class="bi bi-speedometer2 me-2"></i>
