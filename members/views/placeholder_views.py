@@ -1553,12 +1553,120 @@ def care_group_report_list(request):
 @login_required
 def care_group_report_create(request):
     """Create care group report"""
-    return render(request, 'members/groups/care_group_report_create.html', {})
+    user = request.user
+
+    if user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to create care group reports.')
+        return redirect('members:care_group_report_list')
+    
+    if request.method == 'POST':
+        form = CareGroupReportForm(request.POST, user=user)
+        if form.is_valid():
+            report = form.save(commit=False)
+            report.created_by = user
+            report.church = user.church
+            report.save()
+
+            ActivityLog.objects.create(
+                user=user,
+                church=user.church,
+                action='REPORT_CREATED',
+                description=f'Created care group report: {report.care_group.name} - {report.date_of_cg}'
+            )
+            
+            messages.success(request, f'Care group report created successfully!')
+            return redirect('members:care_group_member_report_create', report_id=report.pk)
+    else:
+        form = CareGroupReportForm(user=user)
+    
+    context = {
+        'form': form,
+        'title': 'Create Care Group Report',
+        'user_role': user.role.name,
+    }
+    
+    return render(request, 'members/groups/care_group_report_form.html', context)
 
 @login_required
 def care_group_member_report_create(request, report_id):
     """Create care group member report"""
-    return render(request, 'members/groups/care_group_member_report_create.html', {})
+    user = request.user
+    church = user.church
+
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to create care group member reports.')
+        return redirect('churches:dashboard')
+
+    try:
+        report = CareGroupReport.objects.get(id=report_id, church=church)
+    except CareGroupReport.DoesNotExist:
+        messages.error(request, 'Care group report not found.')
+        return redirect('members:care_group_report_list')
+
+    # Check permissions
+    if user.role.name == 'CL' and report.care_group.leader != user:
+        messages.error(request, 'You can only create member reports for your own care groups.')
+        return redirect('members:care_group_report_list')
+    elif user.role.name in ['VSL', 'CSL']:
+        # Check if user can access this report based on their leadership hierarchy
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        if not (report.care_group.leader == user or report.care_group.leader in member_users):
+            messages.error(request, 'You can only create member reports for care groups under your leadership.')
+            return redirect('members:care_group_report_list')
+
+    # Get care group members
+    care_group_members = CustomUser.objects.filter(
+        regular_member_profile__group=report.care_group,
+        is_active=True
+    ).order_by('first_name', 'last_name')
+
+    # Get existing member reports for this care group report
+    existing_reports = {}
+    for member_report in report.member_reports.all():
+        existing_reports[member_report.member.id] = member_report
+
+    if request.method == 'POST':
+        # Process form submission
+        for member in care_group_members:
+            member_id = str(member.id)
+            
+            # Get or create member report
+            member_report, created = CareGroupMemberReport.objects.get_or_create(
+                report=report,
+                member=member,
+                defaults={
+                    'status': 'ACTIVE',
+                    'sunday_attendance': False,
+                    'group_attendance': False,
+                    'new_disciples_invited': 0,
+                    'follow_ups': 0,
+                    'notes': ''
+                }
+            )
+            
+            # Update fields based on form data
+            member_report.sunday_attendance = f'sunday_attendance_{member_id}' in request.POST
+            member_report.group_attendance = f'group_attendance_{member_id}' in request.POST
+            member_report.new_disciples_invited = int(request.POST.get(f'new_disciples_invited_{member_id}', 0))
+            member_report.follow_ups = int(request.POST.get(f'follow_ups_{member_id}', 0))
+            member_report.notes = request.POST.get(f'notes_{member_id}', '')
+            member_report.save()
+
+        messages.success(request, 'Member reports saved successfully!')
+        return redirect('members:care_group_report_detail', report_id=report.id)
+    
+    context = {
+        'report': report,
+        'care_group_members': care_group_members,
+        'existing_reports': existing_reports,
+        'user_role': user.role.name,
+    }
+    
+    return render(request, 'members/groups/care_group_member_report_form.html', context)
 
 @login_required
 def care_group_report_detail(request, report_id):
@@ -1604,7 +1712,43 @@ def care_group_report_detail(request, report_id):
 @login_required
 def care_group_report_print(request, report_id):
     """Print care group report"""
-    return render(request, 'members/groups/care_group_report_print.html', {})
+    user = request.user
+    church = user.church
+
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to print care group reports.')
+        return redirect('churches:dashboard')
+
+    try:
+        report = CareGroupReport.objects.get(id=report_id, church=church)
+    except CareGroupReport.DoesNotExist:
+        messages.error(request, 'Care group report not found.')
+        return redirect('members:care_group_report_list')
+
+    # Check permissions
+    if user.role.name == 'CL' and report.care_group.leader != user:
+        messages.error(request, 'You can only print reports for your own care groups.')
+        return redirect('members:care_group_report_list')
+    elif user.role.name in ['VSL', 'CSL']:
+        # Check if user can access this report based on their leadership hierarchy
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        if not (report.care_group.leader == user or report.care_group.leader in member_users):
+            messages.error(request, 'You can only print reports for care groups under your leadership.')
+            return redirect('members:care_group_report_list')
+
+    member_reports = report.member_reports.select_related('member').order_by('member__first_name', 'member__last_name')
+    
+    context = {
+        'report': report,
+        'member_reports': member_reports,
+        'user_role': user.role.name,
+    }
+    
+    return render(request, 'members/groups/care_group_report_print.html', context)
 
 @login_required
 def care_group_report_edit(request, report_id):
@@ -1656,7 +1800,44 @@ def care_group_report_edit(request, report_id):
 @login_required
 def care_group_report_delete(request, report_id):
     """Delete care group report"""
-    return redirect('members:care_group_report_list')
+    user = request.user
+    church = user.church
+
+    if not user.role or user.role.name not in ['VSL', 'CSL', 'CL', 'ADMIN']:
+        messages.error(request, 'You do not have permission to delete care group reports.')
+        return redirect('churches:dashboard')
+
+    try:
+        report = CareGroupReport.objects.get(id=report_id, church=church)
+    except CareGroupReport.DoesNotExist:
+        messages.error(request, 'Care group report not found.')
+        return redirect('members:care_group_report_list')
+
+    # Check permissions - admin can delete all reports, others can only delete their own
+    if user.role.name != 'ADMIN' and report.created_by != user:
+        messages.error(request, 'You can only delete reports you created.')
+        return redirect('members:care_group_report_detail', report_id=report_id)
+
+    if request.method == 'POST':
+        report_name = report.care_group.name
+        report_date = report.date_of_cg
+        report.delete()
+        
+        ActivityLog.objects.create(
+            user=user,
+            church=user.church,
+            action='REPORT_DELETED',
+            description=f'Deleted care group report: {report_name} - {report_date}'
+        )
+        
+        messages.success(request, f'Care group report deleted successfully!')
+        return redirect('members:care_group_report_list')
+    
+    context = {
+        'report': report,
+    }
+    
+    return render(request, 'members/groups/care_group_report_confirm_delete.html', context)
 
 @login_required
 def care_group_attendance_tracking(request, group_id):
