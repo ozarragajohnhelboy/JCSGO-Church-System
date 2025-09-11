@@ -30,14 +30,14 @@
         <select id="sectorSelect" class="form-select">
           <option value="">Choose a sector...</option>
           {% for sector in sectors %}
-            <option value="{{ sector|lower|replace:' ':'_' }}">{{ sector }}</option>
+            <option value="{{ sector|lower|replace:" ,_" }}">{{ sector }}</option>
           {% endfor %}
         </select>
       </div>
       
       <!-- Dynamic Sector Churches -->
       {% for sector in sectors %}
-        <div id="{{ sector|lower|replace:' ':'_' }}Churches" class="church-list">
+        <div id="{{ sector|lower|replace:" ,_" }}Churches" class="church-list">
           {% for church in churches_by_sector|lookup:sector %}
             <div class="church-item" onclick="selectChurch('{{ church.domain }}')">
               <div class="church-info">
