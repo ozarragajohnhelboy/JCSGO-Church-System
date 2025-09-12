@@ -236,14 +236,18 @@ def church_detail(request, church_id):
     new_friends = church.members.filter(is_active=True, is_new_friend=True).count()
     regular_members = church.members.filter(is_active=True, is_new_friend=False).count()
     
-    # Get recent members
-    recent_members = church.members.filter(is_active=True).order_by('-date_joined')[:10]
+    # Get recent members with pagination
+    all_recent_members = church.members.filter(is_active=True).order_by('-date_joined')
+    paginator = Paginator(all_recent_members, 5)  # 5 members per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
     
     context = {
         'church': church,
         'total_members': total_members,
         'new_friends': new_friends,
         'regular_members': regular_members,
-        'recent_members': recent_members,
+        'page_obj': page_obj,
+        'recent_members': page_obj,  # For backward compatibility
     }
     return render(request, 'churches/church_management/church_detail.html', context)

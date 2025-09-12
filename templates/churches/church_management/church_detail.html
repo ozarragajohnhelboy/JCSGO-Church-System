@@ -140,7 +140,7 @@
           <h5 class="card-title mb-0"><i class="bi bi-clock-history me-2"></i>Recent Members</h5>
         </div>
         <div class="card-body">
-          {% if recent_members %}
+          {% if page_obj %}
             <div class="table-responsive">
               <table class="table table-sm">
                 <thead>
@@ -152,7 +152,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {% for member in recent_members %}
+                  {% for member in page_obj %}
                     <tr>
                       <td>
                         <div class="d-flex align-items-center">
@@ -192,6 +192,56 @@
                 </tbody>
               </table>
             </div>
+            
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+              <nav aria-label="Recent members pagination">
+                <ul class="pagination pagination-sm justify-content-center">
+                  {% if page_obj.has_previous %}
+                    <li class="page-item">
+                      <a class="page-link" href="?page=1" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                      </a>
+                    </li>
+                    <li class="page-item">
+                      <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                      </a>
+                    </li>
+                  {% endif %}
+                  
+                  {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                      <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                      </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                      <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                      </li>
+                    {% endif %}
+                  {% endfor %}
+                  
+                  {% if page_obj.has_next %}
+                    <li class="page-item">
+                      <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                      </a>
+                    </li>
+                    <li class="page-item">
+                      <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                      </a>
+                    </li>
+                  {% endif %}
+                </ul>
+              </nav>
+              
+              <!-- Pagination Info -->
+              <div class="text-center text-muted small">
+                Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} members
+              </div>
+            {% endif %}
           {% else %}
             <div class="text-center py-4">
               <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
