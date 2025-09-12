@@ -92,7 +92,7 @@
         <div class="col-md-4">
             <label for="search" class="form-label">Search</label>
             <input type="text" class="form-control" id="search" name="search" 
-                   value="{{ search }}" placeholder="Search by name, location, or domain...">
+                   value="{{ search }}" placeholder="Search by name or location...">
         </div>
         <div class="col-md-2">
             <label for="status" class="form-label">Status</label>
@@ -139,7 +139,6 @@
                 <th>Church</th>
                 <th>Location</th>
                 <th>Sector</th>
-                <th>Domain</th>
                 <th>Members</th>
                 <th>Status</th>
                 <th>Created</th>
@@ -151,15 +150,8 @@
             <tr>
                 <td>
                     <div class="d-flex align-items-center">
-                        {% if church.logo %}
-                            <img src="{{ church.logo.url }}" alt="{{ church.name }}" 
-                                 class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;">
-                        {% else %}
-                            <div class="rounded me-3 bg-light d-flex align-items-center justify-content-center" 
-                                 style="width: 40px; height: 40px;">
-                                <i class="bi bi-building text-muted"></i>
-                            </div>
-                        {% endif %}
+                        <img src="{% static 'image/JCSGO_logo.png' %}" alt="{{ church.name }}" 
+                             class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;">
                         <div>
                             <strong>{{ church.name }}</strong>
                         </div>
@@ -169,7 +161,6 @@
                 <td>
                     <span class="badge bg-primary">{{ church.sector }}</span>
                 </td>
-                <td><code>{{ church.domain }}</code></td>
                 <td>
                     <span class="badge bg-info">{{ church.total_members }}</span>
                 </td>
@@ -209,7 +200,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="text-center py-5">
+                <td colspan="6" class="text-center py-5">
                     <i class="bi bi-building text-muted" style="font-size: 3rem;"></i>
                     <h5 class="text-muted mt-3">No churches found</h5>
                     <p class="text-muted">Start by adding your first church branch.</p>

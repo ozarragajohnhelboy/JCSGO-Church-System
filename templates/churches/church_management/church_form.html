@@ -31,7 +31,7 @@
                 </h5>
             </div>
             <div class="card-body">
-          <form method="post" enctype="multipart/form-data" id="churchForm">
+          <form method="post" id="churchForm">
             {% csrf_token %}
             
                 <div class="row mb-3">
@@ -63,18 +63,6 @@
             
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label for="{{ form.domain.id_for_label }}" class="form-label">
-                            <i class="bi bi-globe me-2"></i>Domain *
-                        </label>
-                        {{ form.domain }}
-                        <div class="form-text">
-                            This will be used for email addresses (e.g., user@domain.jcsgo.com)
-                        </div>
-                        {% if form.domain.errors %}
-                            <div class="text-danger small">{{ form.domain.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6">
                         <label class="form-label">
                             <i class="bi bi-toggle-on me-2"></i>Status
                         </label>
@@ -90,6 +78,12 @@
                         </div>
                         <div class="form-text">
                             Active churches can be selected during registration
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Domain:</strong> Will be automatically generated from the church name (e.g., "JCSGO Central" → "jcsgo-central")
                         </div>
                     </div>
                 </div>
@@ -124,43 +118,12 @@
                 
                 <!-- Hidden sector field -->
                 {{ form.sector }}
-            
-                <!-- Logo Upload -->
+                
+                <!-- Default Logo Info -->
                 <div class="mb-3">
-                    <label class="form-label">
-                        <i class="bi bi-image me-2"></i>Church Logo
-                    </label>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="border rounded p-3 text-center" style="border: 2px dashed #dee2e6; cursor: pointer;" 
-                                 onclick="document.getElementById('{{ form.logo.id_for_label }}').click()">
-                                <div id="logoPreview">
-                                    {% if church and church.logo %}
-                                        <img src="{{ church.logo.url }}" alt="Current logo" class="img-thumbnail mb-2" style="max-width: 120px; max-height: 120px;">
-                                        <p class="text-muted mb-0">Click to change logo</p>
-                                    {% else %}
-                                        <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
-                                        <p class="text-muted mb-0">Click to upload logo</p>
-                                        <small class="text-muted">Recommended: 200x200px, PNG/JPG</small>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {{ form.logo }}
-                            {% if form.logo.errors %}
-                                <div class="text-danger small">{{ form.logo.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-text">
-                                <strong>Logo Guidelines:</strong>
-                                <ul class="mt-2">
-                                    <li>Recommended size: 200x200 pixels</li>
-                                    <li>Supported formats: PNG, JPG, JPEG</li>
-                                    <li>Maximum file size: 2MB</li>
-                                    <li>Square aspect ratio works best</li>
-                                </ul>
-                            </div>
-                        </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Church Logo:</strong> All churches will use the default JCSGO logo for consistency.
                     </div>
                 </div>
                 
@@ -183,61 +146,24 @@
 
 {% block extra_js %}
   <script>
-    // Logo upload preview
-    document.getElementById('{{ form.logo.id_for_label }}').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      const preview = document.getElementById('logoPreview');
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM loaded, initializing church form...');
       
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          preview.innerHTML = `
-            <img src="${e.target.result}" alt="Logo preview" class="logo-preview mb-2">
-            <p class="text-muted mb-0">Click to change logo</p>
-          `;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-    
-    // Drag and drop for logo upload
-    const uploadArea = document.querySelector('.logo-upload-area');
-    
-    uploadArea.addEventListener('dragover', function(e) {
-      e.preventDefault();
-      this.classList.add('dragover');
-    });
-    
-    uploadArea.addEventListener('dragleave', function(e) {
-      e.preventDefault();
-      this.classList.remove('dragover');
-    });
-    
-    uploadArea.addEventListener('drop', function(e) {
-      e.preventDefault();
-      this.classList.remove('dragover');
+      // Debug: List all select elements on the page
+      const allSelects = document.querySelectorAll('select');
+      console.log('All select elements found:', allSelects);
+      allSelects.forEach((select, index) => {
+        console.log(`Select ${index}:`, select.id, select.name, select.className);
+      });
       
-      const files = e.dataTransfer.files;
-      if (files.length > 0) {
-        document.getElementById('{{ form.logo.id_for_label }}').files = files;
-        document.getElementById('{{ form.logo.id_for_label }}').dispatchEvent(new Event('change'));
-      }
-    });
+      // Logo upload functionality removed - using default logo
     
-    // Domain auto-formatting
-    document.getElementById('{{ form.domain.id_for_label }}').addEventListener('input', function(e) {
-      let value = e.target.value.toLowerCase();
-      // Replace spaces and special characters with hyphens
-      value = value.replace(/[^a-z0-9-]/g, '-');
-      // Remove multiple consecutive hyphens
-      value = value.replace(/-+/g, '-');
-      // Remove leading/trailing hyphens
-      value = value.replace(/^-+|-+$/g, '');
-      e.target.value = value;
-    });
+    // Domain is now auto-generated, no need for manual formatting
     
     // Status toggle label update
-    document.getElementById('{{ form.is_active.id_for_label }}').addEventListener('change', function(e) {
+    const statusToggle = document.getElementById('{{ form.is_active.id_for_label }}');
+    if (statusToggle) {
+      statusToggle.addEventListener('change', function(e) {
       const label = document.querySelector('label[for="{{ form.is_active.id_for_label }}"]');
       if (e.target.checked) {
         label.innerHTML = '<span class="text-success">Active</span>';
@@ -245,40 +171,60 @@
         label.innerHTML = '<span class="text-muted">Inactive</span>';
       }
     });
+    } else {
+      console.log('Status toggle not found');
+    }
     
     // Sector selection dynamic behavior
-    document.getElementById('{{ form.sector_choice.id_for_label }}').addEventListener('change', function(e) {
-      const newSectorContainer = document.getElementById('new-sector-container');
-      const newSectorInput = document.getElementById('{{ form.new_sector_name.id_for_label }}');
-      
-      if (e.target.value === '__new__') {
-        newSectorContainer.style.display = 'block';
-        newSectorInput.required = true;
-        newSectorInput.focus();
-      } else {
-        newSectorContainer.style.display = 'none';
-        newSectorInput.required = false;
-        newSectorInput.value = '';
-      }
-    });
+    const sectorChoice = document.getElementById('sector-choice');
+    const newSectorContainer = document.getElementById('new-sector-container');
+    const newSectorInput = document.getElementById('new-sector-name');
+    
+    console.log('Sector choice element:', sectorChoice);
+    console.log('New sector container:', newSectorContainer);
+    console.log('New sector input:', newSectorInput);
+    
+    if (sectorChoice) {
+      console.log('Adding event listener to sector choice');
+      sectorChoice.addEventListener('change', function(e) {
+        console.log('Sector choice changed to:', e.target.value);
+        
+        if (e.target.value === '__new__') {
+          console.log('Showing new sector input');
+          if (newSectorContainer) {
+            newSectorContainer.style.display = 'block';
+          }
+          if (newSectorInput) {
+            newSectorInput.required = true;
+            newSectorInput.focus();
+          }
+        } else {
+          console.log('Hiding new sector input');
+          if (newSectorContainer) {
+            newSectorContainer.style.display = 'none';
+          }
+          if (newSectorInput) {
+            newSectorInput.required = false;
+            newSectorInput.value = '';
+          }
+        }
+      });
+    } else {
+      console.log('Sector choice element not found!');
+    }
     
     // Form validation
-    document.getElementById('churchForm').addEventListener('submit', function(e) {
+    const churchForm = document.getElementById('churchForm');
+    if (churchForm) {
+      churchForm.addEventListener('submit', function(e) {
       const name = document.getElementById('{{ form.name.id_for_label }}').value.trim();
       const location = document.getElementById('{{ form.location.id_for_label }}').value.trim();
-      const domain = document.getElementById('{{ form.domain.id_for_label }}').value.trim();
-      const sectorChoice = document.getElementById('{{ form.sector_choice.id_for_label }}').value;
-      const newSectorName = document.getElementById('{{ form.new_sector_name.id_for_label }}').value.trim();
+      const sectorChoice = document.getElementById('sector-choice').value;
+      const newSectorName = document.getElementById('new-sector-name').value.trim();
       
-      if (!name || !location || !domain || !sectorChoice) {
+      if (!name || !location || !sectorChoice) {
         e.preventDefault();
         showAlert('danger', 'Error', 'Please fill in all required fields.');
-        return;
-      }
-      
-      if (domain.length < 3) {
-        e.preventDefault();
-        showAlert('danger', 'Error', 'Domain must be at least 3 characters long.');
         return;
       }
       
@@ -288,6 +234,9 @@
         return;
       }
     });
+    } else {
+      console.log('Church form not found');
+    }
     
     // Alert system - matches existing design pattern
     function showAlert(type, title, message) {
@@ -328,6 +277,23 @@
                 bsAlert.close();
             }
         }, 5000);
+    }
+    }); // End of DOMContentLoaded
+    
+    // Test function to manually show/hide the field
+    function testShowField() {
+      const container = document.getElementById('new-sector-container');
+      if (container) {
+        if (container.style.display === 'none') {
+          container.style.display = 'block';
+          console.log('Field shown manually');
+        } else {
+          container.style.display = 'none';
+          console.log('Field hidden manually');
+        }
+      } else {
+        console.log('Container not found!');
+      }
     }
   </script>
 {% endblock %}

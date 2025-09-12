@@ -8,9 +8,12 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 import json
 
-from members.models import Church
+from members.models import Church, Role
 from churches.models import ChurchSettings
 from churches.forms import ChurchForm
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 @login_required
@@ -33,8 +36,7 @@ def church_list(request):
     if search:
         churches = churches.filter(
             models.Q(name__icontains=search) |
-            models.Q(location__icontains=search) |
-            models.Q(domain__icontains=search)
+            models.Q(location__icontains=search)
         )
     
     # Apply status filter
@@ -91,7 +93,7 @@ def add_church(request):
         return redirect('churches:dashboard')
     
     if request.method == 'POST':
-        form = ChurchForm(request.POST, request.FILES)
+        form = ChurchForm(request.POST)
         if form.is_valid():
             try:
                 with transaction.atomic():
@@ -111,7 +113,26 @@ def add_church(request):
                         allow_member_directory=False,
                     )
                     
-                    messages.success(request, f'Church "{church.name}" has been successfully created!')
+                    # Create default church admin user
+                    admin_email = f"admin@{church.domain}.jcsgo.com"
+                    admin_role = Role.objects.get(name='ADMIN')
+                    
+                    # Check if admin user already exists
+                    if not User.objects.filter(email=admin_email).exists():
+                        admin_user = User.objects.create_user(
+                            email=admin_email,
+                            first_name='Church',
+                            last_name='Admin',
+                            password='admin123456',  # Default password
+                            church=church,
+                            role=admin_role,
+                            is_active=True
+                        )
+                        print(f"Created admin user: {admin_email}")
+                    else:
+                        print(f"Admin user already exists: {admin_email}")
+                    
+                    messages.success(request, f'Church "{church.name}" has been successfully created with admin user!')
                     return redirect('churches:church_list')
             except Exception as e:
                 messages.error(request, f'Error creating church: {str(e)}')
@@ -135,7 +156,7 @@ def edit_church(request, church_id):
     church = get_object_or_404(Church, id=church_id)
     
     if request.method == 'POST':
-        form = ChurchForm(request.POST, request.FILES, instance=church)
+        form = ChurchForm(request.POST, instance=church)
         if form.is_valid():
             try:
                 form.save()

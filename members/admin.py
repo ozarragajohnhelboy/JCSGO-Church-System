@@ -16,7 +16,7 @@ class ChurchResource(resources.ModelResource):
     class Meta:
         model = Church
         import_id_fields = ('domain',)
-        fields = ('id', 'name', 'location', 'domain', 'is_active', 'created_at', 'updated_at')
+        fields = ('id', 'name', 'location', 'domain', 'sector', 'is_active', 'created_at', 'updated_at')
         export_order = fields
 
 
@@ -101,9 +101,9 @@ class AttendanceResource(resources.ModelResource):
 @admin.register(Church)
 class ChurchAdmin(ImportExportModelAdmin):
     resource_class = ChurchResource
-    list_display = ('name', 'location', 'domain', 'member_count', 'is_active', 'created_at')
-    list_filter = ('is_active', 'created_at')
-    search_fields = ('name', 'location', 'domain')
+    list_display = ('name', 'location', 'domain', 'sector', 'member_count', 'is_active', 'created_at')
+    list_filter = ('is_active', 'sector', 'created_at')
+    search_fields = ('name', 'location', 'domain', 'sector')
     readonly_fields = ('created_at', 'updated_at')
     
     def member_count(self, obj):

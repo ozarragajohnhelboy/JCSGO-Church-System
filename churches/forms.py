@@ -219,21 +219,18 @@ class ChurchForm(forms.ModelForm):
         widget=forms.TextInput(attrs={
             'class': 'form-control',
             'placeholder': 'Enter new sector name',
-            'id': 'new-sector-name',
-            'style': 'display: none;'
+            'id': 'new-sector-name'
         }),
         label='New Sector Name'
     )
     
     class Meta:
         model = Church
-        fields = ['name', 'location', 'domain', 'sector', 'logo', 'is_active']
+        fields = ['name', 'location', 'sector', 'is_active']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter church name'}),
             'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter church location'}),
-            'domain': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter unique domain (e.g., church-name)'}),
             'sector': forms.HiddenInput(),  # Hidden field to store the actual sector value
-            'logo': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
     
@@ -241,8 +238,9 @@ class ChurchForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['name'].required = True
         self.fields['location'].required = True
-        self.fields['domain'].required = True
         self.fields['is_active'].initial = True
+        # Make sector field not required since we handle it in clean()
+        self.fields['sector'].required = False
         
         # Get existing sectors from all churches
         existing_sectors = Church.objects.values_list('sector', flat=True).distinct().order_by('sector')
@@ -264,7 +262,9 @@ class ChurchForm(forms.ModelForm):
         cleaned_data = super().clean()
         sector_choice = cleaned_data.get('sector_choice')
         new_sector_name = cleaned_data.get('new_sector_name')
+        church_name = cleaned_data.get('name')
         
+        # Handle sector selection
         if sector_choice == '__new__':
             if not new_sector_name:
                 raise forms.ValidationError('Please enter a name for the new sector.')
@@ -274,23 +274,46 @@ class ChurchForm(forms.ModelForm):
             # Set the sector field to the selected existing sector
             cleaned_data['sector'] = sector_choice
         
+        # Auto-generate domain from church name
+        if church_name:
+            # Remove "JCSGO" prefix and get the rest
+            name_parts = church_name.strip()
+            if name_parts.upper().startswith('JCSGO'):
+                # Remove "JCSGO" and any following spaces
+                name_parts = name_parts[5:].strip()
+            
+            # Convert to lowercase and remove spaces (join all words together)
+            domain = name_parts.lower().replace(' ', '')
+            # Remove special characters, keep only alphanumeric
+            domain = ''.join(c for c in domain if c.isalnum())
+            
+            # Ensure domain is not empty
+            if not domain:
+                domain = 'church'
+            
+            # Check if domain already exists and make it unique if needed
+            base_domain = domain
+            counter = 1
+            while Church.objects.filter(domain=domain).exclude(pk=self.instance.pk if self.instance.pk else None).exists():
+                domain = f"{base_domain}{counter}"
+                counter += 1
+            
+            # Set the domain field (this will be saved to the model)
+            cleaned_data['domain'] = domain
+        
         return cleaned_data
     
-    def clean_domain(self):
-        domain = self.cleaned_data.get('domain')
-        if domain:
-            # Convert to lowercase and replace spaces with hyphens
-            domain = domain.lower().replace(' ', '-')
-            
-            # Check if domain already exists (excluding current instance if editing)
-            queryset = Church.objects.filter(domain=domain)
-            if self.instance.pk:
-                queryset = queryset.exclude(pk=self.instance.pk)
-            
-            if queryset.exists():
-                raise forms.ValidationError('A church with this domain already exists.')
+    def save(self, commit=True):
+        """Override save to ensure domain is set"""
+        instance = super().save(commit=False)
         
-        return domain
+        # Ensure domain is set from cleaned_data
+        if hasattr(self, 'cleaned_data') and 'domain' in self.cleaned_data:
+            instance.domain = self.cleaned_data['domain']
+        
+        if commit:
+            instance.save()
+        return instance
 
 
 class ProfileUpdateForm(forms.ModelForm):

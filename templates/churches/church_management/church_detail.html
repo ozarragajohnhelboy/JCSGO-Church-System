@@ -28,13 +28,7 @@
         </div>
         <div class="card-body">
           <div class="text-center mb-3">
-            {% if church.logo %}
-              <img src="{{ church.logo.url }}" alt="{{ church.name }}" class="img-thumbnail" style="max-width: 150px; max-height: 150px;" />
-            {% else %}
-              <div class="bg-light d-flex align-items-center justify-content-center rounded mx-auto" style="width: 150px; height: 150px;">
-                <i class="bi bi-building text-muted" style="font-size: 3rem;"></i>
-              </div>
-            {% endif %}
+            <img src="{% static 'image/JCSGO_logo.png' %}" alt="{{ church.name }}" class="img-thumbnail" style="max-width: 150px; max-height: 150px;" />
           </div>
 
           <table class="table table-borderless">
@@ -52,10 +46,10 @@
             </tr>
             <tr>
               <td>
-                <strong>Domain:</strong>
+                <strong>Sector:</strong>
               </td>
               <td>
-                <code>{{ church.domain }}</code>
+                <span class="badge bg-primary">{{ church.sector }}</span>
               </td>
             </tr>
             <tr>
