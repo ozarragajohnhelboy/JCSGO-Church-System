@@ -252,36 +252,86 @@
     </div>
 </div>
 
-<!-- Recent Activity -->
+<!-- Group Activity Logs -->
 <div class="card">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">
             <i class="bi bi-activity me-2"></i>
-            Recent Group Activity
+            Group Activity Logs
         </h5>
+        <button class="btn btn-sm btn-outline-primary" onclick="toggleGroupActivityFilters()">
+            <i class="bi bi-funnel"></i> Filters
+        </button>
     </div>
-    <div class="card-body">
-        {% if recent_activity %}
-        {% for activity in recent_activity %}
-        <div class="activity-item">
-            <div class="d-flex justify-content-between">
-                <div>
-                    <strong>{{ activity.user.full_name }}</strong>
-                    <span class="text-muted">{{ activity.get_action_display }}</span>
-                    {% if activity.description %}
-                    <br><small class="text-muted">{{ activity.description }}</small>
-                    {% endif %}
-                </div>
-                <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+    
+    <!-- Activity Filters -->
+    <div id="groupActivityFilters" class="card-body border-bottom" style="display: none;">
+        <form id="groupActivityFilterForm" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Date From</label>
+                <input type="date" class="form-control" id="groupActivityDateFrom" name="date_from">
             </div>
+            <div class="col-md-3">
+                <label class="form-label">Date To</label>
+                <input type="date" class="form-control" id="groupActivityDateTo" name="date_to">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Action</label>
+                <select class="form-select" id="groupActivityAction" name="action">
+                    <option value="">All Actions</option>
+                    <option value="LOGIN">Login</option>
+                    <option value="LOGOUT">Logout</option>
+                    <option value="REGISTER">Register</option>
+                    <option value="PROFILE_UPDATE">Profile Update</option>
+                    <option value="ROLE_CHANGE">Role Change</option>
+                    <option value="STATUS_CHANGE">Status Change</option>
+                    <option value="ATTENDANCE">Attendance</option>
+                    <option value="FOLLOW_UP">Follow Up</option>
+                    <option value="GROUP_JOIN">Group Join</option>
+                    <option value="GROUP_LEAVE">Group Leave</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="loadGroupActivities({{ group.id }}, 5)">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearGroupActivityFilters()">
+                        <i class="bi bi-x"></i> Clear
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="card-body">
+        <div id="groupActivityLogsContent" style="max-height: 300px; overflow-y: auto;">
+            {% if recent_activity %}
+            {% for activity in recent_activity %}
+            <div class="activity-item">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>{{ activity.user.full_name }}</strong>
+                        <span class="text-muted">{{ activity.get_action_display }}</span>
+                        {% if activity.description %}
+                        <br><small class="text-muted">{{ activity.description }}</small>
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="text-center py-3">
+                <i class="bi bi-activity fs-1 text-muted"></i>
+                <p class="text-muted">No recent activity</p>
+            </div>
+            {% endif %}
         </div>
-        {% endfor %}
-        {% else %}
-        <div class="text-center py-3">
-            <i class="bi bi-activity fs-1 text-muted"></i>
-            <p class="text-muted">No recent activity</p>
-        </div>
-        {% endif %}
+        
+        <!-- Load More Button -->
+        <div id="groupActivityLoadMore" class="mt-3"></div>
     </div>
 </div>
 
@@ -327,5 +377,79 @@
     // Pass Django template data to JavaScript
     window.groupId = {{ group.pk }};
     window.removeMemberUrl = "{% url 'members:care_group_remove_member' group.pk 0 %}";
+    
+    // Group Activity Logs Functions
+    function toggleGroupActivityFilters() {
+        const filters = document.getElementById('groupActivityFilters');
+        filters.style.display = filters.style.display === 'none' ? 'block' : 'none';
+    }
+    
+    function clearGroupActivityFilters() {
+        document.getElementById('groupActivityDateFrom').value = '';
+        document.getElementById('groupActivityDateTo').value = '';
+        document.getElementById('groupActivityAction').value = '';
+        loadGroupActivities({{ group.id }}, 5);
+    }
+    
+    function loadGroupActivities(groupId, limit = 5) {
+        const dateFrom = document.getElementById('groupActivityDateFrom').value;
+        const dateTo = document.getElementById('groupActivityDateTo').value;
+        const action = document.getElementById('groupActivityAction').value;
+        
+        // Show loading state
+        document.getElementById('groupActivityLogsContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading activities...</p></div>';
+        
+        const params = new URLSearchParams({
+            limit: limit
+        });
+        
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+        if (action) params.append('action', action);
+        
+        fetch(`/members/ajax/group-activity-logs/${groupId}/?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('groupActivityLogsContent').innerHTML = data.html;
+                    document.getElementById('groupActivityLoadMore').innerHTML = data.load_more;
+                } else {
+                    document.getElementById('groupActivityLogsContent').innerHTML = '<div class="alert alert-danger">Failed to load activities.</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('groupActivityLogsContent').innerHTML = '<div class="alert alert-danger">Error loading activities.</div>';
+            });
+    }
+    
+    function loadMoreGroupActivities(groupId, limit) {
+        const dateFrom = document.getElementById('groupActivityDateFrom').value;
+        const dateTo = document.getElementById('groupActivityDateTo').value;
+        const action = document.getElementById('groupActivityAction').value;
+        
+        const params = new URLSearchParams({
+            limit: limit
+        });
+        
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+        if (action) params.append('action', action);
+        
+        fetch(`/members/ajax/group-activity-logs/${groupId}/?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('groupActivityLogsContent').innerHTML = data.html;
+                    document.getElementById('groupActivityLoadMore').innerHTML = data.load_more;
+                } else {
+                    document.getElementById('groupActivityLogsContent').innerHTML = '<div class="alert alert-danger">Failed to load more activities.</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('groupActivityLogsContent').innerHTML = '<div class="alert alert-danger">Error loading more activities.</div>';
+            });
+    }
 </script>
 {% endblock %} 

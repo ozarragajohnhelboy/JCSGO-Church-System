@@ -257,6 +257,155 @@ def ajax_activity_details(request, activity_id):
         return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
+def ajax_member_activity_logs(request, member_id):
+    """AJAX endpoint to get activity logs for a specific member with scrollable view"""
+    try:
+        member = get_object_or_404(CustomUser, pk=member_id)
+        
+        # Check if user has permission to view this member's activities
+        if not request.user.can_access_church_data(member.church):
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        # Get filter parameters
+        date_from = request.GET.get('date_from', '')
+        date_to = request.GET.get('date_to', '')
+        action_filter = request.GET.get('action', '')
+        limit = int(request.GET.get('limit', 5))  # Default to 5 activities
+        
+        # Get activities for this member
+        activities = member.activity_logs.select_related('related_user').order_by('-timestamp')
+        
+        # Apply filters
+        if date_from:
+            activities = activities.filter(timestamp__date__gte=date_from)
+        if date_to:
+            activities = activities.filter(timestamp__date__lte=date_to)
+        if action_filter:
+            activities = activities.filter(action=action_filter)
+        
+        # Get limited activities for scrollable view
+        limited_activities = activities[:limit]
+        total_count = activities.count()
+        
+        # Generate HTML for activities
+        activities_html = ""
+        if limited_activities:
+            for activity in limited_activities:
+                activities_html += f"""
+                <div class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 me-auto">
+                        <div class="fw-bold">{activity.get_action_display()}</div>
+                        <small class="text-muted">{activity.description}</small>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">{activity.timestamp.strftime('%b %d, %Y')}</small>
+                        <br><small class="text-muted">{activity.timestamp.strftime('%I:%M %p')}</small>
+                    </div>
+                </div>
+                """
+        else:
+            activities_html = '<p class="text-muted text-center py-3">No activities found for the selected criteria.</p>'
+        
+        # Show "Load More" button if there are more activities
+        load_more_html = ""
+        if total_count > limit:
+            load_more_html = f"""
+            <div class="text-center mt-3">
+                <button class="btn btn-outline-primary btn-sm" onclick="loadMoreMemberActivities({member_id}, {limit + 5})">
+                    <i class="bi bi-arrow-down-circle"></i> Load More ({total_count - limit} more)
+                </button>
+            </div>
+            """
+        
+        return JsonResponse({
+            'success': True,
+            'html': activities_html,
+            'load_more': load_more_html,
+            'total_count': total_count,
+            'showing_count': len(limited_activities)
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def ajax_group_activity_logs(request, group_id):
+    """AJAX endpoint to get activity logs for a specific group with scrollable view"""
+    try:
+        group = get_object_or_404(Group, pk=group_id)
+        
+        # Check if user has permission to view this group's activities
+        if not request.user.can_access_church_data(group.church):
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        # Get filter parameters
+        date_from = request.GET.get('date_from', '')
+        date_to = request.GET.get('date_to', '')
+        action_filter = request.GET.get('action', '')
+        limit = int(request.GET.get('limit', 5))  # Default to 5 activities
+        
+        # Get activities for group members
+        group_member_users = CustomUser.objects.filter(
+            regular_member_profile__group=group
+        )
+        activities = ActivityLog.objects.filter(
+            user__in=group_member_users
+        ).select_related('user', 'related_user').order_by('-timestamp')
+        
+        # Apply filters
+        if date_from:
+            activities = activities.filter(timestamp__date__gte=date_from)
+        if date_to:
+            activities = activities.filter(timestamp__date__lte=date_to)
+        if action_filter:
+            activities = activities.filter(action=action_filter)
+        
+        # Get limited activities for scrollable view
+        limited_activities = activities[:limit]
+        total_count = activities.count()
+        
+        # Generate HTML for activities
+        activities_html = ""
+        if limited_activities:
+            for activity in limited_activities:
+                activities_html += f"""
+                <div class="activity-item">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>{activity.user.full_name}</strong>
+                            <span class="text-muted">{activity.get_action_display()}</span>
+                            {f'<br><small class="text-muted">{activity.description}</small>' if activity.description else ''}
+                        </div>
+                        <small class="text-muted">{activity.timestamp.strftime('%b %d, %Y %I:%M %p')}</small>
+                    </div>
+                </div>
+                """
+        else:
+            activities_html = '<div class="text-center py-3"><i class="bi bi-activity fs-1 text-muted"></i><p class="text-muted">No activities found for the selected criteria.</p></div>'
+        
+        # Show "Load More" button if there are more activities
+        load_more_html = ""
+        if total_count > limit:
+            load_more_html = f"""
+            <div class="text-center mt-3">
+                <button class="btn btn-outline-primary btn-sm" onclick="loadMoreGroupActivities({group_id}, {limit + 5})">
+                    <i class="bi bi-arrow-down-circle"></i> Load More ({total_count - limit} more)
+                </button>
+            </div>
+            """
+        
+        return JsonResponse({
+            'success': True,
+            'html': activities_html,
+            'load_more': load_more_html,
+            'total_count': total_count,
+            'showing_count': len(limited_activities)
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
 def export_members(request):
     """Export members data"""
     user = request.user
@@ -799,7 +948,9 @@ def care_group_detail(request, group_id):
         messages.error(request, 'You do not have permission to view this care group.')
         return redirect('members:care_group_list')
     
-    if user.role.name in ['CSL', 'CL'] and care_group.leader != user:
+    # Check permissions based on leadership hierarchy
+    if user.role.name == 'CL' and care_group.leader != user:
+        # CL can only view their own care groups
         try:
             user_member_profile = RegularMember.objects.get(user=user)
             if user_member_profile.group != care_group:
@@ -808,6 +959,38 @@ def care_group_detail(request, group_id):
         except RegularMember.DoesNotExist:
             messages.error(request, 'You can only view care groups you lead or are a member of.')
             return redirect('members:care_group_list')
+    elif user.role.name in ['VSL', 'CSL'] and care_group.leader != user:
+        # VSL/CSL can view care groups under their leadership hierarchy
+        try:
+            user_member_profile = RegularMember.objects.get(user=user)
+            if user_member_profile.group != care_group:
+                # Check if the care group leader is under user's leadership
+                user_groups = Group.objects.filter(leader=user, group_type='CARE')
+                member_users = CustomUser.objects.filter(
+                    regular_member_profile__group__in=user_groups
+                ).exclude(id=user.id)
+                
+                can_access = (
+                    care_group.leader in member_users or
+                    # Additional check: if the care group leader is under user's leadership hierarchy
+                    (user.role.name == 'VSL' and care_group.leader.role.name in ['CSL', 'CL', 'CM']) or
+                    (user.role.name == 'CSL' and care_group.leader.role.name in ['CL', 'CM'])
+                )
+                
+                if not can_access:
+                    messages.error(request, 'You can only view care groups you lead or are a member of.')
+                    return redirect('members:care_group_list')
+        except RegularMember.DoesNotExist:
+            # If user is not a regular member, check leadership hierarchy
+            can_access = (
+                # Check if the care group leader is under user's leadership hierarchy
+                (user.role.name == 'VSL' and care_group.leader.role.name in ['CSL', 'CL', 'CM']) or
+                (user.role.name == 'CSL' and care_group.leader.role.name in ['CL', 'CM'])
+            )
+            
+            if not can_access:
+                messages.error(request, 'You can only view care groups you lead or are a member of.')
+                return redirect('members:care_group_list')
 
     members = care_group.members.select_related('user').order_by('user__first_name')
 
@@ -1639,9 +1822,14 @@ def care_group_report_list(request):
             regular_member_profile__group__in=user_groups
         ).exclude(id=user.id)
         
+        # VSL can see reports from:
+        # 1. Their own care groups
+        # 2. Care groups led by their members
+        # 3. Care groups led by CSL, CL, CM (under their leadership hierarchy)
         reports = reports.filter(
             Q(care_group__leader=user) | 
-            Q(care_group__leader__in=member_users)
+            Q(care_group__leader__in=member_users) |
+            Q(care_group__leader__role__name__in=['CSL', 'CL', 'CM'])
         ).distinct()
     elif user.role.name == 'CSL':
         user_groups = Group.objects.filter(leader=user, group_type='CARE')
@@ -1649,9 +1837,14 @@ def care_group_report_list(request):
             regular_member_profile__group__in=user_groups
         ).exclude(id=user.id)
         
+        # CSL can see reports from:
+        # 1. Their own care groups
+        # 2. Care groups led by their members
+        # 3. Care groups led by CL, CM (under their leadership hierarchy)
         reports = reports.filter(
             Q(care_group__leader=user) | 
-            Q(care_group__leader__in=member_users)
+            Q(care_group__leader__in=member_users) |
+            Q(care_group__leader__role__name__in=['CL', 'CM'])
         ).distinct()
     elif user.role.name == 'CL':
         reports = reports.filter(care_group__leader=user)
@@ -1695,7 +1888,8 @@ def care_group_report_list(request):
         
         care_groups = care_groups.filter(
             Q(leader=user) | 
-            Q(leader__in=member_users)
+            Q(leader__in=member_users) |
+            Q(leader__role__name__in=['CSL', 'CL', 'CM'])
         ).distinct()
         
     elif user.role.name == 'CSL':
@@ -1706,7 +1900,8 @@ def care_group_report_list(request):
         
         care_groups = care_groups.filter(
             Q(leader=user) | 
-            Q(leader__in=member_users)  
+            Q(leader__in=member_users) |
+            Q(leader__role__name__in=['CL', 'CM'])
         ).distinct()
     elif user.role.name == 'CL':
         care_groups = care_groups.filter(leader=user)
@@ -1861,20 +2056,36 @@ def care_group_report_detail(request, report_id):
         messages.error(request, 'Care group report not found.')
         return redirect('members:care_group_report_list')
 
-    # Check permissions
+    # Check permissions - same logic as in care_group_report_list
     if user.role.name == 'CL' and report.care_group.leader != user:
         messages.error(request, 'You can only view reports for your own care groups.')
         return redirect('members:care_group_report_list')
     elif user.role.name in ['VSL', 'CSL']:
         # Check if user can access this report based on their leadership hierarchy
+        # Same logic as in care_group_report_list
         user_groups = Group.objects.filter(leader=user, group_type='CARE')
         member_users = CustomUser.objects.filter(
             regular_member_profile__group__in=user_groups
         ).exclude(id=user.id)
         
-        if not (report.care_group.leader == user or report.care_group.leader in member_users):
+        # Allow access if:
+        # 1. User is the leader of this care group, OR
+        # 2. The care group leader is a member of user's care groups, OR
+        # 3. The care group leader is under user's leadership hierarchy
+        can_access = (
+            report.care_group.leader == user or 
+            report.care_group.leader in member_users or
+            # Additional check: if the care group leader is under user's leadership
+            (user.role.name == 'VSL' and report.care_group.leader.role.name in ['CSL', 'CL', 'CM']) or
+            (user.role.name == 'CSL' and report.care_group.leader.role.name in ['CL', 'CM'])
+        )
+        
+        if not can_access:
             messages.error(request, 'You can only view reports for care groups under your leadership.')
             return redirect('members:care_group_report_list')
+    elif user.role.name == 'ADMIN':
+        # Admin can view all reports
+        pass
 
     member_reports = report.member_reports.select_related('member').order_by('member__first_name', 'member__last_name')
     
