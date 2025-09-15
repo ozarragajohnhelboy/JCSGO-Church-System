@@ -250,24 +250,30 @@
 {{ block.super }}
 <script>
 function showActivityDetails(activityId) {
-    // You can implement AJAX call to get detailed activity information
-    // For now, we'll show a simple alert
-    alert('Detailed activity information will be displayed here for activity ID: ' + activityId);
+    // Show loading state
+    $('#activityDetailsContent').html('<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading activity details...</p></div>');
+    $('#activityDetailsModal').modal('show');
     
-    // Example of how you could implement this:
-    /*
     $.ajax({
         url: `/members/ajax/activity-details/${activityId}/`,
         method: 'GET',
         success: function(response) {
-            $('#activityDetailsContent').html(response.html);
-            $('#activityDetailsModal').modal('show');
+            if (response.success) {
+                $('#activityDetailsContent').html(response.html);
+            } else {
+                $('#activityDetailsContent').html('<div class="alert alert-danger">Failed to load activity details.</div>');
+            }
         },
-        error: function() {
-            showError('Failed to load activity details');
+        error: function(xhr) {
+            let errorMessage = 'Failed to load activity details.';
+            if (xhr.status === 403) {
+                errorMessage = 'You do not have permission to view this activity.';
+            } else if (xhr.status === 404) {
+                errorMessage = 'Activity not found.';
+            }
+            $('#activityDetailsContent').html(`<div class="alert alert-danger">${errorMessage}</div>`);
         }
     });
-    */
 }
 </script>
 {% endblock %} 

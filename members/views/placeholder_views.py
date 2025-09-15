@@ -134,7 +134,27 @@ def ajax_record_attendance(request, user_id):
 @login_required
 def ajax_update_follow_up(request, new_friend_id):
     """AJAX endpoint to update follow up status"""
-    return JsonResponse({'success': True})
+    if request.method == 'POST':
+        try:
+            new_friend = get_object_or_404(NewFriend, id=new_friend_id)
+            
+            if not request.user.can_access_church_data(new_friend.user.church):
+                return JsonResponse({'error': 'Permission denied'}, status=403)
+            
+            status = request.POST.get('status')
+            notes = request.POST.get('notes', '')
+            
+            new_friend.update_follow_up(status, notes)
+            
+            return JsonResponse({
+                'success': True,
+                'follow_up_status': new_friend.follow_up_status,
+                'last_follow_up': new_friend.last_follow_up.isoformat() if new_friend.last_follow_up else None
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
 
 @csrf_exempt
 @login_required
@@ -147,6 +167,94 @@ def ajax_add_to_group(request, user_id, group_id):
 def ajax_remove_from_group(request, user_id, group_id):
     """AJAX endpoint to remove member from group"""
     return JsonResponse({'success': True})
+
+@login_required
+def ajax_activity_details(request, activity_id):
+    """AJAX endpoint to get activity details"""
+    try:
+        activity = get_object_or_404(ActivityLog, pk=activity_id)
+        
+        # Check if user has permission to view this activity
+        if not request.user.can_access_church_data(activity.church):
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        # Prepare the details data
+        details_html = f"""
+        <div class="row">
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">Activity Information</h6>
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>Action:</strong></td>
+                        <td>
+                            <span class="badge bg-{'success' if activity.action == 'LOGIN' else 'secondary' if activity.action == 'LOGOUT' else 'primary' if activity.action == 'REGISTER' else 'info' if activity.action == 'ATTENDANCE' else 'warning'}">
+                                {activity.get_action_display()}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>User:</strong></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {'<img src="' + activity.user.profile_picture.url + '" alt="Profile" class="rounded-circle me-2" width="24" height="24">' if activity.user.profile_picture else '<div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 24px; height: 24px;"><i class="bi bi-person text-white" style="font-size: 12px;"></i></div>'}
+                                <span>{activity.user.full_name}</span>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Church:</strong></td>
+                        <td>{activity.church.name if activity.church else 'N/A'}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Timestamp:</strong></td>
+                        <td>
+                            {activity.timestamp.strftime('%B %d, %Y at %I:%M %p')}
+                            <br><small class="text-muted">{activity.timestamp.strftime('%A')}</small>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6 class="text-muted mb-3">Technical Details</h6>
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>IP Address:</strong></td>
+                        <td>
+                            <code>{activity.ip_address if activity.ip_address else 'N/A'}</code>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>User Agent:</strong></td>
+                        <td>
+                            <small class="text-muted">
+                                {activity.user_agent[:100] + '...' if activity.user_agent and len(activity.user_agent) > 100 else activity.user_agent or 'N/A'}
+                            </small>
+                        </td>
+                    </tr>
+                    {'<tr><td><strong>Related User:</strong></td><td>' + activity.related_user.full_name + '</td></tr>' if activity.related_user else ''}
+                </table>
+            </div>
+        </div>
+        
+        <div class="row mt-3">
+            <div class="col-12">
+                <h6 class="text-muted mb-3">Description</h6>
+                <div class="alert alert-light">
+                    <p class="mb-0">{activity.description}</p>
+                </div>
+            </div>
+        </div>
+        
+        {'<div class="row mt-3"><div class="col-12"><h6 class="text-muted mb-3">Additional Data</h6><div class="alert alert-info"><pre class="mb-0">' + str(activity.metadata) + '</pre></div></div></div>' if activity.metadata else ''}
+        """
+        
+        return JsonResponse({
+            'success': True,
+            'html': details_html
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @login_required
 def export_members(request):
@@ -849,8 +957,77 @@ def care_group_remove_member(request, group_id, member_id):
 
 @login_required
 def role_new_friends_list(request):
-    """New friends list for specific roles"""
-    return render(request, 'members/members/role_new_friends_list.html', {})
+    """List new friends endorsed to the current user (VSL, CSL, CL, CM)"""
+    user = request.user
+
+    if user.role.name not in ['VSL', 'CSL', 'CL', 'CM']:
+        messages.error(request, 'You do not have permission to access this page.')
+        return redirect('churches:dashboard')
+    
+    church = user.church
+
+    search = request.GET.get('search', '')
+    follow_up_status = request.GET.get('follow_up_status', '')
+    timer_status = request.GET.get('timer_status', '')
+
+    new_friends_users = CustomUser.objects.filter(
+        church=church,
+        is_active=True,
+        is_new_friend=True,
+        new_friend_profile__endorsed_to=user  
+    )
+
+    if search:
+        new_friends_users = new_friends_users.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(email__icontains=search) |
+            Q(new_friend_profile__invited_by__first_name__icontains=search) |
+            Q(new_friend_profile__invited_by__last_name__icontains=search)
+        )
+    
+    if timer_status:
+        new_friends_users = new_friends_users.filter(timer_status=timer_status)
+
+    new_friends = []
+    for user_obj in new_friends_users:
+        try:
+            new_friend_profile = NewFriend.objects.get(user=user_obj)
+            if follow_up_status and new_friend_profile.follow_up_status != follow_up_status:
+                continue
+            new_friends.append(new_friend_profile)
+        except NewFriend.DoesNotExist:
+            new_friend_profile = NewFriend.objects.create(
+                user=user_obj,
+                invited_by=None,
+                endorsed_to=user,
+                notes='',
+                is_active=True
+            )
+            new_friends.append(new_friend_profile)
+
+    if follow_up_status:
+        new_friends = [nf for nf in new_friends if nf.follow_up_status == follow_up_status]
+
+    new_friends.sort(key=lambda x: x.registration_date, reverse=True)
+
+    paginator = Paginator(new_friends, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'search': search,
+        'follow_up_status': follow_up_status,
+        'timer_status': timer_status,
+        'total_new_friends': len(new_friends),
+        'pending_follow_up': len([nf for nf in new_friends if nf.follow_up_status == 'PENDING']),
+        'engaged_count': len([nf for nf in new_friends if nf.follow_up_status == 'ENGAGED']),
+        'user_role': user.role.name,
+        'is_role_view': True,
+    }
+    
+    return render(request, 'members/members/role_new_friends_list.html', context)
 
 @login_required
 def user_profile(request):

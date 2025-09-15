@@ -173,6 +173,8 @@ def new_friends_list(request):
         'follow_up_status': follow_up_status,
         'timer_status': timer_status,
         'total_new_friends': len(new_friends),
+        'pending_follow_up': len([nf for nf in new_friends if nf.follow_up_status == 'PENDING']),
+        'engaged_count': len([nf for nf in new_friends if nf.follow_up_status == 'ENGAGED']),
     }
     
     return render(request, 'members/members/new_friends_list.html', context)
@@ -233,6 +235,14 @@ def regular_members_list(request):
         'group_filter': group_filter,
         'roles': roles,
         'total_regular_members': len(regular_members),
+        'by_role_type': {},
     }
+    
+    # Calculate counters by role type
+    for rm in regular_members:
+        role = rm.role_type
+        if role not in context['by_role_type']:
+            context['by_role_type'][role] = {'count': 0, 'name': role}
+        context['by_role_type'][role]['count'] += 1
     
     return render(request, 'members/members/regular_members_list.html', context)

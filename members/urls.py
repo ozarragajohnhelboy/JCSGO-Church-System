@@ -51,6 +51,7 @@ urlpatterns = [
     
     # Activity Logs
     path('activity-logs/', views.activity_logs, name='activity_logs'),
+    path('ajax/activity-details/<int:activity_id>/', views.ajax_activity_details, name='ajax_activity_details'),
     
     # Export functionality
     path('export/', views.export_members, name='export_members'),
