@@ -48,7 +48,7 @@ def regular_member_add(request):
 
                     regular_member = RegularMember.objects.create(
                         user=user,
-                        role_type=form.cleaned_data['role'],
+                        role_type=form.cleaned_data['role'].name,
                         group=form.cleaned_data['group']
                     )
 
@@ -97,7 +97,7 @@ def regular_member_edit(request, regular_member_id):
                     user.role = form.cleaned_data['role']
                     user.save()
                     
-                    regular_member.role_type = form.cleaned_data['role']
+                    regular_member.role_type = form.cleaned_data['role'].name
                     regular_member.group = form.cleaned_data['group']
                     regular_member.save()
                     
