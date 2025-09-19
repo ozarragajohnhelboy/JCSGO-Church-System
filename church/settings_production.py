@@ -157,8 +157,16 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
 # Session security
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+# Allow HTTP for IP-based deployments (when using IP addresses instead of domains)
+if DEBUG or any(host.replace('.', '').isdigit() for host in ALLOWED_HOSTS):
+    # For development or IP-based deployments, allow HTTP cookies
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+else:
+    # For production with domains, enforce HTTPS cookies
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 
