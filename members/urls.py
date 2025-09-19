@@ -24,7 +24,7 @@ urlpatterns = [
     
     # Groups (Admin access)
     path('groups/', views.group_list, name='group_list'),
-    path('groups/<int:group_id>/', views.group_detail, name='group_detail'),
+    path('groups/<int:pk>/', views.group_detail, name='group_detail'),
     
     # Care Groups (Leadership access - VSL, CSL, CL)
     path('care-groups/', views.care_group_list, name='care_group_list'),
@@ -51,6 +51,9 @@ urlpatterns = [
     
     # Activity Logs
     path('activity-logs/', views.activity_logs, name='activity_logs'),
+    path('ajax/activity-details/<int:activity_id>/', views.ajax_activity_details, name='ajax_activity_details'),
+    path('ajax/member-activity-logs/<int:member_id>/', views.ajax_member_activity_logs, name='ajax_member_activity_logs'),
+    path('ajax/group-activity-logs/<int:group_id>/', views.ajax_group_activity_logs, name='ajax_group_activity_logs'),
     
     # Export functionality
     path('export/', views.export_members, name='export_members'),
@@ -80,6 +83,8 @@ urlpatterns = [
     path('care-group-reports/<int:report_id>/print/', views.care_group_report_print, name='care_group_report_print'),
     path('care-group-reports/<int:report_id>/edit/', views.care_group_report_edit, name='care_group_report_edit'),
     path('care-group-reports/<int:report_id>/delete/', views.care_group_report_delete, name='care_group_report_delete'),
+    path('care-group-reports/export/', views.care_group_report_export, name='care_group_report_export'),
+    path('care-group-reports/<int:report_id>/export/', views.care_group_member_report_export, name='care_group_member_report_export'),
     
     # Care Group Attendance Tracking
     path('care-groups/<int:group_id>/attendance/', views.care_group_attendance_tracking, name='care_group_attendance_tracking'),

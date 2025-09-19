@@ -12,6 +12,12 @@
       border: none;
       border-radius: 15px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .stats-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
     
     .stats-card:nth-child(2) {
@@ -20,6 +26,10 @@
     
     .stats-card:nth-child(3) {
       background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .stats-card:nth-child(4) {
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
     }
     
     .group-card {
@@ -126,12 +136,31 @@
       text-decoration: none;
       border-radius: 10px;
       transition: transform 0.2s;
+      border: none;
+      font-weight: 500;
     }
     
     .action-button:hover {
       color: white;
       text-decoration: none;
       transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .action-button.secondary {
+      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    }
+    
+    .action-button.secondary:hover {
+      box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+    }
+    
+    .action-button.success {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+    
+    .action-button.success:hover {
+      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
     }
     
     .empty-state {
@@ -145,14 +174,64 @@
       margin-bottom: 1rem;
       opacity: 0.5;
     }
+    
+    .chart-container {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 1.5rem;
+      position: relative;
+      height: 400px;
+    }
+    
+    .chart-container canvas {
+      max-height: 350px !important;
+      width: 100% !important;
+    }
+    
+    
+    .care-group-list {
+      background: white;
+      border-radius: 15px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .care-group-item {
+      padding: 1rem;
+      border: 1px solid #e9ecef;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      transition: all 0.3s ease;
+    }
+    
+    .care-group-item:hover {
+      border-color: #007bff;
+      box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+    }
+    
+    .care-group-item:last-child {
+      margin-bottom: 0;
+    }
+    
+    .btn-action {
+      padding: 0.5rem 1rem;
+      margin: 0.25rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-action:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
   </style>
 {% endblock %}
 
-<!-- This template extends base.html but doesn't override the content block -->
-<!-- The base template will handle the sidebar logic based on user role -->
-<!-- For non-admin users (VSL, CSL, CL, CM, NEW_FRIEND), no sidebar will be shown -->
-
-<!-- Dashboard content will be displayed in the main content area -->
+{% block content %}
 <div class="container-fluid">
   <!-- Header -->
   <div class="row mb-4">
@@ -178,33 +257,16 @@
     </div>
   </div>
 
-  <!-- Statistics Cards -->
+  <!-- Enhanced Statistics Cards -->
   <div class="row mb-4">
     <div class="col-xl-3 col-md-6 mb-4">
       <div class="card stats-card">
         <div class="card-body">
           <div class="d-flex justify-content-between">
             <div>
-              <h5 class="card-title text-white">Groups Led</h5>
-              <h2 class="text-white mb-0">{{ led_groups.count }}</h2>
-              <small class="text-white-50">Active groups</small>
-            </div>
-            <div class="align-self-center">
-              <i class="bi bi-collection display-4 text-white-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card stats-card">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h5 class="card-title text-white">Total Members</h5>
-              <h2 class="text-white mb-0">{{ total_group_members }}</h2>
-              <small class="text-white-50">In your groups</small>
+              <h5 class="card-title text-white">Direct Members</h5>
+              <h2 class="text-white mb-0">{{ direct_members_count }}</h2>
+              <small class="text-white-50">In your care groups</small>
             </div>
             <div class="align-self-center">
               <i class="bi bi-people display-4 text-white-50"></i>
@@ -219,18 +281,12 @@
         <div class="card-body">
           <div class="d-flex justify-content-between">
             <div>
-              <h5 class="card-title text-white">Avg Capacity</h5>
-              <h2 class="text-white mb-0">
-                {% if led_groups.count > 0 %}
-                  {{ total_group_members|floatformat:0 }}
-                {% else %}
-                  0
-                {% endif %}
-              </h2>
-              <small class="text-white-50">Members per group</small>
+              <h5 class="card-title text-white">Nested Members</h5>
+              <h2 class="text-white mb-0">{{ nested_members_count }}</h2>
+              <small class="text-white-50">Members of your members' groups</small>
             </div>
             <div class="align-self-center">
-              <i class="bi bi-bar-chart display-4 text-white-50"></i>
+              <i class="bi bi-diagram-3 display-4 text-white-50"></i>
             </div>
           </div>
         </div>
@@ -242,16 +298,29 @@
         <div class="card-body">
           <div class="d-flex justify-content-between">
             <div>
-              <h5 class="card-title text-white">Full Groups</h5>
-              <h2 class="text-white mb-0">
-                {% for group in group_stats %}
-                  {% if group.is_full %}{{ forloop.counter }}{% endif %}
-                {% endfor %}
-              </h2>
-              <small class="text-white-50">At capacity</small>
+              <h5 class="card-title text-white">Total Care Group</h5>
+              <h2 class="text-white mb-0">{{ total_care_group_members }}</h2>
+              <small class="text-white-50">All members under you</small>
             </div>
             <div class="align-self-center">
-              <i class="bi bi-exclamation-triangle display-4 text-white-50"></i>
+              <i class="bi bi-collection display-4 text-white-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card stats-card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title text-white">Groups Led</h5>
+              <h2 class="text-white mb-0">{{ led_groups.count }}</h2>
+              <small class="text-white-50">Active care groups</small>
+            </div>
+            <div class="align-self-center">
+              <i class="bi bi-house display-4 text-white-50"></i>
             </div>
           </div>
         </div>
@@ -259,93 +328,73 @@
     </div>
   </div>
 
-  <!-- Quick Actions -->
-  <div class="quick-actions">
-    <h5 class="mb-3">
-      <i class="bi bi-lightning me-2"></i>
-      Quick Actions
-    </h5>
-    <div class="d-flex flex-wrap">
-      <a href="{% url 'members:care_group_list' %}" class="action-button">
-        <i class="bi bi-collection me-2"></i>
-        Manage Care Groups
-      </a>
-      <a href="{% url 'members:member_list' %}" class="action-button">
-        <i class="bi bi-people me-2"></i>
-        View Members
-      </a>
-      <a href="{% url 'members:care_group_create' %}" class="action-button">
-        <i class="bi bi-plus-circle me-2"></i>
-        Create Care Group
-      </a>
-      <a href="{% url 'members:role_new_friends_list' %}" class="action-button">
-        <i class="bi bi-person-plus me-2"></i>
-        My New Friends
-      </a>
-      <a href="#" class="action-button" onclick="alert('Schedule Meeting functionality coming soon!')">
-        <i class="bi bi-calendar-event me-2"></i>
-        Schedule Meeting
-      </a>
+  <!-- Charts and Analytics Section -->
+  <div class="row mb-4">
+    <!-- Role Distribution Chart -->
+    <div class="col-md-6">
+      <div class="chart-container">
+        <h5 class="mb-3">
+          <i class="bi bi-pie-chart me-2"></i>
+          My Members' Role Distribution
+        </h5>
+        <canvas id="roleDistributionChart" width="400" height="200"></canvas>
+      </div>
     </div>
-  </div>
-
-  <!-- Your Groups -->
-  <div class="row">
-    <div class="col-12">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">
-            <i class="bi bi-collection me-2"></i>
-            Your Care Groups
-          </h5>
-        </div>
-        <div class="card-body">
-          {% if led_groups %}
-            {% for group in group_stats %}
-              <div class="group-card">
-                <div class="group-header">
-                  <div>
-                    <div class="group-name">{{ group.group.name }}</div>
-                    <span class="badge group-type-badge type-{{ group.group.group_type|lower }}">
-                      {{ group.group.get_group_type_display }}
-                    </span>
-                  </div>
-                  <div class="text-end">
-                    <small class="text-muted">{{ group.member_count }}/{{ group.group.max_members }} members</small>
-                  </div>
-                </div>
-                
-                <div class="capacity-bar">
-                  <div class="capacity-fill {% if group.capacity_percentage < 50 %}capacity-low{% elif group.capacity_percentage < 80 %}capacity-medium{% else %}capacity-high{% endif %}" 
-                       style="width: {{ group.capacity_percentage }}%"></div>
-                </div>
-                
-                <div class="d-flex justify-content-between align-items-center mt-2">
-                  <small class="text-muted">Capacity: {{ group.capacity_percentage }}%</small>
-                  {% if group.is_full %}
-                    <span class="badge bg-danger">Full</span>
-                  {% else %}
-                    <span class="badge bg-success">Available</span>
-                  {% endif %}
-                </div>
-              </div>
-            {% endfor %}
-          {% else %}
-            <div class="empty-state">
-              <i class="bi bi-collection"></i>
-              <h5>No Care Groups Yet</h5>
-              <p class="mb-3">You haven't created any care groups yet.</p>
-              <a href="{% url 'members:care_group_create' %}" class="btn btn-primary">
-                Create Your First Care Group
-              </a>
-            </div>
-          {% endif %}
-        </div>
+    
+    <!-- Care Group Growth Chart -->
+    <div class="col-md-6">
+      <div class="chart-container">
+        <h5 class="mb-3">
+          <i class="bi bi-graph-up me-2"></i>
+          Care Group Growth Over Time
+        </h5>
+        <canvas id="careGroupGrowthChart" width="400" height="200"></canvas>
       </div>
     </div>
   </div>
 
-  <!-- Recent Activities and Summary -->
+
+  <!-- Care Group List with Quick Actions -->
+  <div class="care-group-list">
+    <h5 class="mb-3">
+      <i class="bi bi-collection me-2"></i>
+      Care Groups with Quick Actions
+    </h5>
+    {% if led_groups %}
+      {% for group in group_stats %}
+        <div class="care-group-item">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <h6 class="mb-1">{{ group.group.name }}</h6>
+              <p class="text-muted mb-1">{{ group.group.description|truncatechars:100 }}</p>
+              <small class="text-muted">
+                <i class="bi bi-people me-1"></i>{{ group.member_count }}/{{ group.group.max_members }} members
+                <span class="ms-2 badge {% if group.is_full %}bg-danger{% else %}bg-success{% endif %}">
+                  {% if group.is_full %}Full{% else %}Available{% endif %}
+                </span>
+              </small>
+            </div>
+            <div class="col-md-6 text-end">
+              <a href="{% url 'members:care_group_detail' group.group.id %}" class="btn btn-primary btn-action">
+                <i class="bi bi-eye me-1"></i>View
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <i class="bi bi-collection"></i>
+        <h5>No Care Groups Yet</h5>
+        <p class="mb-3">You haven't created any care groups yet.</p>
+        <a href="{% url 'members:care_group_create' %}" class="btn btn-primary">
+          Create Your First Care Group
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Activities and Reports -->
   <div class="row mt-4">
     <div class="col-md-6">
       <div class="card">
@@ -384,17 +433,131 @@
       <div class="card">
         <div class="card-header">
           <h5 class="mb-0">
-            <i class="bi bi-pie-chart me-2"></i>
-            Group Members Summary
+            <i class="bi bi-file-text me-2"></i>
+            Recent Care Group Reports
           </h5>
         </div>
         <div class="card-body">
-          <div class="text-center py-3">
-            <h3 class="text-primary">{{ total_group_members }}</h3>
-            <p class="text-muted mb-0">Total members across all groups</p>
-          </div>
+          {% if recent_reports %}
+            <div class="activity-feed">
+              {% for report in recent_reports %}
+                <div class="activity-item">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <strong>{{ report.care_group.name }}</strong>
+                      <span class="text-muted">{{ report.date_of_cg }}</span>
+                    </div>
+                    <small class="text-muted">{{ report.created_at|timesince }} ago</small>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center text-muted py-3">
+              <i class="bi bi-file-text fs-1"></i>
+              <p>No recent reports</p>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Chart.js Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  // Role Distribution Chart
+  const roleCtx = document.getElementById('roleDistributionChart').getContext('2d');
+  const roleChart = new Chart(roleCtx, {
+    type: 'doughnut',
+    data: {
+      labels: [
+        {% for role in role_distribution %}
+          '{{ role.role }}',
+        {% endfor %}
+      ],
+      datasets: [{
+        data: [
+          {% for role in role_distribution %}
+            {{ role.count }},
+          {% endfor %}
+        ],
+        backgroundColor: [
+          '#667eea',
+          '#f093fb',
+          '#4facfe',
+          '#43e97b',
+          '#f5576c'
+        ],
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      aspectRatio: 2,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      },
+      layout: {
+        padding: {
+          top: 10,
+          bottom: 10
+        }
+      }
+    }
+  });
+
+  // Care Group Growth Chart
+  const growthCtx = document.getElementById('careGroupGrowthChart').getContext('2d');
+  const growthChart = new Chart(growthCtx, {
+    type: 'line',
+    data: {
+      labels: [
+        {% for month in care_group_growth_months %}
+          '{{ month }}',
+        {% endfor %}
+      ],
+      datasets: [{
+        label: 'New Members',
+        data: [
+          {% for count in care_group_growth_counts %}
+            {{ count }},
+          {% endfor %}
+        ],
+        borderColor: '#667eea',
+        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+        borderWidth: 3,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      aspectRatio: 2,
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+      layout: {
+        padding: {
+          top: 10,
+          bottom: 10
+        }
+      }
+    }
+  });
+
+</script>
+{% endblock %}

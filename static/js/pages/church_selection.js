@@ -1,19 +1,22 @@
 document.addEventListener('DOMContentLoaded', function () {
     const sectorSelect = document.getElementById('sectorSelect');
-    const centralChurches = document.getElementById('centralChurches');
-    const rizalChurches = document.getElementById('rizalChurches');
 
     if (sectorSelect) {
         sectorSelect.addEventListener('change', function () {
             const selectedSector = this.value;
 
-            centralChurches.classList.remove('active');
-            rizalChurches.classList.remove('active');
+            // Hide all church lists
+            const allChurchLists = document.querySelectorAll('.church-list');
+            allChurchLists.forEach(list => {
+                list.classList.remove('active');
+            });
 
-            if (selectedSector === 'central') {
-                centralChurches.classList.add('active');
-            } else if (selectedSector === 'rizal') {
-                rizalChurches.classList.add('active');
+            // Show the selected sector's church list
+            if (selectedSector) {
+                const selectedChurchList = document.getElementById(selectedSector + 'Churches');
+                if (selectedChurchList) {
+                    selectedChurchList.classList.add('active');
+                }
             }
         });
     }

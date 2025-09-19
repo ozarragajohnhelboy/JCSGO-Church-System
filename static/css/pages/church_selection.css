@@ -53,16 +53,41 @@
 .church-list {
   display: none;
   margin-top: 1rem;
+  max-height: 240px;
+    /* Height for exactly 3 church items */
+    overflow-y: auto;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 0.5rem;
+    background: #f8f9fa;
 }
 
 .church-list.active {
   display: block;
 }
 
+/* Custom scrollbar styling */
+.church-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.church-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.church-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.church-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
 .church-item {
-  background: #f8f9fa;
+  background: white;
   border: 1px solid #e9ecef;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1rem;
   margin-bottom: 0.5rem;
   cursor: pointer;
@@ -70,6 +95,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .church-item:last-child {
+    margin-bottom: 0;
 }
 
 .church-item:hover {
@@ -136,4 +166,19 @@
 .admin-login-section .btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Scroll indicator styling */
+.scroll-indicator {
+  text-align: center;
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 6px;
+  border: 1px dashed rgba(102, 126, 234, 0.3);
+}
+
+.scroll-indicator small {
+  color: #667eea !important;
+  font-weight: 500;
 }

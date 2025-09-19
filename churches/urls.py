@@ -19,4 +19,12 @@ urlpatterns = [
     # AJAX endpoints
     path('ajax/church-detection/', views.ajax_church_detection, name='ajax_church_detection'),
     path('ajax/church-dashboard/<str:church_domain>/', views.ajax_church_dashboard, name='ajax_church_dashboard'),
+    
+    # Church Management (Super Admin only)
+    path('churches/', views.church_list, name='church_list'),
+    path('churches/add/', views.add_church, name='add_church'),
+    path('churches/<int:church_id>/edit/', views.edit_church, name='edit_church'),
+    path('churches/<int:church_id>/delete/', views.delete_church, name='delete_church'),
+    path('churches/<int:church_id>/detail/', views.church_detail, name='church_detail'),
+    path('ajax/churches/<int:church_id>/toggle-status/', views.toggle_church_status, name='toggle_church_status'),
 ] 

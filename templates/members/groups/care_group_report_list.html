@@ -12,9 +12,16 @@
                     <h3 class="card-title mb-0">
                         <i class="fas fa-chart-line me-2"></i>Care Group Reports
                     </h3>
-                    <a href="{% url 'members:care_group_report_create' %}" class="btn btn-primary">
-                        <i class="fas fa-plus me-1"></i>Create Report
-                    </a>
+                    <div class="btn-group">
+                        {% if user.role.name == 'ADMIN' %}
+                        <button type="button" class="btn btn-success" onclick="exportCareGroupReports()">
+                            <i class="fas fa-download me-1"></i>Export
+                        </button>
+                        {% endif %}
+                        <a href="{% url 'members:care_group_report_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>Create Report
+                        </a>
+                    </div>
                 </div>
                 
                 <div class="card-body">
@@ -66,7 +73,7 @@
                                         <th>Scripture</th>
                                         <th>Members</th>
                                         <th>Created By</th>
-                                        <th>Actions</th>
+                                        <th style="min-width: 200px;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -83,7 +90,7 @@
                                             </td>
                                             <td>{{ report.created_by.full_name }}</td>
                                             <td>
-                                                <div class="d-flex gap-1">
+                                                <div class="d-flex gap-1 align-items-center">
                                                     <a href="{% url 'members:care_group_report_detail' report.id %}" 
                                                        class="btn btn-outline-primary btn-sm" title="View Details">
                                                         View
@@ -92,14 +99,20 @@
                                                             data-bs-toggle="modal" data-bs-target="#printModal{{ report.id }}" title="Print Report">
                                                         Print
                                                     </button>
+                                                    {% if user.role.name == 'ADMIN' or report.created_by == user %}
                                                     <a href="{% url 'members:care_group_report_edit' report.id %}" 
                                                        class="btn btn-outline-warning btn-sm" title="Edit Report">
                                                         Edit
                                                     </a>
+                                                    {% endif %}
+                                                    {% if user.role.name == 'ADMIN' %}
                                                     <a href="{% url 'members:care_group_report_delete' report.id %}" 
-                                                       class="btn btn-outline-danger btn-sm" title="Delete Report">
-                                                        Delete
+                                                       class="btn btn-danger btn-sm" title="Delete Report"
+                                                       style="pointer-events: auto; z-index: 10; position: relative; min-width: 60px;"
+                                                       onclick="showDeleteModal({{ report.id }}, '{{ report.care_group.name|escapejs }}'); return false;">
+                                                        <i class="fas fa-trash"></i> Delete
                                                     </a>
+                                                    {% endif %}
                                                 </div>
                                             </td>
                                         </tr>
@@ -390,5 +403,264 @@
     }
 </script>
 {% endfor %}
+
+<script>
+function exportCareGroupReports() {
+    // Create a professional modal-style prompt
+    const modalHtml = `
+      <div id="exportModal" style="
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      ">
+        <div style="
+          background: white;
+          border-radius: 15px;
+          padding: 2rem;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+          max-width: 400px;
+          width: 90%;
+          text-align: center;
+        ">
+          <div style="margin-bottom: 1.5rem;">
+            <i class="fas fa-download" style="font-size: 3rem; color: #28a745; margin-bottom: 1rem;"></i>
+            <h3 style="color: #2c3e50; margin: 0 0 0.5rem 0; font-size: 1.5rem;">Export Care Group Reports</h3>
+            <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Choose your preferred export format</p>
+          </div>
+          
+          <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+            <button id="csvBtn" style="
+              flex: 1;
+              padding: 0.75rem 1rem;
+              background: linear-gradient(135deg, #28a745, #20c997);
+              color: white;
+              border: none;
+              border-radius: 8px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.3s ease;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 0.5rem;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(40, 167, 69, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+              <i class="fas fa-file-csv"></i>
+              CSV
+            </button>
+            <button id="excelBtn" style="
+              flex: 1;
+              padding: 0.75rem 1rem;
+              background: linear-gradient(135deg, #007bff, #0056b3);
+              color: white;
+              border: none;
+              border-radius: 8px;
+              font-weight: 500;
+              cursor: pointer;
+              transition: all 0.3s ease;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 0.5rem;
+            " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 123, 255, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
+              <i class="fas fa-file-excel"></i>
+              Excel
+            </button>
+          </div>
+          
+          <button id="cancelBtn" style="
+            padding: 0.5rem 1.5rem;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+          " onmouseover="this.style.background='#5a6268'" onmouseout="this.style.background='#6c757d'">
+            Cancel
+          </button>
+        </div>
+      </div>
+    `;
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Get modal elements
+    const modal = document.getElementById('exportModal');
+    const csvBtn = document.getElementById('csvBtn');
+    const excelBtn = document.getElementById('excelBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    
+    // Get current filter parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const search = urlParams.get('search') || '';
+    const careGroup = urlParams.get('care_group') || '';
+    const dateFrom = urlParams.get('date_from') || '';
+    const dateTo = urlParams.get('date_to') || '';
+    
+    // Build export URL with current filters
+    const baseUrl = '/members/care-group-reports/export/';
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (careGroup) params.append('care_group', careGroup);
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+    
+    // Handle CSV export
+    csvBtn.addEventListener('click', function() {
+      params.append('format', 'csv');
+      window.open(`${baseUrl}?${params.toString()}`, '_blank');
+      document.body.removeChild(modal);
+    });
+    
+    // Handle Excel export
+    excelBtn.addEventListener('click', function() {
+      params.append('format', 'excel');
+      window.open(`${baseUrl}?${params.toString()}`, '_blank');
+      document.body.removeChild(modal);
+    });
+    
+    // Handle cancel
+    cancelBtn.addEventListener('click', function() {
+      document.body.removeChild(modal);
+    });
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        document.body.removeChild(modal);
+      }
+    });
+    
+    // Close modal with Escape key
+    const handleEscape = function(e) {
+      if (e.key === 'Escape') {
+        document.body.removeChild(modal);
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+}
+
+// Delete Confirmation Modal
+function showDeleteModal(reportId, careGroupName) {
+    // Clean up any existing modals first
+    closeDeleteModal();
+    
+    // Create modal backdrop
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop fade show';
+    backdrop.style.zIndex = '1055';
+    backdrop.id = 'deleteModalBackdrop';
+    
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'modal fade show';
+    modal.style.display = 'block';
+    modal.style.zIndex = '1056';
+    modal.id = 'deleteModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-danger text-white border-0">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirm Deletion
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" onclick="closeDeleteModal()"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-trash-alt text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    <h6 class="text-center mb-3">Are you sure you want to delete this care group report?</h6>
+                    <div class="alert alert-warning border-0">
+                        <strong>Care Group:</strong> ${careGroupName}<br>
+                        <strong>Report ID:</strong> #${reportId}
+                    </div>
+                    <p class="text-muted text-center mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        This action cannot be undone and will permanently remove all data associated with this report.
+                    </p>
+                </div>
+                <div class="modal-footer border-0 p-4">
+                    <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="confirmDelete(${reportId})">
+                        <i class="fas fa-trash me-1"></i>Delete Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add to body
+    document.body.appendChild(backdrop);
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden';
+    
+    // Close on backdrop click
+    backdrop.addEventListener('click', closeDeleteModal);
+}
+
+function closeDeleteModal() {
+    // Remove only our specific delete modal elements
+    const backdrop = document.getElementById('deleteModalBackdrop');
+    const modal = document.getElementById('deleteModal');
+    
+    if (backdrop) backdrop.remove();
+    if (modal) modal.remove();
+    
+    // Only reset body styles if no other modals are open
+    const remainingBackdrops = document.querySelectorAll('.modal-backdrop:not(#deleteModalBackdrop)');
+    const remainingModals = document.querySelectorAll('.modal:not(#deleteModal)');
+    
+    if (remainingBackdrops.length === 0 && remainingModals.length === 0) {
+        document.body.style.overflow = '';
+        document.body.classList.remove('modal-open');
+    }
+}
+
+function confirmDelete(reportId) {
+    // Redirect to delete URL
+    window.location.href = `/members/care-group-reports/${reportId}/delete/`;
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeDeleteModal();
+    }
+});
+
+// Clean up any leftover delete modal elements on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Remove only leftover delete modal elements (not Bootstrap modals)
+    const leftoverDeleteBackdrops = document.querySelectorAll('#deleteModalBackdrop');
+    const leftoverDeleteModals = document.querySelectorAll('#deleteModal');
+    
+    leftoverDeleteBackdrops.forEach(b => b.remove());
+    leftoverDeleteModals.forEach(m => m.remove());
+    
+    // Reset body styles only if no modals are present
+    const allBackdrops = document.querySelectorAll('.modal-backdrop');
+    const allModals = document.querySelectorAll('.modal');
+    
+    if (allBackdrops.length === 0 && allModals.length === 0) {
+        document.body.style.overflow = '';
+        document.body.classList.remove('modal-open');
+    }
+});
+</script>
 
 {% endblock %}

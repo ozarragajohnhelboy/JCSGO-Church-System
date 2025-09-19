@@ -206,6 +206,116 @@ class ChurchRegistrationForm(UserCreationForm):
         return user
 
 
+class ChurchForm(forms.ModelForm):
+    """Form for adding/editing churches"""
+    sector_choice = forms.ChoiceField(
+        choices=[],  # Will be populated in __init__
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'sector-choice'}),
+        label='Sector'
+    )
+    new_sector_name = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter new sector name',
+            'id': 'new-sector-name'
+        }),
+        label='New Sector Name'
+    )
+    
+    class Meta:
+        model = Church
+        fields = ['name', 'location', 'sector', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter church name'}),
+            'location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter church location'}),
+            'sector': forms.HiddenInput(),  # Hidden field to store the actual sector value
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].required = True
+        self.fields['location'].required = True
+        self.fields['is_active'].initial = True
+        # Make sector field not required since we handle it in clean()
+        self.fields['sector'].required = False
+        
+        # Get existing sectors from all churches
+        existing_sectors = Church.objects.values_list('sector', flat=True).distinct().order_by('sector')
+        
+        # Create choices for sector dropdown
+        sector_choices = [('', 'Select a sector...')]
+        for sector in existing_sectors:
+            if sector:  # Skip empty sectors
+                sector_choices.append((sector, sector))
+        sector_choices.append(('__new__', 'Add New Sector'))
+        
+        self.fields['sector_choice'].choices = sector_choices
+        
+        # Set initial value for editing
+        if self.instance.pk and self.instance.sector:
+            self.fields['sector_choice'].initial = self.instance.sector
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        sector_choice = cleaned_data.get('sector_choice')
+        new_sector_name = cleaned_data.get('new_sector_name')
+        church_name = cleaned_data.get('name')
+        
+        # Handle sector selection
+        if sector_choice == '__new__':
+            if not new_sector_name:
+                raise forms.ValidationError('Please enter a name for the new sector.')
+            # Set the sector field to the new sector name
+            cleaned_data['sector'] = new_sector_name.strip()
+        elif sector_choice:
+            # Set the sector field to the selected existing sector
+            cleaned_data['sector'] = sector_choice
+        
+        # Auto-generate domain from church name
+        if church_name:
+            # Remove "JCSGO" prefix and get the rest
+            name_parts = church_name.strip()
+            if name_parts.upper().startswith('JCSGO'):
+                # Remove "JCSGO" and any following spaces
+                name_parts = name_parts[5:].strip()
+            
+            # Convert to lowercase and remove spaces (join all words together)
+            domain = name_parts.lower().replace(' ', '')
+            # Remove special characters, keep only alphanumeric
+            domain = ''.join(c for c in domain if c.isalnum())
+            
+            # Ensure domain is not empty
+            if not domain:
+                domain = 'church'
+            
+            # Check if domain already exists and make it unique if needed
+            base_domain = domain
+            counter = 1
+            while Church.objects.filter(domain=domain).exclude(pk=self.instance.pk if self.instance.pk else None).exists():
+                domain = f"{base_domain}{counter}"
+                counter += 1
+            
+            # Set the domain field (this will be saved to the model)
+            cleaned_data['domain'] = domain
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        """Override save to ensure domain is set"""
+        instance = super().save(commit=False)
+        
+        # Ensure domain is set from cleaned_data
+        if hasattr(self, 'cleaned_data') and 'domain' in self.cleaned_data:
+            instance.domain = self.cleaned_data['domain']
+        
+        if commit:
+            instance.save()
+        return instance
+
+
 class ProfileUpdateForm(forms.ModelForm):
     """Form for updating user profile"""
     class Meta:

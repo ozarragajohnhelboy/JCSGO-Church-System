@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  Edit Care Group Report - {{ report.care_group.name }}
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title mb-0"><i class="fas fa-edit me-2"></i>Edit Care Group Report</h3>
+          </div>
+
+          <div class="card-body">
+            <form method="post">
+              {% csrf_token %}
+
+              <div class="row">
+                <!-- Care Group Selection -->
+                <div class="col-md-6 mb-3">
+                  <label for="{{ form.care_group.id_for_label }}" class="form-label"><i class="fas fa-users me-1"></i>Care Group *</label>
+                  {{ form.care_group }}
+                  {% if form.care_group.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.care_group.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <!-- Date of Care Group -->
+                <div class="col-md-6 mb-3">
+                  <label for="{{ form.date_of_cg.id_for_label }}" class="form-label"><i class="fas fa-calendar me-1"></i>Date of CG *</label>
+                  {{ form.date_of_cg }}
+                  {% if form.date_of_cg.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.date_of_cg.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <hr class="my-4" />
+
+              <!-- Leadership Information -->
+              <h5 class="mb-3"><i class="fas fa-crown me-2"></i>Leadership Information</h5>
+
+              <div class="row">
+                {% if form.vine_servant_leader %}
+                  <div class="col-md-6 mb-3">
+                    <label for="{{ form.vine_servant_leader.id_for_label }}" class="form-label"><i class="fas fa-user-tie me-1"></i>{{ form.vine_servant_leader.label }}</label>
+                    {{ form.vine_servant_leader }}
+                    {% if form.vine_servant_leader.errors %}
+                      <div class="text-danger small mt-1">
+                        {% for error in form.vine_servant_leader.errors %}
+                          {{ error }}
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+
+                {% if form.cluster_servant_leader %}
+                  <div class="col-md-6 mb-3">
+                    <label for="{{ form.cluster_servant_leader.id_for_label }}" class="form-label"><i class="fas fa-user-tie me-1"></i>{{ form.cluster_servant_leader.label }}</label>
+                    {{ form.cluster_servant_leader }}
+                    {% if form.cluster_servant_leader.errors %}
+                      <div class="text-danger small mt-1">
+                        {% for error in form.cluster_servant_leader.errors %}
+                          {{ error }}
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+
+                {% if form.care_leader %}
+                  <div class="col-md-6 mb-3">
+                    <label for="{{ form.care_leader.id_for_label }}" class="form-label"><i class="fas fa-user-tie me-1"></i>{{ form.care_leader.label }}</label>
+                    {{ form.care_leader }}
+                    {% if form.care_leader.errors %}
+                      <div class="text-danger small mt-1">
+                        {% for error in form.care_leader.errors %}
+                          {{ error }}
+                        {% endfor %}
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+
+                <div class="col-md-6 mb-3">
+                  <label for="{{ form.contact_number.id_for_label }}" class="form-label"><i class="fas fa-phone me-1"></i>Contact No.</label>
+                  {{ form.contact_number }}
+                  {% if form.contact_number.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.contact_number.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-12 mb-3">
+                  <label for="{{ form.venue_address.id_for_label }}" class="form-label"><i class="fas fa-map-marker-alt me-1"></i>Venue Address</label>
+                  {{ form.venue_address }}
+                  {% if form.venue_address.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.venue_address.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <hr class="my-4" />
+
+              <!-- Meeting Details -->
+              <h5 class="mb-3"><i class="fas fa-calendar-alt me-2"></i>Meeting Details</h5>
+
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="{{ form.topic_discussed.id_for_label }}" class="form-label"><i class="fas fa-comment me-1"></i>Topic Discussed</label>
+                  {{ form.topic_discussed }}
+                  {% if form.topic_discussed.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.topic_discussed.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-6 mb-3">
+                  <label for="{{ form.scripture_used.id_for_label }}" class="form-label"><i class="fas fa-bible me-1"></i>Scripture Used</label>
+                  {{ form.scripture_used }}
+                  {% if form.scripture_used.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.scripture_used.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label for="{{ form.group_day.id_for_label }}" class="form-label"><i class="fas fa-calendar-day me-1"></i>Group Day</label>
+                  {{ form.group_day }}
+                  {% if form.group_day.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.group_day.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div class="col-md-4 mb-3">
+                  <label for="{{ form.group_time.id_for_label }}" class="form-label"><i class="fas fa-clock me-1"></i>Group Time</label>
+                  {{ form.group_time }}
+                  {% if form.group_time.errors %}
+                    <div class="text-danger small mt-1">
+                      {% for error in form.group_time.errors %}
+                        {{ error }}
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Form Actions -->
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-between">
+                    <a href="{% url 'members:care_group_report_detail' report.id %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i>Back to Report</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Update Report</button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

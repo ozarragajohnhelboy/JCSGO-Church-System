@@ -15,6 +15,15 @@ from .ajax_views import (
     ajax_church_detection
 )
 
+from .church_management_views import (
+    church_list,
+    add_church,
+    edit_church,
+    delete_church,
+    toggle_church_status,
+    church_detail
+)
+
 # Make all views available when importing from churches.views
 __all__ = [
     'church_selection',
@@ -25,4 +34,10 @@ __all__ = [
     'dashboard',
     'ajax_church_dashboard',
     'ajax_church_detection',
+    'church_list',
+    'add_church',
+    'edit_church',
+    'delete_church',
+    'toggle_church_status',
+    'church_detail',
 ]

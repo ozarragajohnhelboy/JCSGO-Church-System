@@ -36,6 +36,9 @@ from .placeholder_views import (
     ajax_update_follow_up,
     ajax_add_to_group,
     ajax_remove_from_group,
+    ajax_activity_details,
+    ajax_member_activity_logs,
+    ajax_group_activity_logs,
     export_members,
     export_role_data,
     role_management,
@@ -63,7 +66,9 @@ from .placeholder_views import (
     care_group_report_print,
     care_group_report_edit,
     care_group_report_delete,
-    care_group_attendance_tracking
+    care_group_attendance_tracking,
+    care_group_report_export,
+    care_group_member_report_export
 )
 
 # Make all views available when importing from members.views
@@ -99,6 +104,9 @@ __all__ = [
     'ajax_update_follow_up',
     'ajax_add_to_group',
     'ajax_remove_from_group',
+    'ajax_activity_details',
+    'ajax_member_activity_logs',
+    'ajax_group_activity_logs',
     'export_members',
     'export_role_data',
     'role_management',
@@ -126,5 +134,8 @@ __all__ = [
     'care_group_report_detail',
     'care_group_report_print',
     'care_group_report_edit',
-    'care_group_report_delete'
+    'care_group_report_delete',
+    'care_group_attendance_tracking',
+    'care_group_report_export',
+    'care_group_member_report_export'
 ]

@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load church_extras %}
 
 {% block title %}
   Church Selection - JCSGO CMS
@@ -28,40 +29,38 @@
         <label for="sectorSelect" class="form-label fw-bold">Select Sector:</label>
         <select id="sectorSelect" class="form-select">
           <option value="">Choose a sector...</option>
-          <option value="central">Central Sector</option>
-          <option value="rizal">Rizal Sector</option>
+          {% for sector in sectors %}
+            <option value="{{ sector|lower|replace:" ,_" }}">{{ sector }}</option>
+          {% endfor %}
         </select>
       </div>
       
-      <!-- Central Sector Churches -->
-      <div id="centralChurches" class="church-list">
-        {% for church in central_sector_churches %}
-          <div class="church-item" onclick="selectChurch('{{ church.domain }}')">
-            <div class="church-info">
-              <h5>{{ church.name }}</h5>
-              <small>{{ church.location }}</small>
+      <!-- Dynamic Sector Churches -->
+      {% for sector in sectors %}
+        <div id="{{ sector|lower|replace:" ,_" }}Churches" class="church-list">
+          {% for church in churches_by_sector|lookup:sector %}
+            <div class="church-item" onclick="selectChurch('{{ church.domain }}')">
+              <div class="church-info">
+                <h5>{{ church.name }}</h5>
+                <small>{{ church.location }}</small>
+              </div>
+              <div class="church-arrow">
+                <i class="bi bi-arrow-right"></i>
+              </div>
             </div>
-            <div class="church-arrow">
-              <i class="bi bi-arrow-right"></i>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-      
-             <!-- Rizal Sector Churches -->
-       <div id="rizalChurches" class="church-list">
-         {% for church in rizal_sector_churches %}
-           <div class="church-item" onclick="selectChurch('{{ church.domain }}')">
-             <div class="church-info">
-               <h5>{{ church.name }}</h5>
-               <small>{{ church.location }}</small>
-             </div>
-             <div class="church-arrow">
-               <i class="bi bi-arrow-right"></i>
-             </div>
-           </div>
-         {% endfor %}
-       </div>
+          {% endfor %}
+          {% with sector_churches=churches_by_sector|lookup:sector %}
+            {% if sector_churches|length > 3 %}
+              <div class="scroll-indicator">
+                <small class="text-muted">
+                  <i class="bi bi-arrow-up-down me-1"></i>
+                  Scroll to see more churches
+                </small>
+              </div>
+            {% endif %}
+          {% endwith %}
+        </div>
+      {% endfor %}
        
        <!-- Super Admin Login Section -->
        <div class="admin-login-section">

@@ -282,27 +282,75 @@
         </div>
         {% endif %}
         
-        <!-- Recent Activity -->
+        <!-- Activity Logs -->
         <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">Recent Activity</h6>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Activity Logs</h6>
+                <button class="btn btn-sm btn-outline-primary" onclick="toggleActivityFilters()">
+                    <i class="bi bi-funnel"></i> Filters
+                </button>
             </div>
-            <div class="card-body">
-                {% if recent_activity %}
-                <div class="list-group list-group-flush">
-                    {% for activity in recent_activity %}
-                    <div class="list-group-item d-flex justify-content-between align-items-start">
-                        <div class="ms-2 me-auto">
-                            <div class="fw-bold">{{ activity.get_action_display }}</div>
-                            <small class="text-muted">{{ activity.description }}</small>
-                        </div>
-                        <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+            
+            <!-- Activity Filters -->
+            <div id="activityFilters" class="card-body border-bottom" style="display: none;">
+                <form id="activityFilterForm" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Date From</label>
+                        <input type="date" class="form-control" id="activityDateFrom" name="date_from">
                     </div>
-                    {% endfor %}
+                    <div class="col-md-3">
+                        <label class="form-label">Date To</label>
+                        <input type="date" class="form-control" id="activityDateTo" name="date_to">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Action</label>
+                        <select class="form-select" id="activityAction" name="action">
+                            <option value="">All Actions</option>
+                            <option value="LOGIN">Login</option>
+                            <option value="LOGOUT">Logout</option>
+                            <option value="REGISTER">Register</option>
+                            <option value="PROFILE_UPDATE">Profile Update</option>
+                            <option value="ROLE_CHANGE">Role Change</option>
+                            <option value="STATUS_CHANGE">Status Change</option>
+                            <option value="ATTENDANCE">Attendance</option>
+                            <option value="FOLLOW_UP">Follow Up</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="loadMemberActivities({{ member.pk }}, 5)">
+                                <i class="bi bi-search"></i> Filter
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearActivityFilters()">
+                                <i class="bi bi-x"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card-body">
+                <div id="activityLogsContent" style="max-height: 300px; overflow-y: auto;">
+                    {% if recent_activity %}
+                    <div class="list-group list-group-flush">
+                        {% for activity in recent_activity %}
+                        <div class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">{{ activity.get_action_display }}</div>
+                                <small class="text-muted">{{ activity.description }}</small>
+                            </div>
+                            <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No recent activity</p>
+                    {% endif %}
                 </div>
-                {% else %}
-                <p class="text-muted text-center">No recent activity</p>
-                {% endif %}
+                
+                <!-- Load More Button -->
+                <div id="activityLoadMore" class="mt-3"></div>
             </div>
         </div>
     </div>
@@ -508,9 +556,104 @@ function updateFollowUp(newFriendId) {
     // Set the new friend ID for the modal
     document.getElementById('fuNewFriendId').value = newFriendId;
     
+    // Find the current follow-up status from the page
+    const statusBadge = document.querySelector('.badge');
+    const currentStatus = statusBadge ? statusBadge.textContent.trim() : 'Pending';
+    
+    // Map display text to status values
+    const statusMap = {
+        'Pending': 'PENDING',
+        'Contacted': 'CONTACTED', 
+        'Followed Up': 'FOLLOWED_UP',
+        'Engaged': 'ENGAGED',
+        'Not Interested': 'NOT_INTERESTED'
+    };
+    
+    // Set the current status in the modal
+    const statusSelect = document.getElementById('fuStatus');
+    const statusValue = statusMap[currentStatus] || 'PENDING';
+    statusSelect.value = statusValue;
+    
+    // Clear notes field
+    document.getElementById('fuNotes').value = '';
+    
     // Show the follow-up modal
     const modal = new bootstrap.Modal(document.getElementById('followUpModal'));
     modal.show();
+}
+
+// Activity Logs Functions
+function toggleActivityFilters() {
+    const filters = document.getElementById('activityFilters');
+    filters.style.display = filters.style.display === 'none' ? 'block' : 'none';
+}
+
+function clearActivityFilters() {
+    document.getElementById('activityDateFrom').value = '';
+    document.getElementById('activityDateTo').value = '';
+    document.getElementById('activityAction').value = '';
+    loadMemberActivities({{ member.pk }}, 5);
+}
+
+function loadMemberActivities(memberId, limit = 5) {
+    const dateFrom = document.getElementById('activityDateFrom').value;
+    const dateTo = document.getElementById('activityDateTo').value;
+    const action = document.getElementById('activityAction').value;
+    
+    // Show loading state
+    document.getElementById('activityLogsContent').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2">Loading activities...</p></div>';
+    
+    const params = new URLSearchParams({
+        limit: limit
+    });
+    
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+    if (action) params.append('action', action);
+    
+    fetch(`/members/ajax/member-activity-logs/${memberId}/?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('activityLogsContent').innerHTML = data.html;
+                document.getElementById('activityLoadMore').innerHTML = data.load_more;
+            } else {
+                document.getElementById('activityLogsContent').innerHTML = '<div class="alert alert-danger">Failed to load activities.</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('activityLogsContent').innerHTML = '<div class="alert alert-danger">Error loading activities.</div>';
+        });
+}
+
+function loadMoreMemberActivities(memberId, limit) {
+    const dateFrom = document.getElementById('activityDateFrom').value;
+    const dateTo = document.getElementById('activityDateTo').value;
+    const action = document.getElementById('activityAction').value;
+    
+    const params = new URLSearchParams({
+        limit: limit
+    });
+    
+    if (dateFrom) params.append('date_from', dateFrom);
+    if (dateTo) params.append('date_to', dateTo);
+    if (action) params.append('action', action);
+    
+    fetch(`/members/ajax/member-activity-logs/${memberId}/?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('activityLogsContent').innerHTML = data.html;
+                document.getElementById('activityLoadMore').innerHTML = data.load_more;
+            } else {
+                document.getElementById('activityLogsContent').innerHTML = '<div class="alert alert-danger">Failed to load more activities.</div>';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('activityLogsContent').innerHTML = '<div class="alert alert-danger">Error loading more activities.</div>';
+        });
 }
 
 function submitFollowUp() {

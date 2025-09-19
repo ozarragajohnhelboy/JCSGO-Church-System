@@ -362,6 +362,29 @@ function updateFollowUp(new_friend_id) {
     // Set the new friend ID for the modal
     document.getElementById('fuNewFriendId').value = new_friend_id;
     
+    // Find the current follow-up status from the table row
+    const button = event.target.closest('button');
+    const row = button.closest('tr');
+    const statusBadge = row.querySelector('.badge');
+    const currentStatus = statusBadge.textContent.trim();
+    
+    // Map display text to status values
+    const statusMap = {
+        'Pending': 'PENDING',
+        'Contacted': 'CONTACTED', 
+        'Followed Up': 'FOLLOWED_UP',
+        'Engaged': 'ENGAGED',
+        'Not Interested': 'NOT_INTERESTED'
+    };
+    
+    // Set the current status in the modal
+    const statusSelect = document.getElementById('fuStatus');
+    const statusValue = statusMap[currentStatus] || 'PENDING';
+    statusSelect.value = statusValue;
+    
+    // Clear notes field
+    document.getElementById('fuNotes').value = '';
+    
     // Show the follow-up modal
     const modal = new bootstrap.Modal(document.getElementById('followUpModal'));
     modal.show();

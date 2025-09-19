@@ -43,6 +43,7 @@ class Church(models.Model):
     name = models.CharField(max_length=100)
     location = models.CharField(max_length=200)
     domain = models.CharField(max_length=100, unique=True)
+    sector = models.CharField(max_length=100, default='General')
     logo = models.ImageField(upload_to='church_logos/', null=True, blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

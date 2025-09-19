@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="bi bi-{% if church %}pencil-square{% else %}plus-circle{% endif %} me-2"></i>
+        {{ title }}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{% url 'churches:church_list' %}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Churches
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    {% if church %}
+                        <i class="bi bi-pencil-square me-2"></i>Edit Church Information
+                    {% else %}
+                        <i class="bi bi-plus-circle me-2"></i>Add New Church
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+          <form method="post" id="churchForm">
+            {% csrf_token %}
+            
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            <i class="bi bi-building me-2"></i>Church Name *
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.help_text %}
+                            <div class="form-text">{{ form.name.help_text }}</div>
+                        {% endif %}
+                        {% if form.name.errors %}
+                            <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.location.id_for_label }}" class="form-label">
+                            <i class="bi bi-geo-alt me-2"></i>Location *
+                        </label>
+                        {{ form.location }}
+                        {% if form.location.help_text %}
+                            <div class="form-text">{{ form.location.help_text }}</div>
+                        {% endif %}
+                        {% if form.location.errors %}
+                            <div class="text-danger small">{{ form.location.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            <i class="bi bi-toggle-on me-2"></i>Status
+                        </label>
+                        <div class="form-check form-switch">
+                            {{ form.is_active }}
+                            <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                {% if form.is_active.value %}
+                                    <span class="text-success">Active</span>
+                                {% else %}
+                                    <span class="text-muted">Inactive</span>
+                                {% endif %}
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            Active churches can be selected during registration
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Domain:</strong> Will be automatically generated from the church name (e.g., "JCSGO Central" → "jcsgo-central")
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sector Selection -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.sector_choice.id_for_label }}" class="form-label">
+                            <i class="bi bi-diagram-3 me-2"></i>Sector *
+                        </label>
+                        {{ form.sector_choice }}
+                        <div class="form-text">
+                            Select an existing sector or create a new one
+                        </div>
+                        {% if form.sector_choice.errors %}
+                            <div class="text-danger small">{{ form.sector_choice.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6" id="new-sector-container" style="display: none;">
+                        <label for="{{ form.new_sector_name.id_for_label }}" class="form-label">
+                            <i class="bi bi-plus-circle me-2"></i>New Sector Name *
+                        </label>
+                        {{ form.new_sector_name }}
+                        <div class="form-text">
+                            Enter the name for the new sector
+                        </div>
+                        {% if form.new_sector_name.errors %}
+                            <div class="text-danger small">{{ form.new_sector_name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Hidden sector field -->
+                {{ form.sector }}
+                
+                <!-- Default Logo Info -->
+                <div class="mb-3">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Church Logo:</strong> All churches will use the default JCSGO logo for consistency.
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'churches:church_list' %}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-{% if church %}check-circle{% else %}plus-circle{% endif %} me-2"></i>
+                        {% if church %}Update Church{% else %}Create Church{% endif %}
+                    </button>
+                </div>
+            </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('DOM loaded, initializing church form...');
+      
+      // Debug: List all select elements on the page
+      const allSelects = document.querySelectorAll('select');
+      console.log('All select elements found:', allSelects);
+      allSelects.forEach((select, index) => {
+        console.log(`Select ${index}:`, select.id, select.name, select.className);
+      });
+      
+      // Logo upload functionality removed - using default logo
+    
+    // Domain is now auto-generated, no need for manual formatting
+    
+    // Status toggle label update
+    const statusToggle = document.getElementById('{{ form.is_active.id_for_label }}');
+    if (statusToggle) {
+      statusToggle.addEventListener('change', function(e) {
+      const label = document.querySelector('label[for="{{ form.is_active.id_for_label }}"]');
+      if (e.target.checked) {
+        label.innerHTML = '<span class="text-success">Active</span>';
+      } else {
+        label.innerHTML = '<span class="text-muted">Inactive</span>';
+      }
+    });
+    } else {
+      console.log('Status toggle not found');
+    }
+    
+    // Sector selection dynamic behavior
+    const sectorChoice = document.getElementById('sector-choice');
+    const newSectorContainer = document.getElementById('new-sector-container');
+    const newSectorInput = document.getElementById('new-sector-name');
+    
+    console.log('Sector choice element:', sectorChoice);
+    console.log('New sector container:', newSectorContainer);
+    console.log('New sector input:', newSectorInput);
+    
+    if (sectorChoice) {
+      console.log('Adding event listener to sector choice');
+      sectorChoice.addEventListener('change', function(e) {
+        console.log('Sector choice changed to:', e.target.value);
+        
+        if (e.target.value === '__new__') {
+          console.log('Showing new sector input');
+          if (newSectorContainer) {
+            newSectorContainer.style.display = 'block';
+          }
+          if (newSectorInput) {
+            newSectorInput.required = true;
+            newSectorInput.focus();
+          }
+        } else {
+          console.log('Hiding new sector input');
+          if (newSectorContainer) {
+            newSectorContainer.style.display = 'none';
+          }
+          if (newSectorInput) {
+            newSectorInput.required = false;
+            newSectorInput.value = '';
+          }
+        }
+      });
+    } else {
+      console.log('Sector choice element not found!');
+    }
+    
+    // Form validation
+    const churchForm = document.getElementById('churchForm');
+    if (churchForm) {
+      churchForm.addEventListener('submit', function(e) {
+      const name = document.getElementById('{{ form.name.id_for_label }}').value.trim();
+      const location = document.getElementById('{{ form.location.id_for_label }}').value.trim();
+      const sectorChoice = document.getElementById('sector-choice').value;
+      const newSectorName = document.getElementById('new-sector-name').value.trim();
+      
+      if (!name || !location || !sectorChoice) {
+        e.preventDefault();
+        showAlert('danger', 'Error', 'Please fill in all required fields.');
+        return;
+      }
+      
+      if (sectorChoice === '__new__' && !newSectorName) {
+        e.preventDefault();
+        showAlert('danger', 'Error', 'Please enter a name for the new sector.');
+        return;
+      }
+    });
+    } else {
+      console.log('Church form not found');
+    }
+    
+    // Alert system - matches existing design pattern
+    function showAlert(type, title, message) {
+        // Create a temporary alert element that matches Django's message format
+        const alertContainer = document.querySelector('.position-fixed.top-0.end-0.p-3');
+        if (!alertContainer) {
+            // If no alert container exists, create one
+            const container = document.createElement('div');
+            container.className = 'position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '1055';
+            document.body.appendChild(container);
+        }
+        
+        const alertId = 'alert-' + Date.now();
+        const alertHtml = `
+            <div id="${alertId}" class="alert alert-${type} alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius: 12px; min-width: 300px; max-width: 500px;">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="bi bi-${type === 'success' ? 'check-circle-fill text-success' : type === 'danger' ? 'exclamation-triangle-fill text-danger' : type === 'info' ? 'info-circle-fill text-info' : 'exclamation-circle-fill text-warning'} fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <strong class="me-2">${title}!</strong>
+                        <div class="small">${message}</div>
+                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        
+        const container = document.querySelector('.position-fixed.top-0.end-0.p-3');
+        container.insertAdjacentHTML('beforeend', alertHtml);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+            const alertElement = document.getElementById(alertId);
+            if (alertElement) {
+                const bsAlert = new bootstrap.Alert(alertElement);
+                bsAlert.close();
+            }
+        }, 5000);
+    }
+    }); // End of DOMContentLoaded
+    
+    // Test function to manually show/hide the field
+    function testShowField() {
+      const container = document.getElementById('new-sector-container');
+      if (container) {
+        if (container.style.display === 'none') {
+          container.style.display = 'block';
+          console.log('Field shown manually');
+        } else {
+          container.style.display = 'none';
+          console.log('Field hidden manually');
+        }
+      } else {
+        console.log('Container not found!');
+      }
+    }
+  </script>
+{% endblock %}
