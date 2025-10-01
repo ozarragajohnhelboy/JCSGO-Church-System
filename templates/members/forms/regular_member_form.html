@@ -128,6 +128,40 @@
                 {% endif %}
               </div>
 
+              <!-- Birth Date -->
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.birth_date.id_for_label }}" class="form-label">
+                  <i class="bi bi-calendar me-2"></i>Birth Date *
+                </label>
+                {{ form.birth_date }}
+                {% if form.birth_date.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.birth_date.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+                <small class="form-text text-muted">Required for age categorization (Youth: 13-29, Adult: 30+)</small>
+              </div>
+            </div>
+
+            <div class="row">
+              <!-- Gender -->
+              <div class="col-md-6 mb-3">
+                <label for="{{ form.gender.id_for_label }}" class="form-label">
+                  <i class="bi bi-gender-ambiguous me-2"></i>Gender *
+                </label>
+                {{ form.gender }}
+                {% if form.gender.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.gender.errors %}
+                      {{ error }}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+                <small class="form-text text-muted">Required for demographic reporting</small>
+              </div>
+
               <!-- Group -->
               <div class="col-md-6 mb-3">
                 <label for="{{ form.group.id_for_label }}" class="form-label">

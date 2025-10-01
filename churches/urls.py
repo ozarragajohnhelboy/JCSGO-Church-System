@@ -12,6 +12,7 @@ urlpatterns = [
     
     # Dashboard
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('church-report/', views.church_report, name='church_report'),
     
     # Custom logout
     path('logout/', views.custom_logout, name='custom_logout'),

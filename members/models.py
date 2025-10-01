@@ -111,6 +111,103 @@ class Church(models.Model):
         
         return stats
 
+    def get_demographic_statistics(self):
+        """Get demographic statistics for church reporting"""
+        regular_members = self.members.filter(is_active=True, is_new_friend=False)
+        
+        # Initialize counters
+        stats = {
+            'registered_disciples': {
+                'youth_men': 0,
+                'youth_women': 0,
+                'men': 0,
+                'women': 0,
+                'total': 0
+            }
+        }
+        
+        # Count by demographic category
+        for member in regular_members:
+            if member.birth_date and member.gender:
+                age = member.age
+                if age is not None:
+                    if 13 <= age <= 29:  # Youth
+                        if member.gender == 'MALE':
+                            stats['registered_disciples']['youth_men'] += 1
+                        elif member.gender == 'FEMALE':
+                            stats['registered_disciples']['youth_women'] += 1
+                    elif age >= 30:  # Adult
+                        if member.gender == 'MALE':
+                            stats['registered_disciples']['men'] += 1
+                        elif member.gender == 'FEMALE':
+                            stats['registered_disciples']['women'] += 1
+        
+        # Calculate total
+        stats['registered_disciples']['total'] = (
+            stats['registered_disciples']['youth_men'] +
+            stats['registered_disciples']['youth_women'] +
+            stats['registered_disciples']['men'] +
+            stats['registered_disciples']['women']
+        )
+        
+        return stats
+
+    def get_sunday_attendance_statistics(self, start_date=None, end_date=None):
+        """Get Sunday attendance statistics by demographic"""
+        from datetime import timedelta
+        
+        if not start_date:
+            start_date = timezone.now().date() - timedelta(days=30)
+        if not end_date:
+            end_date = timezone.now().date()
+        
+        # Get Sunday attendances in the date range
+        sunday_attendances = Attendance.objects.filter(
+            church=self,
+            attendance_type='SUNDAY',
+            date__range=[start_date, end_date]
+        ).select_related('user')
+        
+        # Initialize counters
+        stats = {
+            'sunday_attendance': {
+                'youth_men': 0,
+                'youth_women': 0,
+                'men': 0,
+                'women': 0,
+                'total': 0
+            }
+        }
+        
+        # Count unique attendees by demographic
+        unique_attendees = set()
+        for attendance in sunday_attendances:
+            user = attendance.user
+            if user.birth_date and user.gender and user.id not in unique_attendees:
+                unique_attendees.add(user.id)
+                age = user.age
+                if age is not None:
+                    if 13 <= age <= 29:  # Youth
+                        if user.gender == 'MALE':
+                            stats['sunday_attendance']['youth_men'] += 1
+                        elif user.gender == 'FEMALE':
+                            stats['sunday_attendance']['youth_women'] += 1
+                    elif age >= 30:  # Adult
+                        if user.gender == 'MALE':
+                            stats['sunday_attendance']['men'] += 1
+                        elif user.gender == 'FEMALE':
+                            stats['sunday_attendance']['women'] += 1
+        
+        # Calculate total
+        stats['sunday_attendance']['total'] = (
+            stats['sunday_attendance']['youth_men'] +
+            stats['sunday_attendance']['youth_women'] +
+            stats['sunday_attendance']['men'] +
+            stats['sunday_attendance']['women']
+        )
+        
+        return stats
+
 
 class Role(models.Model):
     """User roles and permissions"""
@@ -174,6 +271,15 @@ class CustomUser(AbstractUser):
     phone_number = models.CharField(max_length=15, blank=True)
     address = models.TextField(blank=True)
     birth_date = models.DateField(null=True, blank=True)
+    gender = models.CharField(
+        max_length=10,
+        choices=[
+            ('MALE', 'Male'),
+            ('FEMALE', 'Female'),
+        ],
+        blank=True,
+        help_text="Required for demographic reporting"
+    )
     
     # QR Code fields
     qr_code_id = models.UUIDField(null=True, blank=True, unique=True, editable=False)
@@ -222,6 +328,30 @@ class CustomUser(AbstractUser):
             from datetime import date
             today = date.today()
             return today.year - self.birth_date.year - ((today.month, today.day) < (self.birth_date.month, self.birth_date.day))
+        return None
+
+    @property
+    def age_category(self):
+        """Get age category: Youth (13-29) or Adult (30+)"""
+        age = self.age
+        if age is None:
+            return None
+        if 13 <= age <= 29:
+            return 'YOUTH'
+        elif age >= 30:
+            return 'ADULT'
+        return 'CHILD'  # Under 13
+
+    @property
+    def demographic_category(self):
+        """Get demographic category: Youth Men, Youth Women, Men, Women"""
+        if not self.gender or not self.age_category:
+            return None
+        
+        if self.age_category == 'YOUTH':
+            return f"Youth {self.get_gender_display()}"
+        elif self.age_category == 'ADULT':
+            return self.get_gender_display()
         return None
 
     @property

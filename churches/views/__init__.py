@@ -8,7 +8,7 @@ from .auth_views import (
     custom_logout
 )
 
-from .dashboard_views import dashboard
+from .dashboard_views import dashboard, church_report
 
 from .ajax_views import (
     ajax_church_dashboard,
@@ -32,6 +32,7 @@ __all__ = [
     'super_admin_login',
     'custom_logout',
     'dashboard',
+    'church_report',
     'ajax_church_dashboard',
     'ajax_church_detection',
     'church_list',
