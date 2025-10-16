@@ -104,7 +104,7 @@ class GoogleSheetsService:
         church.save(update_fields=['google_sheet_id'])
         return spreadsheet_id, spreadsheet_url
     
-    def export_church_report(self, church, demographic_stats, sunday_attendance_stats, target_2025):
+    def export_church_report(self, church, demographic_stats, sunday_attendance_stats, target_2025, new_believers_stats=None):
         spreadsheet_id, spreadsheet_url = self.get_or_create_church_report_sheet(church)
         
         try:
@@ -211,6 +211,16 @@ class GoogleSheetsService:
             sunday_attendance_stats['sunday_attendance']['women']
         ])
         
+        if new_believers_stats:
+            data.append([''])
+            data.append(['II. New Believers', '', '', '', ''])
+            data.append(['1st Timers', '', new_believers_stats.get('first_timers', 0), '', new_believers_stats.get('first_timers', 0)])
+            data.append(['2nd Timers', '', new_believers_stats.get('second_timers', 0), '', new_believers_stats.get('second_timers', 0)])
+            data.append(['3rd Timers', '', new_believers_stats.get('third_timers', 0), '', new_believers_stats.get('third_timers', 0)])
+            data.append(['4th Timers', '', new_believers_stats.get('fourth_timers', 0), '', new_believers_stats.get('fourth_timers', 0)])
+            data.append(['5th Timers/Conversion', '', new_believers_stats.get('fifth_timers_conversion', 0), '', new_believers_stats.get('fifth_timers_conversion', 0)])
+            data.append(['Power Filled Life', '', new_believers_stats.get('power_filled_life', 0), '', new_believers_stats.get('power_filled_life', 0)])
+            data.append(['Water Baptism', '', new_believers_stats.get('water_baptism', 0), '', new_believers_stats.get('water_baptism', 0)])
         all_values = headers + data
         
         self.clear_sheet(spreadsheet_id, f'{sheet_title}!A1:Z1000')

@@ -573,6 +573,27 @@ def church_report(request):
     total_members = church.total_members
     new_friends_count = church.new_friends_count
     regular_members_count = church.regular_members_count
+    # New believers statistics
+    from members.models import CustomUser, RegularMember
+    nf = CustomUser.objects.filter(church=church, is_active=True, is_new_friend=True)
+    timers = {
+        'first': nf.filter(timer_status=1).count(),
+        'second': nf.filter(timer_status=2).count(),
+        'third': nf.filter(timer_status=3).count(),
+        'fourth': nf.filter(timer_status=4).count(),
+        'fifth': nf.filter(timer_status=5).count(),
+    }
+    water_baptism = RegularMember.objects.filter(user__church=church, baptism_date__isnull=False).count()
+    power_filled_life = 0
+    new_believers_stats = {
+        'first_timers': timers['first'],
+        'second_timers': timers['second'],
+        'third_timers': timers['third'],
+        'fourth_timers': timers['fourth'],
+        'fifth_timers_conversion': timers['fifth'],
+        'power_filled_life': power_filled_life,
+        'water_baptism': water_baptism,
+    }
     
     context = {
         'user': user,
@@ -585,6 +606,7 @@ def church_report(request):
         'regular_members_count': regular_members_count,
         'start_date': start_date,
         'end_date': end_date,
+        'new_believers_stats': new_believers_stats,
     }
     
     return render(request, 'churches/dashboard/church_report.html', context)
@@ -629,6 +651,28 @@ def export_church_report_to_sheets(request):
         'women': int(demographic_stats['registered_disciples']['women'] * 1.2),
     }
     
+    # New believers statistics for export
+    from members.models import CustomUser, RegularMember
+    nf = CustomUser.objects.filter(church=church, is_active=True, is_new_friend=True)
+    timers = {
+        'first': nf.filter(timer_status=1).count(),
+        'second': nf.filter(timer_status=2).count(),
+        'third': nf.filter(timer_status=3).count(),
+        'fourth': nf.filter(timer_status=4).count(),
+        'fifth': nf.filter(timer_status=5).count(),
+    }
+    water_baptism = RegularMember.objects.filter(user__church=church, baptism_date__isnull=False).count()
+    power_filled_life = 0
+    new_believers_stats = {
+        'first_timers': timers['first'],
+        'second_timers': timers['second'],
+        'third_timers': timers['third'],
+        'fourth_timers': timers['fourth'],
+        'fifth_timers_conversion': timers['fifth'],
+        'power_filled_life': power_filled_life,
+        'water_baptism': water_baptism,
+    }
+
     try:
         from ..google_sheets import GoogleSheetsService
         sheets_service = GoogleSheetsService()
@@ -636,7 +680,8 @@ def export_church_report_to_sheets(request):
             church, 
             demographic_stats, 
             sunday_attendance_stats, 
-            target_2025
+            target_2025,
+            new_believers_stats
         )
         
         from django.contrib import messages

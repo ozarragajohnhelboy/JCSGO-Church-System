@@ -210,189 +210,61 @@
           <table class="report-table">
             <thead>
               <tr>
-                <th style="width: 30%;">Category</th>
-                <th style="width: 20%;">2025 Target</th>
-                <th style="width: 20%;">Onsite/Actual</th>
-                <th style="width: 15%;">Online</th>
-                <th style="width: 15%;">TOTAL</th>
+                <th style="width: 50%;">&nbsp;</th>
+                <th style="width: 25%;">Onsite/ Actual</th>
+                <th style="width: 25%;">TOTAL</th>
               </tr>
             </thead>
             <tbody>
-              <!-- 2025 Target Row -->
               <tr class="category-row">
-                <td>
-                  <strong>2025 Target</strong>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ target_2025.registered_disciples }}</span>
-                </td>
-                <td>-</td>
-                <td>-</td>
-                <td>-</td>
+                <td><strong>Registered Disciples</strong></td>
+                <td>{{ demographic_stats.registered_disciples.total }}</td>
+                <td>{{ demographic_stats.registered_disciples.total }}</td>
               </tr>
-
-              <!-- Registered Disciples Section -->
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Youth Men</td>
+                <td>{{ demographic_stats.registered_disciples.youth_men }}</td>
+                <td>{{ demographic_stats.registered_disciples.youth_men }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Youth Women</td>
+                <td>{{ demographic_stats.registered_disciples.youth_women }}</td>
+                <td>{{ demographic_stats.registered_disciples.youth_women }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Men</td>
+                <td>{{ demographic_stats.registered_disciples.men }}</td>
+                <td>{{ demographic_stats.registered_disciples.men }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Women</td>
+                <td>{{ demographic_stats.registered_disciples.women }}</td>
+                <td>{{ demographic_stats.registered_disciples.women }}</td>
+              </tr>
               <tr class="category-row">
-                <td>
-                  <strong>Registered Disciples</strong>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ target_2025.registered_disciples }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ demographic_stats.registered_disciples.total }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">0</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ demographic_stats.registered_disciples.total }}</span>
-                </td>
+                <td><strong>Sunday Attendance</strong></td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.total }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.total }}</td>
               </tr>
-
-              <!-- Youth Men -->
               <tr class="subcategory-row">
-                <td style="padding-left: 2rem;">Youth Men</td>
-                <td>
-                  <span class="counter-badge">{{ target_2025.youth_men }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ demographic_stats.registered_disciples.youth_men }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">0</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ demographic_stats.registered_disciples.youth_men }}</span>
-                </td>
+                <td style="text-align: left; padding-left: 1rem;">Youth Men</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.youth_men }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.youth_men }}</td>
               </tr>
-
-              <!-- Youth Women -->
               <tr class="subcategory-row">
-                <td style="padding-left: 2rem;">Youth Women</td>
-                <td>
-                  <span class="counter-badge">{{ target_2025.youth_women }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ demographic_stats.registered_disciples.youth_women }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">0</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ demographic_stats.registered_disciples.youth_women }}</span>
-                </td>
+                <td style="text-align: left; padding-left: 1rem;">Youth Women</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.youth_women }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.youth_women }}</td>
               </tr>
-
-              <!-- Men -->
               <tr class="subcategory-row">
-                <td style="padding-left: 2rem;">Men</td>
-                <td>
-                  <span class="counter-badge">{{ target_2025.men }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ demographic_stats.registered_disciples.men }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">0</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ demographic_stats.registered_disciples.men }}</span>
-                </td>
+                <td style="text-align: left; padding-left: 1rem;">Men</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.men }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.men }}</td>
               </tr>
-
-              <!-- Women -->
               <tr class="subcategory-row">
-                <td style="padding-left: 2rem;">Women</td>
-                <td>
-                  <span class="counter-badge">{{ target_2025.women }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ demographic_stats.registered_disciples.women }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">0</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ demographic_stats.registered_disciples.women }}</span>
-                </td>
-              </tr>
-
-              <!-- Sunday Attendance Section -->
-              <tr class="category-row">
-                <td>
-                  <strong>Sunday Attendance</strong>
-                </td>
-                <td>-</td>
-                <td>
-                  <span class="counter-badge">{{ sunday_attendance_stats.sunday_attendance.total }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">0</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ sunday_attendance_stats.sunday_attendance.total }}</span>
-                </td>
-              </tr>
-
-              <!-- Sunday Attendance - Youth Men -->
-              <tr class="subcategory-row">
-                <td style="padding-left: 2rem;">Youth Men</td>
-                <td>-</td>
-                <td>
-                  <span class="counter-badge">{{ sunday_attendance_stats.sunday_attendance.youth_men }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">0</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ sunday_attendance_stats.sunday_attendance.youth_men }}</span>
-                </td>
-              </tr>
-
-              <!-- Sunday Attendance - Youth Women -->
-              <tr class="subcategory-row">
-                <td style="padding-left: 2rem;">Youth Women</td>
-                <td>-</td>
-                <td>
-                  <span class="counter-badge">{{ sunday_attendance_stats.sunday_attendance.youth_women }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">0</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ sunday_attendance_stats.sunday_attendance.youth_women }}</span>
-                </td>
-              </tr>
-
-              <!-- Sunday Attendance - Men -->
-              <tr class="subcategory-row">
-                <td style="padding-left: 2rem;">Men</td>
-                <td>-</td>
-                <td>
-                  <span class="counter-badge">{{ sunday_attendance_stats.sunday_attendance.men }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">0</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ sunday_attendance_stats.sunday_attendance.men }}</span>
-                </td>
-              </tr>
-
-              <!-- Sunday Attendance - Women -->
-              <tr class="subcategory-row">
-                <td style="padding-left: 2rem;">Women</td>
-                <td>-</td>
-                <td>
-                  <span class="counter-badge">{{ sunday_attendance_stats.sunday_attendance.women }}</span>
-                </td>
-                <td>
-                  <span class="counter-badge">0</span>
-                </td>
-                <td>
-                  <span class="counter-badge">{{ sunday_attendance_stats.sunday_attendance.women }}</span>
-                </td>
+                <td style="text-align: left; padding-left: 1rem;">Women</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.women }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.women }}</td>
               </tr>
             </tbody>
           </table>
@@ -410,6 +282,62 @@
               </small>
             </div>
           {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- New Believers Report -->
+    <div class="row">
+      <div class="col-12">
+        <div class="report-section">
+          <h3 class="section-title">II. New Believers</h3>
+
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th style="width: 50%;">&nbsp;</th>
+                <th style="width: 25%;">Onsite/ Actual</th>
+                <th style="width: 25%;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">1st Timers</td>
+                <td>{{ new_believers_stats.first_timers }}</td>
+                <td>{{ new_believers_stats.first_timers }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">2nd Timers</td>
+                <td>{{ new_believers_stats.second_timers }}</td>
+                <td>{{ new_believers_stats.second_timers }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">3rd Timers</td>
+                <td>{{ new_believers_stats.third_timers }}</td>
+                <td>{{ new_believers_stats.third_timers }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">4th Timers</td>
+                <td>{{ new_believers_stats.fourth_timers }}</td>
+                <td>{{ new_believers_stats.fourth_timers }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">5th Timers/Conversion</td>
+                <td>{{ new_believers_stats.fifth_timers_conversion }}</td>
+                <td>{{ new_believers_stats.fifth_timers_conversion }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Power Filled Life</td>
+                <td>{{ new_believers_stats.power_filled_life }}</td>
+                <td>{{ new_believers_stats.power_filled_life }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Water Baptism</td>
+                <td>{{ new_believers_stats.water_baptism }}</td>
+                <td>{{ new_believers_stats.water_baptism }}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
