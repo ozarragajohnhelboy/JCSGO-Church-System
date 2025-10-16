@@ -311,8 +311,7 @@ class RegularMemberForm(forms.ModelForm):
         group = self.cleaned_data.get('group')
         
         # Create or update the CustomUser
-        if self.instance and self.instance.user:
-            # Editing existing regular member
+        if self.instance and self.instance.pk:
             user = self.instance.user
             user.first_name = first_name
             user.last_name = last_name

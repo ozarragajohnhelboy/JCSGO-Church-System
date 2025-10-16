@@ -588,3 +588,62 @@ def church_report(request):
     }
     
     return render(request, 'churches/dashboard/church_report.html', context)
+
+
+@login_required
+def export_church_report_to_sheets(request):
+    user = request.user
+    
+    if not (user.is_superuser or user.role.name == 'ADMIN'):
+        from django.contrib import messages
+        messages.error(request, 'You do not have permission to export church reports.')
+        return redirect('churches:church_report')
+    
+    church = user.church
+    
+    from datetime import datetime
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    if start_date:
+        try:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        except ValueError:
+            start_date = None
+    
+    if end_date:
+        try:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            end_date = None
+    
+    demographic_stats = church.get_demographic_statistics()
+    sunday_attendance_stats = church.get_sunday_attendance_statistics(start_date, end_date)
+    
+    current_total = demographic_stats['registered_disciples']['total']
+    target_2025 = {
+        'registered_disciples': int(current_total * 1.2),
+        'youth_men': int(demographic_stats['registered_disciples']['youth_men'] * 1.2),
+        'youth_women': int(demographic_stats['registered_disciples']['youth_women'] * 1.2),
+        'men': int(demographic_stats['registered_disciples']['men'] * 1.2),
+        'women': int(demographic_stats['registered_disciples']['women'] * 1.2),
+    }
+    
+    try:
+        from ..google_sheets import GoogleSheetsService
+        sheets_service = GoogleSheetsService()
+        spreadsheet_url = sheets_service.export_church_report(
+            church, 
+            demographic_stats, 
+            sunday_attendance_stats, 
+            target_2025
+        )
+        
+        from django.contrib import messages
+        messages.success(request, f'Church report exported to Google Sheets successfully!')
+        return redirect(spreadsheet_url)
+        
+    except Exception as e:
+        from django.contrib import messages
+        messages.error(request, f'Failed to export to Google Sheets: {str(e)}')
+        return redirect('churches:church_report')
