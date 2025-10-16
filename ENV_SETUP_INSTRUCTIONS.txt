@@ -1,0 +1,41 @@
+GOOGLE SHEETS API SETUP INSTRUCTIONS
+
+1. Add this to your .env file:
+
+GOOGLE_SHEETS_CREDENTIALS={"type":"service_account","project_id":"your-project-id","private_key_id":"your-key-id","private_key":"-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY_HERE\n-----END PRIVATE KEY-----\n","client_email":"your-service-account@your-project.iam.gserviceaccount.com","client_id":"your-client-id","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/your-service-account%40your-project.iam.gserviceaccount.com"}
+
+2. Steps to get Google Sheets API credentials:
+
+   a. Go to Google Cloud Console (https://console.cloud.google.com)
+   
+   b. Create a new project or select existing project
+   
+   c. Enable Google Sheets API:
+      - Go to "APIs & Services" > "Library"
+      - Search for "Google Sheets API"
+      - Click "Enable"
+   
+   d. Create Service Account:
+      - Go to "APIs & Services" > "Credentials"
+      - Click "Create Credentials" > "Service Account"
+      - Fill in service account details
+      - Click "Create and Continue"
+      - Skip granting access (click "Continue" then "Done")
+   
+   e. Create JSON key:
+      - Click on the created service account
+      - Go to "Keys" tab
+      - Click "Add Key" > "Create new key"
+      - Select "JSON" format
+      - Click "Create" (file will download)
+   
+   f. Copy the entire JSON content from the downloaded file
+   
+   g. Paste the JSON as a single line in your .env file for GOOGLE_SHEETS_CREDENTIALS
+
+3. Important: The service account email will need access to view/edit the created sheets.
+   The system will automatically create sheets that are owned by the service account.
+
+4. Install the new dependencies:
+   pip install -r requirements.txt
+

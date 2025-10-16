@@ -25,42 +25,18 @@ def regular_member_add(request):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    default_password = f"jcsgo{request.user.church.domain}"
-                    user = CustomUser.objects.create_user(
-                        email=form.full_email,
-                        first_name=form.cleaned_data['first_name'],
-                        last_name=form.cleaned_data['last_name'],
-                        phone_number=form.cleaned_data['phone'],
-                        church=request.user.church,
-                        is_new_friend=False,
-                        is_active=True,
-                        password=default_password
-                    )
-
-                    user.role = form.cleaned_data['role']
-                    user.save()
-
-                    try:
-                        if hasattr(user, 'new_friend_profile'):
-                            user.new_friend_profile.delete()
-                    except NewFriend.DoesNotExist:
-                        pass
-
-                    regular_member = RegularMember.objects.create(
-                        user=user,
-                        role_type=form.cleaned_data['role'].name,
-                        group=form.cleaned_data['group']
-                    )
+                    # Use the form's save method which handles birth_date and gender
+                    regular_member = form.save()
 
                     ActivityLog.objects.create(
                         user=request.user,
                         action='REGULAR_MEMBER_ADDED',
-                        description=f'Added regular member: {user.full_name}',
+                        description=f'Added regular member: {regular_member.user.full_name}',
                         ip_address=request.META.get('REMOTE_ADDR'),
                         user_agent=request.META.get('HTTP_USER_AGENT', '')
                     )
                     
-                    messages.success(request, f'Regular member "{user.full_name}" has been added successfully!')
+                    messages.success(request, f'Regular member "{regular_member.user.full_name}" has been added successfully!')
                     return redirect('members:regular_members_list')
                     
             except Exception as e:
@@ -90,26 +66,18 @@ def regular_member_edit(request, regular_member_id):
         if form.is_valid():
             try:
                 with transaction.atomic():
-                    user = regular_member.user
-                    user.first_name = form.cleaned_data['first_name']
-                    user.last_name = form.cleaned_data['last_name']
-                    user.phone_number = form.cleaned_data['phone']
-                    user.role = form.cleaned_data['role']
-                    user.save()
-                    
-                    regular_member.role_type = form.cleaned_data['role'].name
-                    regular_member.group = form.cleaned_data['group']
-                    regular_member.save()
+                    # Use the form's save method which handles birth_date and gender
+                    form.save()
                     
                     ActivityLog.objects.create(
                         user=request.user,
                         action='REGULAR_MEMBER_UPDATED',
-                        description=f'Updated regular member: {user.full_name}',
+                        description=f'Updated regular member: {regular_member.user.full_name}',
                         ip_address=request.META.get('REMOTE_ADDR'),
                         user_agent=request.META.get('HTTP_USER_AGENT', '')
                     )
                     
-                    messages.success(request, f'Regular member "{user.full_name}" has been updated successfully!')
+                    messages.success(request, f'Regular member "{regular_member.user.full_name}" has been updated successfully!')
                     return redirect('members:regular_members_list')
                     
             except Exception as e:

@@ -18,7 +18,7 @@ class CustomUserForm(forms.ModelForm):
         model = CustomUser
         fields = [
             'first_name', 'last_name', 'email', 'church', 'role',
-            'phone_number', 'address', 'birth_date', 'profile_picture',
+            'phone_number', 'address', 'birth_date', 'gender', 'profile_picture',
             'is_new_friend', 'timer_status', 'is_active'
         ]
         widgets = {
@@ -30,6 +30,7 @@ class CustomUserForm(forms.ModelForm):
             'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'gender': forms.Select(attrs={'class': 'form-select'}),
             'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
             'timer_status': forms.Select(attrs={'class': 'form-select'}),
         }
@@ -224,6 +225,26 @@ class RegularMemberForm(forms.ModelForm):
             'placeholder': 'Enter phone number'
         })
     )
+    birth_date = forms.DateField(
+        required=True,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        }),
+        help_text="Required for age categorization (Youth: 13-29, Adult: 30+)"
+    )
+    gender = forms.ChoiceField(
+        choices=[
+            ('', 'Select Gender'),
+            ('MALE', 'Male'),
+            ('FEMALE', 'Female'),
+        ],
+        required=True,
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        help_text="Required for demographic reporting"
+    )
     role = forms.ModelChoiceField(
         queryset=Role.objects.filter(name__in=['VSL', 'CSL', 'CL', 'CM']),
         widget=forms.Select(attrs={
@@ -240,7 +261,7 @@ class RegularMemberForm(forms.ModelForm):
     
     class Meta:
         model = RegularMember
-        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'role', 'group']
+        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'birth_date', 'gender', 'role', 'group']
     
     def __init__(self, *args, **kwargs):
         self.church = kwargs.pop('church', None)
@@ -277,6 +298,76 @@ class RegularMemberForm(forms.ModelForm):
             self.full_email = full_email
         
         return email_prefix
+
+    def save(self, commit=True):
+        # Get the cleaned data
+        email_prefix = self.cleaned_data['email_prefix']
+        first_name = self.cleaned_data['first_name']
+        last_name = self.cleaned_data['last_name']
+        phone = self.cleaned_data.get('phone', '')
+        birth_date = self.cleaned_data['birth_date']
+        gender = self.cleaned_data['gender']
+        role = self.cleaned_data['role']
+        group = self.cleaned_data.get('group')
+        
+        # Create or update the CustomUser
+        if self.instance and self.instance.pk:
+            user = self.instance.user
+            user.first_name = first_name
+            user.last_name = last_name
+            user.phone_number = phone
+            user.birth_date = birth_date
+            user.gender = gender
+            user.role = role
+            if commit:
+                user.save()
+        else:
+            # Creating new regular member
+            full_email = getattr(self, 'full_email', None)
+            if not full_email and self.church:
+                full_email = f"{email_prefix}@{self.church.domain}.jcsgo.com"
+            
+            # Set default password
+            default_password = f"jcsgo{self.church.domain}"
+            
+            user = CustomUser.objects.create_user(
+                email=full_email,
+                first_name=first_name,
+                last_name=last_name,
+                phone_number=phone,
+                birth_date=birth_date,
+                gender=gender,
+                church=self.church,
+                role=role,
+                is_new_friend=False,  # Regular member
+                is_active=True,
+                password=default_password
+            )
+            
+            # Remove any existing new friend profile
+            try:
+                if hasattr(user, 'new_friend_profile'):
+                    user.new_friend_profile.delete()
+            except:
+                pass
+        
+        # Create or update the RegularMember
+        if self.instance and self.instance.pk:
+            # Editing existing regular member
+            regular_member = self.instance
+            regular_member.role_type = role.name
+            regular_member.group = group
+            if commit:
+                regular_member.save()
+        else:
+            # Creating new regular member
+            regular_member = RegularMember.objects.create(
+                user=user,
+                role_type=role.name,
+                group=group
+            )
+        
+        return regular_member
 
 
 class GroupForm(forms.ModelForm):
@@ -324,7 +415,7 @@ class ProfileUpdateForm(forms.ModelForm):
         model = CustomUser
         fields = [
             'first_name', 'last_name', 'phone_number', 'address', 
-            'birth_date', 'profile_picture'
+            'birth_date', 'gender', 'profile_picture'
         ]
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -332,6 +423,7 @@ class ProfileUpdateForm(forms.ModelForm):
             'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
             'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'birth_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'gender': forms.Select(attrs={'class': 'form-select'}),
             'profile_picture': forms.FileInput(attrs={'class': 'form-control'}),
         }
 

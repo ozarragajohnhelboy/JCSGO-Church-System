@@ -1,0 +1,366 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+  {{ church.name }} - Church Report
+{% endblock %}
+
+{% block extra_css %}
+  <style>
+    .stats-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stats-card:nth-child(2) {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .stats-card:nth-child(3) {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .stats-card:nth-child(4) {
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    
+    .report-section {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .report-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    
+    .report-table th,
+    .report-table td {
+      padding: 12px;
+      text-align: center;
+      border: 1px solid #dee2e6;
+    }
+    
+    .report-table th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+      color: #495057;
+    }
+    
+    .report-table .category-row {
+      background-color: #e9ecef;
+      font-weight: 600;
+    }
+    
+    .report-table .subcategory-row {
+      background-color: #f8f9fa;
+      padding-left: 2rem;
+    }
+    
+    .counter-badge {
+      display: inline-block;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      min-width: 60px;
+    }
+    
+    .date-filter-form {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+    }
+    
+    .section-title {
+      color: #495057;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #007bff;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 class="h3 mb-0 text-gray-800">Church Report</h1>
+            <p class="text-muted mb-0">{{ church.name }} - Demographic Statistics</p>
+          </div>
+          <div class="d-flex gap-2 align-items-center">
+            <span class="badge bg-primary fs-6">{{ church.location }}</span>
+            <a href="{% url 'churches:export_church_report_to_sheets' %}?start_date={% if start_date %}{{ start_date|date:'Y-m-d' }}{% endif %}&end_date={% if end_date %}{{ end_date|date:'Y-m-d' }}{% endif %}" 
+               class="btn btn-success" 
+               target="_blank">
+              Connect to Google Sheet
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Date Filter -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="date-filter-form">
+          <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label for="start_date" class="form-label">Start Date</label>
+              <input type="date" class="form-control" id="start_date" name="start_date" value="{% if start_date %}{{ start_date|date:'Y-m-d' }}{% endif %}" />
+            </div>
+            <div class="col-md-4">
+              <label for="end_date" class="form-label">End Date</label>
+              <input type="date" class="form-control" id="end_date" name="end_date" value="{% if end_date %}{{ end_date|date:'Y-m-d' }}{% endif %}" />
+            </div>
+            <div class="col-md-4">
+              <button type="submit" class="btn btn-primary">Filter</button>
+              <a href="{% url 'churches:church_report' %}" class="btn btn-outline-secondary ms-2">Clear</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card text-white">
+          <div class="card-body">
+            <div class="row no-gutters align-items-center">
+              <div class="col mr-2">
+                <div class="text-xs font-weight-bold text-uppercase mb-1">Total Members</div>
+                <div class="h5 mb-0 font-weight-bold">{{ total_members }}</div>
+              </div>
+              <div class="col-auto">
+                <i class="fas fa-users fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card text-white">
+          <div class="card-body">
+            <div class="row no-gutters align-items-center">
+              <div class="col mr-2">
+                <div class="text-xs font-weight-bold text-uppercase mb-1">Regular Members</div>
+                <div class="h5 mb-0 font-weight-bold">{{ regular_members_count }}</div>
+              </div>
+              <div class="col-auto">
+                <i class="fas fa-user-check fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card text-white">
+          <div class="card-body">
+            <div class="row no-gutters align-items-center">
+              <div class="col mr-2">
+                <div class="text-xs font-weight-bold text-uppercase mb-1">New Friends</div>
+                <div class="h5 mb-0 font-weight-bold">{{ new_friends_count }}</div>
+              </div>
+              <div class="col-auto">
+                <i class="fas fa-user-plus fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card text-white">
+          <div class="card-body">
+            <div class="row no-gutters align-items-center">
+              <div class="col mr-2">
+                <div class="text-xs font-weight-bold text-uppercase mb-1">Sunday Attendance</div>
+                <div class="h5 mb-0 font-weight-bold">{{ sunday_attendance_stats.sunday_attendance.total }}</div>
+              </div>
+              <div class="col-auto">
+                <i class="fas fa-calendar-check fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Church Attendance Report -->
+    <div class="row">
+      <div class="col-12">
+        <div class="report-section">
+          <h3 class="section-title">I. Church Attendance</h3>
+
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th style="width: 50%;">&nbsp;</th>
+                <th style="width: 25%;">Onsite/ Actual</th>
+                <th style="width: 25%;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="category-row">
+                <td><strong>Registered Disciples</strong></td>
+                <td>{{ demographic_stats.registered_disciples.total }}</td>
+                <td>{{ demographic_stats.registered_disciples.total }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Youth Men</td>
+                <td>{{ demographic_stats.registered_disciples.youth_men }}</td>
+                <td>{{ demographic_stats.registered_disciples.youth_men }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Youth Women</td>
+                <td>{{ demographic_stats.registered_disciples.youth_women }}</td>
+                <td>{{ demographic_stats.registered_disciples.youth_women }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Men</td>
+                <td>{{ demographic_stats.registered_disciples.men }}</td>
+                <td>{{ demographic_stats.registered_disciples.men }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Women</td>
+                <td>{{ demographic_stats.registered_disciples.women }}</td>
+                <td>{{ demographic_stats.registered_disciples.women }}</td>
+              </tr>
+              <tr class="category-row">
+                <td><strong>Sunday Attendance</strong></td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.total }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.total }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Youth Men</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.youth_men }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.youth_men }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Youth Women</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.youth_women }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.youth_women }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Men</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.men }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.men }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Women</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.women }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.women }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {% if start_date and end_date %}
+            <div class="mt-3">
+              <small class="text-muted">
+                Report period: {{ start_date|date:'M d, Y' }} to {{ end_date|date:'M d, Y' }}
+              </small>
+            </div>
+          {% else %}
+            <div class="mt-3">
+              <small class="text-muted">
+                Sunday attendance data for the last 30 days
+              </small>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- New Believers Report -->
+    <div class="row">
+      <div class="col-12">
+        <div class="report-section">
+          <h3 class="section-title">II. New Believers</h3>
+
+          <table class="report-table">
+            <thead>
+              <tr>
+                <th style="width: 50%;">&nbsp;</th>
+                <th style="width: 25%;">Onsite/ Actual</th>
+                <th style="width: 25%;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">1st Timers</td>
+                <td>{{ new_believers_stats.first_timers }}</td>
+                <td>{{ new_believers_stats.first_timers }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">2nd Timers</td>
+                <td>{{ new_believers_stats.second_timers }}</td>
+                <td>{{ new_believers_stats.second_timers }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">3rd Timers</td>
+                <td>{{ new_believers_stats.third_timers }}</td>
+                <td>{{ new_believers_stats.third_timers }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">4th Timers</td>
+                <td>{{ new_believers_stats.fourth_timers }}</td>
+                <td>{{ new_believers_stats.fourth_timers }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">5th Timers/Conversion</td>
+                <td>{{ new_believers_stats.fifth_timers_conversion }}</td>
+                <td>{{ new_believers_stats.fifth_timers_conversion }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Power Filled Life</td>
+                <td>{{ new_believers_stats.power_filled_life }}</td>
+                <td>{{ new_believers_stats.power_filled_life }}</td>
+              </tr>
+              <tr class="subcategory-row">
+                <td style="text-align: left; padding-left: 1rem;">Water Baptism</td>
+                <td>{{ new_believers_stats.water_baptism }}</td>
+                <td>{{ new_believers_stats.water_baptism }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    // Set default date range to last 30 days
+    document.addEventListener('DOMContentLoaded', function () {
+      const endDateInput = document.getElementById('end_date')
+      const startDateInput = document.getElementById('start_date')
+    
+      if (!endDateInput.value) {
+        const today = new Date()
+        endDateInput.value = today.toISOString().split('T')[0]
+      }
+    
+      if (!startDateInput.value) {
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        startDateInput.value = thirtyDaysAgo.toISOString().split('T')[0]
+      }
+    })
+  </script>
+{% endblock %}

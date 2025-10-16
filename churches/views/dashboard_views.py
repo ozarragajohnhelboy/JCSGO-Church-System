@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -520,3 +520,175 @@ def dashboard(request):
             'attendance_streak': attendance_streak,
         })
         return render(request, 'churches/dashboard/member_dashboard.html', context)
+
+
+@login_required
+def church_report(request):
+    """Church Report with demographic statistics"""
+    user = request.user
+    
+    # Check if user has permission to view church reports
+    if not (user.is_superuser or user.role.name == 'ADMIN'):
+        from django.contrib import messages
+        messages.error(request, 'You do not have permission to view church reports.')
+        return redirect('churches:dashboard')
+    
+    church = user.church
+    
+    # Get date range from request parameters
+    from datetime import datetime, timedelta
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    if start_date:
+        try:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        except ValueError:
+            start_date = None
+    
+    if end_date:
+        try:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            end_date = None
+    
+    # Get demographic statistics
+    demographic_stats = church.get_demographic_statistics()
+    
+    # Get Sunday attendance statistics
+    sunday_attendance_stats = church.get_sunday_attendance_statistics(start_date, end_date)
+    
+    # Get 2025 target (this would typically come from church settings or be configurable)
+    # For now, we'll calculate it as a percentage of current registered disciples
+    current_total = demographic_stats['registered_disciples']['total']
+    target_2025 = {
+        'registered_disciples': int(current_total * 1.2),  # 20% growth target
+        'youth_men': int(demographic_stats['registered_disciples']['youth_men'] * 1.2),
+        'youth_women': int(demographic_stats['registered_disciples']['youth_women'] * 1.2),
+        'men': int(demographic_stats['registered_disciples']['men'] * 1.2),
+        'women': int(demographic_stats['registered_disciples']['women'] * 1.2),
+    }
+    
+    # Get additional statistics
+    total_members = church.total_members
+    new_friends_count = church.new_friends_count
+    regular_members_count = church.regular_members_count
+    # New believers statistics
+    from members.models import CustomUser, RegularMember
+    nf = CustomUser.objects.filter(church=church, is_active=True, is_new_friend=True)
+    timers = {
+        'first': nf.filter(timer_status=1).count(),
+        'second': nf.filter(timer_status=2).count(),
+        'third': nf.filter(timer_status=3).count(),
+        'fourth': nf.filter(timer_status=4).count(),
+        'fifth': nf.filter(timer_status=5).count(),
+    }
+    water_baptism = RegularMember.objects.filter(user__church=church, baptism_date__isnull=False).count()
+    power_filled_life = 0
+    new_believers_stats = {
+        'first_timers': timers['first'],
+        'second_timers': timers['second'],
+        'third_timers': timers['third'],
+        'fourth_timers': timers['fourth'],
+        'fifth_timers_conversion': timers['fifth'],
+        'power_filled_life': power_filled_life,
+        'water_baptism': water_baptism,
+    }
+    
+    context = {
+        'user': user,
+        'church': church,
+        'demographic_stats': demographic_stats,
+        'sunday_attendance_stats': sunday_attendance_stats,
+        'target_2025': target_2025,
+        'total_members': total_members,
+        'new_friends_count': new_friends_count,
+        'regular_members_count': regular_members_count,
+        'start_date': start_date,
+        'end_date': end_date,
+        'new_believers_stats': new_believers_stats,
+    }
+    
+    return render(request, 'churches/dashboard/church_report.html', context)
+
+
+@login_required
+def export_church_report_to_sheets(request):
+    user = request.user
+    
+    if not (user.is_superuser or user.role.name == 'ADMIN'):
+        from django.contrib import messages
+        messages.error(request, 'You do not have permission to export church reports.')
+        return redirect('churches:church_report')
+    
+    church = user.church
+    
+    from datetime import datetime
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    
+    if start_date:
+        try:
+            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+        except ValueError:
+            start_date = None
+    
+    if end_date:
+        try:
+            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+        except ValueError:
+            end_date = None
+    
+    demographic_stats = church.get_demographic_statistics()
+    sunday_attendance_stats = church.get_sunday_attendance_statistics(start_date, end_date)
+    
+    current_total = demographic_stats['registered_disciples']['total']
+    target_2025 = {
+        'registered_disciples': int(current_total * 1.2),
+        'youth_men': int(demographic_stats['registered_disciples']['youth_men'] * 1.2),
+        'youth_women': int(demographic_stats['registered_disciples']['youth_women'] * 1.2),
+        'men': int(demographic_stats['registered_disciples']['men'] * 1.2),
+        'women': int(demographic_stats['registered_disciples']['women'] * 1.2),
+    }
+    
+    # New believers statistics for export
+    from members.models import CustomUser, RegularMember
+    nf = CustomUser.objects.filter(church=church, is_active=True, is_new_friend=True)
+    timers = {
+        'first': nf.filter(timer_status=1).count(),
+        'second': nf.filter(timer_status=2).count(),
+        'third': nf.filter(timer_status=3).count(),
+        'fourth': nf.filter(timer_status=4).count(),
+        'fifth': nf.filter(timer_status=5).count(),
+    }
+    water_baptism = RegularMember.objects.filter(user__church=church, baptism_date__isnull=False).count()
+    power_filled_life = 0
+    new_believers_stats = {
+        'first_timers': timers['first'],
+        'second_timers': timers['second'],
+        'third_timers': timers['third'],
+        'fourth_timers': timers['fourth'],
+        'fifth_timers_conversion': timers['fifth'],
+        'power_filled_life': power_filled_life,
+        'water_baptism': water_baptism,
+    }
+
+    try:
+        from ..google_sheets import GoogleSheetsService
+        sheets_service = GoogleSheetsService()
+        spreadsheet_url = sheets_service.export_church_report(
+            church, 
+            demographic_stats, 
+            sunday_attendance_stats, 
+            target_2025,
+            new_believers_stats
+        )
+        
+        from django.contrib import messages
+        messages.success(request, f'Church report exported to Google Sheets successfully!')
+        return redirect(spreadsheet_url)
+        
+    except Exception as e:
+        from django.contrib import messages
+        messages.error(request, f'Failed to export to Google Sheets: {str(e)}')
+        return redirect('churches:church_report')
