@@ -9,18 +9,8 @@
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
 
     <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'churches:dashboard' %}"><i class="bi bi-house"></i> Dashboard</a>
-        </li>
-        {% if user.is_superuser or user.role.name == 'ADMIN' %}
-          <li class="nav-item">
-            <a class="nav-link" href="/admin/"><i class="bi bi-gear"></i> Admin</a>
-          </li>
-        {% endif %}
-      </ul>
 
-      <ul class="navbar-nav">
+      <ul class="navbar-nav ms-auto">
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
             <div class="me-2">
