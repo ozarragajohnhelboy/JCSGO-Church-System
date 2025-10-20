@@ -207,7 +207,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             video.srcObject = stream;
+            video.classList.remove('d-none');
             video.style.display = 'block';
+            video.setAttribute('autoplay', 'true');
+            video.setAttribute('muted', 'true');
+            video.setAttribute('playsinline', 'true');
             startCameraBtn.style.display = 'none';
             stopCameraBtn.style.display = 'inline-block';
             debugCameraBtn.style.display = 'inline-block';
@@ -338,6 +342,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         video.style.display = 'none';
+        video.classList.add('d-none');
+        video.srcObject = null;
         startCameraBtn.style.display = 'inline-block';
         stopCameraBtn.style.display = 'none';
         debugCameraBtn.style.display = 'none';
