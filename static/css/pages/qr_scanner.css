@@ -36,12 +36,12 @@
 }
 
 .error-alert {
-    background: #f8d7da;
-    border: 1px solid #f5c6cb;
-    color: #721c24;
-    border-radius: 10px;
-    padding: 1rem;
-    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    color: #ffffff !important;
+    border-radius: 10px !important;
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+    border: 2px solid #dc3545 !important;
 }
 
 /* Video and canvas styles */

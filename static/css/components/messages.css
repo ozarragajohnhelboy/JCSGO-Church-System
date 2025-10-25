@@ -9,8 +9,50 @@
 }
 
 .alert-danger {
-    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-    color: #721c24;
+    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    color: #ffffff !important;
+    border: 2px solid #dc3545 !important;
+}
+
+/* More specific targeting for alert messages */
+.alert.alert-danger {
+    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    color: #ffffff !important;
+    border: 2px solid #dc3545 !important;
+}
+
+/* Target the exact structure from messages.html */
+.alert.alert-danger.alert-dismissible {
+    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    color: #ffffff !important;
+    border: 2px solid #dc3545 !important;
+}
+
+/* Target with all classes and override inline styles */
+.alert.alert-danger.alert-dismissible.fade.show.shadow-sm.border-0 {
+    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    color: #ffffff !important;
+    border: 2px solid #dc3545 !important;
+}
+
+/* Force override Bootstrap's alert-danger */
+.alert-danger,
+.alert-danger[class*="alert"],
+div[class*="alert-danger"] {
+    background: linear-gradient(135deg, #dc3545, #c82333) !important;
+    color: #ffffff !important;
+    border: 2px solid #dc3545 !important;
+}
+
+/* Error icon styling */
+.alert-danger .bi-exclamation-triangle-fill,
+.alert-danger i[class*="exclamation-triangle"] {
+    color: #800000 !important;
+}
+
+/* Target the specific error icon in messages */
+.alert.alert-danger .bi-exclamation-triangle-fill {
+    color: #800000 !important;
 }
 
 .alert-warning {
