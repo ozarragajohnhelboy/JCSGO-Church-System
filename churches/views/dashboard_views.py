@@ -736,16 +736,19 @@ def generate_new_friends_report(request):
                 gender_str = str(gender_raw).strip().upper()
                 
                 if gender_str in ('MALE', 'FEMALE'):
-                    if age < 18:
+                    # 10-29 years old: Youth Boys / Youth Girls (labeled as boys/girls in report)
+                    # 30+ years old: Men / Women
+                    if 10 <= age <= 29:
                         if gender_str == 'MALE':
                             timer_stats[timer_key]['boys'] += 1
                         elif gender_str == 'FEMALE':
                             timer_stats[timer_key]['girls'] += 1
-                    else:
+                    elif age >= 30:
                         if gender_str == 'MALE':
                             timer_stats[timer_key]['men'] += 1
                         elif gender_str == 'FEMALE':
                             timer_stats[timer_key]['women'] += 1
+                    # Age < 10 is not counted (children)
     
     total_stats = {
         'boys': sum(stats['boys'] for stats in timer_stats.values()),
