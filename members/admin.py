@@ -37,7 +37,7 @@ class CustomUserResource(resources.ModelResource):
         import_id_fields = ('email',)
         fields = (
             'id', 'email', 'first_name', 'last_name', 'church', 'role',
-            'phone_number', 'address', 'birth_date', 'is_new_friend', 
+            'phone_number', 'address', 'birth_date', 'gender', 'is_new_friend', 
             'timer_status', 'date_joined', 'last_attendance', 'transition_date',
             'email_verified', 'is_active', 'is_staff', 'is_superuser',
             'qr_code_id', 'qr_code_image'
@@ -127,14 +127,14 @@ class RoleAdmin(ImportExportModelAdmin):
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin, ImportExportModelAdmin):
     resource_class = CustomUserResource
-    list_display = ('email', 'full_name', 'church', 'role', 'status_display', 'is_active', 'date_joined')
+    list_display = ('email', 'full_name', 'church', 'role', 'birth_date', 'gender', 'status_display', 'is_active', 'date_joined')
     list_filter = ('church', 'role', 'is_new_friend', 'is_active', 'is_staff', 'is_superuser', 'date_joined')
     search_fields = ('email', 'first_name', 'last_name', 'phone_number')
     ordering = ('-date_joined',)
     
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Personal Info', {'fields': ('first_name', 'last_name', 'profile_picture', 'phone_number', 'address', 'birth_date')}),
+        ('Personal Info', {'fields': ('first_name', 'last_name', 'profile_picture', 'phone_number', 'address', 'birth_date', 'gender')}),
         ('Church & Role', {'fields': ('church', 'role')}),
         ('Member Status', {'fields': ('is_new_friend', 'timer_status', 'last_attendance', 'transition_date')}),
         ('QR Code', {'fields': ('qr_code_id', 'qr_code_image')}),

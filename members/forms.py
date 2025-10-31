@@ -76,6 +76,26 @@ class NewFriendForm(forms.ModelForm):
             'placeholder': 'Enter phone number'
         })
     )
+    birth_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        }),
+        help_text='Required for accurate age categorization in reports'
+    )
+    gender = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', 'Select gender'),
+            ('MALE', 'Male'),
+            ('FEMALE', 'Female'),
+        ],
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        help_text='Required for demographic reporting'
+    )
     invited_by = forms.ModelChoiceField(
         queryset=CustomUser.objects.none(),
         required=False,
@@ -152,7 +172,7 @@ class NewFriendForm(forms.ModelForm):
     
     class Meta:
         model = NewFriend
-        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'invited_by', 'endorsed_to', 'notes', 'timer_status', 'convert_to_regular', 'regular_role']
+        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'birth_date', 'gender', 'invited_by', 'endorsed_to', 'notes', 'timer_status', 'convert_to_regular', 'regular_role']
     
     def clean_email_prefix(self):
         email_prefix = self.cleaned_data['email_prefix']

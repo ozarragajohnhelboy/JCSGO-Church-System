@@ -147,14 +147,9 @@
             <p class="text-muted mb-0">Welcome back, {{ user.full_name }}</p>
           </div>
           <div class="text-end">
-            <div class="btn-group me-3" role="group">
-              <button type="button" class="btn btn-success" onclick="generateChurchReport()">
+            <button type="button" class="btn btn-success me-3" data-bs-toggle="modal" data-bs-target="#reportModal">
                 <i class="bi bi-file-text me-2"></i>Generate Report
               </button>
-              <button type="button" class="btn btn-outline-primary" onclick="printDashboard()">
-                <i class="bi bi-printer me-2"></i>Print Dashboard
-              </button>
-            </div>
             <span class="badge bg-primary fs-6">{{ user.get_role_display }}</span>
             <span class="badge bg-info ms-2 fs-6">{{ church.name }}</span>
           </div>
@@ -468,6 +463,99 @@
     </div>
   </div>
 </form>
+
+<div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reportModalLabel">Select Report Type</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="list-group">
+          <button type="button" class="list-group-item list-group-item-action" onclick="loadReport('new_friends')">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-1">New Friends Report</h6>
+                <p class="mb-0 text-muted small">Timer status breakdown by boys, girls, men, and women</p>
+              </div>
+              <i class="bi bi-person-plus fs-4 text-primary"></i>
+            </div>
+          </button>
+          
+          <button type="button" class="list-group-item list-group-item-action" onclick="loadReport('men')">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-1">Men Members Report</h6>
+                <p class="mb-0 text-muted small">Age brackets and role distribution</p>
+              </div>
+              <i class="bi bi-person fs-4 text-info"></i>
+            </div>
+          </button>
+          
+          <button type="button" class="list-group-item list-group-item-action" onclick="loadReport('women')">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-1">Women Members Report</h6>
+                <p class="mb-0 text-muted small">Age brackets and role distribution</p>
+              </div>
+              <i class="bi bi-person-heart fs-4 text-danger"></i>
+            </div>
+          </button>
+          
+          <button type="button" class="list-group-item list-group-item-action" onclick="loadReport('youth_men')">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-1">Youth Boys Report</h6>
+                <p class="mb-0 text-muted small">Age brackets and role distribution (13-29)</p>
+              </div>
+              <i class="bi bi-person-badge fs-4 text-success"></i>
+            </div>
+          </button>
+          
+          <button type="button" class="list-group-item list-group-item-action" onclick="loadReport('youth_women')">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+              <div>
+                <h6 class="mb-1">Youth Girls Report</h6>
+                <p class="mb-0 text-muted small">Age brackets and role distribution (13-29)</p>
+              </div>
+              <i class="bi bi-person-circle fs-4 text-warning"></i>
+            </div>
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="reportPreviewModal" tabindex="-1" aria-labelledby="reportPreviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reportPreviewModalLabel">Report Preview</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="reportPreviewContent">
+        <div class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mt-3 text-muted">Loading report...</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="printReport()">
+          <i class="bi bi-printer me-2"></i>Print Report
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -650,261 +738,16 @@
        dashboardForm.submit();
      };
 
-     // Function to generate church report
-     window.generateChurchReport = function() {
-       // Create a comprehensive report with all dashboard data
-       const reportData = {
-         church: '{{ church.name }}',
-         generatedBy: '{{ user.full_name }}',
-         generatedAt: new Date().toLocaleString(),
-         totalMembers: {{ total_members }},
-         newFriends: {{ new_friends_count }},
-         regularMembers: {{ regulars_count }},
-         activeGroups: {{ active_groups_count }},
-         vslCount: {{ vsl_count }},
-         cslCount: {{ csl_count }},
-         clCount: {{ cl_count }},
-         cmCount: {{ cm_count }},
-         currentMonthTransitions: {{ current_month_transitions }},
-         transitionRate: {{ transition_rate }}
-       };
-
-       // Create report content
-       let reportContent = `
-         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-           <div style="text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 20px; margin-bottom: 30px;">
-             <h1 style="color: #007bff; margin: 0;">{{ church.name }} - Church Report</h1>
-             <p style="color: #6c757d; margin: 5px 0;">Generated by: ${reportData.generatedBy}</p>
-             <p style="color: #6c757d; margin: 5px 0;">Generated on: ${reportData.generatedAt}</p>
-           </div>
-           
-           <div style="margin-bottom: 30px;">
-             <h2 style="color: #007bff; border-bottom: 1px solid #dee2e6; padding-bottom: 10px;">Executive Summary</h2>
-             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
-               <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h3 style="color: #007bff; margin: 0; font-size: 2em;">${reportData.totalMembers}</h3>
-                 <p style="margin: 5px 0; color: #6c757d;">Total Members</p>
-               </div>
-               <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h3 style="color: #28a745; margin: 0; font-size: 2em;">${reportData.newFriends}</h3>
-                 <p style="margin: 5px 0; color: #6c757d;">New Friends</p>
-               </div>
-               <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h3 style="color: #17a2b8; margin: 0; font-size: 2em;">${reportData.regularMembers}</h3>
-                 <p style="margin: 5px 0; color: #6c757d;">Regular Members</p>
-               </div>
-               <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h3 style="color: #ffc107; margin: 0; font-size: 2em;">${reportData.activeGroups}</h3>
-                 <p style="margin: 5px 0; color: #6c757d;">Active Groups</p>
-               </div>
-             </div>
-           </div>
-           
-           <div style="margin-bottom: 30px;">
-             <h2 style="color: #007bff; border-bottom: 1px solid #dee2e6; padding-bottom: 10px;">Leadership Structure</h2>
-             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0;">
-               <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h4 style="color: #1976d2; margin: 0;">${reportData.vslCount}</h4>
-                 <p style="margin: 5px 0; color: #6c757d;">VSL</p>
-               </div>
-               <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h4 style="color: #388e3c; margin: 0;">${reportData.cslCount}</h4>
-                 <p style="margin: 5px 0; color: #6c757d;">CSL</p>
-               </div>
-               <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h4 style="color: #f57c00; margin: 0;">${reportData.clCount}</h4>
-                 <p style="margin: 5px 0; color: #6c757d;">CL</p>
-               </div>
-               <div style="background: #e0f2f1; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h4 style="color: #00796b; margin: 0;">${reportData.cmCount}</h4>
-                 <p style="margin: 5px 0; color: #6c757d;">CM</p>
-               </div>
-             </div>
-           </div>
-           
-           <div style="margin-bottom: 30px;">
-             <h2 style="color: #007bff; border-bottom: 1px solid #dee2e6; padding-bottom: 10px;">Growth Metrics</h2>
-             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
-               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                 <span style="font-weight: 500;">Transitions This Month:</span>
-                 <span style="font-size: 1.2em; color: #28a745; font-weight: bold;">${reportData.currentMonthTransitions}</span>
-               </div>
-               <div style="display: flex; justify-content: space-between; align-items: center;">
-                 <span style="font-weight: 500;">Transition Rate:</span>
-                 <span style="font-size: 1.2em; color: #007bff; font-weight: bold;">${reportData.transitionRate}%</span>
-               </div>
-             </div>
-           </div>
-           
-           <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d;">
-             <p>This report was generated automatically by the JCSGO Church Management System</p>
-           </div>
-         </div>
-       `;
-
-       // Open report in new window for printing
-       const reportWindow = window.open('', '_blank', 'width=800,height=600');
-       reportWindow.document.write(`
-         <html>
-           <head>
-             <title>{{ church.name }} - Church Report</title>
-             <style>
-               @media print {
-                 body { margin: 0; }
-                 .no-print { display: none; }
-               }
-             </style>
-           </head>
-           <body>
-             ${reportContent}
-             <div class="no-print" style="text-align: center; margin-top: 20px;">
-               <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Print Report</button>
-               <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Close</button>
-             </div>
-           </body>
-         </html>
-       `);
-       reportWindow.document.close();
-     };
-
-     // Function to print dashboard
-     window.printDashboard = function() {
-       // Create a clean print version similar to generate report
-       const printData = {
-         church: '{{ church.name }}',
-         generatedBy: '{{ user.full_name }}',
-         generatedAt: new Date().toLocaleString(),
-         totalMembers: {{ total_members }},
-         newFriends: {{ new_friends_count }},
-         regularMembers: {{ regulars_count }},
-         activeGroups: {{ active_groups_count }},
-         vslCount: {{ vsl_count }},
-         cslCount: {{ csl_count }},
-         clCount: {{ cl_count }},
-         cmCount: {{ cm_count }},
-         currentMonthTransitions: {{ current_month_transitions }},
-         transitionRate: {{ transition_rate }},
-         vslPercentage: {{ vsl_percentage }},
-         cslPercentage: {{ csl_percentage }},
-         clPercentage: {{ cl_percentage }},
-         cmPercentage: {{ cm_percentage }}
-       };
-
-       // Create clean print content
-       let printContent = `
-         <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-           <div style="text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 20px; margin-bottom: 30px;">
-             <h1 style="color: #007bff; margin: 0;">{{ church.name }} - Dashboard Summary</h1>
-             <p style="color: #6c757d; margin: 5px 0;">Generated by: ${printData.generatedBy}</p>
-             <p style="color: #6c757d; margin: 5px 0;">Generated on: ${printData.generatedAt}</p>
-           </div>
-           
-           <div style="margin-bottom: 30px;">
-             <h2 style="color: #007bff; border-bottom: 1px solid #dee2e6; padding-bottom: 10px;">Key Statistics</h2>
-             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">
-               <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h3 style="color: #007bff; margin: 0; font-size: 2em;">${printData.totalMembers}</h3>
-                 <p style="margin: 5px 0; color: #6c757d;">Total Members</p>
-               </div>
-               <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h3 style="color: #28a745; margin: 0; font-size: 2em;">${printData.newFriends}</h3>
-                 <p style="margin: 5px 0; color: #6c757d;">New Friends</p>
-               </div>
-               <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h3 style="color: #17a2b8; margin: 0; font-size: 2em;">${printData.regularMembers}</h3>
-                 <p style="margin: 5px 0; color: #6c757d;">Regular Members</p>
-               </div>
-               <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h3 style="color: #ffc107; margin: 0; font-size: 2em;">${printData.activeGroups}</h3>
-                 <p style="margin: 5px 0; color: #6c757d;">Active Groups</p>
-               </div>
-             </div>
-           </div>
-           
-           <div style="margin-bottom: 30px;">
-             <h2 style="color: #007bff; border-bottom: 1px solid #dee2e6; padding-bottom: 10px;">Leadership Structure</h2>
-             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0;">
-               <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h4 style="color: #1976d2; margin: 0;">${printData.vslCount} (${printData.vslPercentage}%)</h4>
-                 <p style="margin: 5px 0; color: #6c757d;">VSL</p>
-               </div>
-               <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h4 style="color: #388e3c; margin: 0;">${printData.cslCount} (${printData.cslPercentage}%)</h4>
-                 <p style="margin: 5px 0; color: #6c757d;">CSL</p>
-               </div>
-               <div style="background: #fff3e0; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h4 style="color: #f57c00; margin: 0;">${printData.clCount} (${printData.clPercentage}%)</h4>
-                 <p style="margin: 5px 0; color: #6c757d;">CL</p>
-               </div>
-               <div style="background: #e0f2f1; padding: 15px; border-radius: 8px; text-align: center;">
-                 <h4 style="color: #00796b; margin: 0;">${printData.cmCount} (${printData.cmPercentage}%)</h4>
-                 <p style="margin: 5px 0; color: #6c757d;">CM</p>
-               </div>
-             </div>
-           </div>
-           
-           <div style="margin-bottom: 30px;">
-             <h2 style="color: #007bff; border-bottom: 1px solid #dee2e6; padding-bottom: 10px;">Growth Metrics</h2>
-             <div style="background: #f8f9fa; padding: 20px; border-radius: 8px;">
-               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                 <span style="font-weight: 500;">Transitions This Month:</span>
-                 <span style="font-size: 1.2em; color: #28a745; font-weight: bold;">${printData.currentMonthTransitions}</span>
-               </div>
-               <div style="display: flex; justify-content: space-between; align-items: center;">
-                 <span style="font-weight: 500;">Transition Rate:</span>
-                 <span style="font-size: 1.2em; color: #007bff; font-weight: bold;">${printData.transitionRate}%</span>
-               </div>
-             </div>
-           </div>
-           
-           <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #dee2e6; color: #6c757d;">
-             <p>This dashboard summary was generated automatically by the JCSGO Church Management System</p>
-           </div>
-         </div>
-       `;
-
-       // Open print window with clean content
-       const printWindow = window.open('', '_blank', 'width=800,height=600');
-       printWindow.document.write(`
-         <html>
-           <head>
-             <title>{{ church.name }} - Dashboard Summary</title>
-             <style>
-               @media print {
-                 body { margin: 0; }
-                 .no-print { display: none; }
-               }
-             </style>
-           </head>
-           <body>
-             ${printContent}
-             <div class="no-print" style="text-align: center; margin-top: 20px;">
-               <button onclick="window.print()" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Print Dashboard</button>
-               <button onclick="window.close()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Close</button>
-             </div>
-           </body>
-         </html>
-       `);
-       printWindow.document.close();
-     };
-     
      if (dashboardForm && recentActivitySection) {
        dashboardForm.addEventListener('submit', function(e) {
-         // Store the current scroll position relative to the recent activity section
          const rect = recentActivitySection.getBoundingClientRect();
          const scrollOffset = window.pageYOffset + rect.top;
-         
-         // Store in sessionStorage for after page reload
          sessionStorage.setItem('scrollToRecentActivity', scrollOffset.toString());
        });
 
-       // Check if we need to scroll to recent activity section after page load
        const scrollOffset = sessionStorage.getItem('scrollToRecentActivity');
        if (scrollOffset) {
-         // Clear the stored offset
          sessionStorage.removeItem('scrollToRecentActivity');
-         
-         // Scroll to the position after a short delay to ensure page is fully loaded
          setTimeout(() => {
            window.scrollTo({
              top: parseInt(scrollOffset),
@@ -913,5 +756,236 @@
          }, 100);
        }
      }
+
+     window.loadReport = function(reportType) {
+       const reportModal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
+       if (reportModal) {
+         reportModal.hide();
+       }
+       
+       const previewModal = new bootstrap.Modal(document.getElementById('reportPreviewModal'));
+       previewModal.show();
+       
+       const contentDiv = document.getElementById('reportPreviewContent');
+       contentDiv.innerHTML = `
+         <div class="text-center py-5">
+           <div class="spinner-border text-primary" role="status">
+             <span class="visually-hidden">Loading...</span>
+               </div>
+           <p class="mt-3 text-muted">Loading report...</p>
+         </div>
+       `;
+
+       let url = '';
+       if (reportType === 'new_friends') {
+         url = "{% url 'churches:generate_new_friends_report' %}?preview=1";
+       } else {
+         url = "{% url 'churches:generate_members_report' %}?type=" + reportType + "&preview=1";
+       }
+       
+       fetch(url)
+         .then(response => response.text())
+         .then(html => {
+           contentDiv.innerHTML = html;
+           
+           if (window.reportChart) {
+             window.reportChart.destroy();
+           }
+           
+           setTimeout(() => {
+             const scripts = contentDiv.querySelectorAll('script');
+             scripts.forEach(script => {
+               if (script.src) {
+                 if (!document.querySelector(`script[src="${script.src}"]`)) {
+                   const newScript = document.createElement('script');
+                   newScript.src = script.src;
+                   document.head.appendChild(newScript);
+                 }
+               }
+             });
+             
+             setTimeout(() => {
+               scripts.forEach(script => {
+                 if (!script.src && script.innerHTML.trim()) {
+                   try {
+                     eval(script.innerHTML);
+                   } catch (e) {
+                     console.error('Script execution error:', e);
+                   }
+                 }
+               });
+             }, 300);
+           }, 100);
+         })
+         .catch(error => {
+           contentDiv.innerHTML = `
+             <div class="alert alert-danger" role="alert">
+               <h5>Error Loading Report</h5>
+               <p>Unable to load the report. Please try again.</p>
+               </div>
+           `;
+         });
+     };
+
+     window.printReport = function() {
+       const content = document.getElementById('reportPreviewContent');
+       
+       const originalCanvases = content.querySelectorAll('canvas');
+       const chartImages = [];
+       
+       originalCanvases.forEach(canvas => {
+         try {
+           const chartInstance = Chart.getChart(canvas);
+           if (chartInstance) {
+             const imgSrc = chartInstance.toBase64Image();
+             chartImages.push({
+               id: canvas.id,
+               src: imgSrc
+             });
+           }
+         } catch (e) {
+         }
+       });
+       
+       const printContent = content.cloneNode(true);
+       const chartPromises = [];
+       
+       chartImages.forEach(chartInfo => {
+         const canvas = printContent.querySelector('#' + chartInfo.id);
+         if (canvas) {
+           const promise = new Promise((resolve) => {
+             const img = document.createElement('img');
+             img.src = chartInfo.src;
+             img.style.width = '100%';
+             img.style.height = 'auto';
+             img.style.display = 'block';
+             img.style.margin = '20px auto';
+             canvas.parentNode.replaceChild(img, canvas);
+             resolve();
+           });
+           chartPromises.push(promise);
+         }
+       });
+       
+       Promise.all(chartPromises).then(() => {
+         const printStyles = document.createElement('style');
+         printStyles.innerHTML = `
+               @media print {
+             @page {
+               margin: 0.8cm;
+             }
+             body * {
+               visibility: hidden;
+             }
+             .print-content, .print-content * {
+               visibility: visible;
+             }
+             .print-content {
+               position: absolute;
+               left: 0;
+               top: 0;
+               width: 100%;
+               padding: 15px;
+               background: white;
+             }
+             .print-content .report-preview-container {
+               page-break-inside: avoid;
+             }
+             .print-content .card {
+               border: 1px solid #ddd;
+               margin-bottom: 15px;
+               page-break-inside: avoid;
+               box-shadow: none;
+             }
+             .print-content .card-body {
+               padding: 10px;
+             }
+             .print-content .card-header {
+               background: #f8f9fa;
+               border-bottom: 1px solid #ddd;
+               padding: 8px 12px;
+             }
+             .print-content .table {
+               width: 100%;
+               border-collapse: collapse;
+               margin: 10px 0;
+               page-break-inside: avoid;
+             }
+             .print-content .table th,
+             .print-content .table td {
+               padding: 6px 10px;
+               border: 1px solid #ddd;
+               text-align: left;
+               font-size: 12px;
+             }
+             .print-content .table th {
+               background: #f8f9fa;
+               font-weight: bold;
+             }
+             .print-content .btn-group,
+             .print-content .btn,
+             .no-print {
+               display: none !important;
+             }
+             .print-content .row {
+               display: flex;
+               flex-wrap: wrap;
+               margin: 0 -8px;
+             }
+             .print-content .col-md-3,
+             .print-content .col-md-4,
+             .print-content .col-md-6,
+             .print-content .col-md-8 {
+               padding: 0 8px;
+               margin-bottom: 12px;
+             }
+             .print-content h3,
+             .print-content h4,
+             .print-content h5,
+             .print-content h6 {
+               margin-top: 0;
+               margin-bottom: 10px;
+             }
+             .print-content img {
+               max-width: 100%;
+               height: auto;
+               display: block;
+               margin: 10px auto;
+               max-height: 300px;
+             }
+             .print-content canvas {
+               display: none !important;
+             }
+             .print-content .text-center {
+               margin-bottom: 10px;
+             }
+             .print-content .mb-4 {
+               margin-bottom: 15px !important;
+             }
+             .print-content .pb-3 {
+               padding-bottom: 10px !important;
+             }
+           }
+           @media screen {
+             .print-content {
+               display: none;
+             }
+           }
+         `;
+         
+         printContent.classList.add('print-content');
+         document.body.appendChild(printContent);
+         document.head.appendChild(printStyles);
+         
+         setTimeout(() => {
+           window.print();
+         }, 250);
+         
+         setTimeout(() => {
+           document.body.removeChild(printContent);
+           document.head.removeChild(printStyles);
+         }, 1000);
+       });
+     };
    </script>
 {% endblock %}

@@ -345,7 +345,7 @@ class CustomUser(AbstractUser):
 
     @property
     def demographic_category(self):
-        """Get demographic category: Youth Men, Youth Women, Men, Women"""
+        """Get demographic category: Youth Boys, Youth Girls, Men, Women"""
         if not self.gender or not self.age_category:
             return None
         

@@ -45,6 +45,15 @@ def new_friend_add(request):
                         pass
                     
                     user.timer_status = form.cleaned_data['timer_status']
+                    
+                    birth_date_val = form.cleaned_data.get('birth_date')
+                    gender_val = form.cleaned_data.get('gender')
+                    
+                    if birth_date_val:
+                        user.birth_date = birth_date_val
+                    if gender_val:
+                        user.gender = gender_val
+                    
                     user.save()
 
                     new_friend = NewFriend.objects.create(
@@ -119,6 +128,15 @@ def new_friend_edit(request, new_friend_id):
                     user.last_name = form.cleaned_data['last_name']
                     user.phone_number = form.cleaned_data['phone']
                     user.timer_status = form.cleaned_data['timer_status']
+                    
+                    birth_date_val = form.cleaned_data.get('birth_date')
+                    gender_val = form.cleaned_data.get('gender')
+                    
+                    if birth_date_val:
+                        user.birth_date = birth_date_val
+                    if gender_val:
+                        user.gender = gender_val
+                    
                     user.save()
 
                     new_friend.invited_by = form.cleaned_data['invited_by']
@@ -195,6 +213,8 @@ def new_friend_edit(request, new_friend_id):
         form.fields['first_name'].initial = new_friend.user.first_name
         form.fields['last_name'].initial = new_friend.user.last_name
         form.fields['phone'].initial = new_friend.user.phone_number
+        form.fields['birth_date'].initial = new_friend.user.birth_date
+        form.fields['gender'].initial = new_friend.user.gender
         form.fields['invited_by'].initial = new_friend.invited_by
         form.fields['endorsed_to'].initial = new_friend.endorsed_to
         form.fields['timer_status'].initial = new_friend.user.timer_status

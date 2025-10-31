@@ -1,0 +1,316 @@
+<div class="report-preview-container">
+  <div class="text-center mb-4 pb-3 border-bottom">
+    <h4 class="mb-2">{{ title }}</h4>
+    <p class="text-muted mb-0">{{ church.name }}</p>
+    <small class="text-muted">Generated: {{ generated_at|date:"F d, Y g:i A" }}</small>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="mb-1">{{ total_members }}</h3>
+          <p class="text-muted mb-0 small">Total Members</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="mb-1">{{ role_stats.VSL }}</h3>
+          <p class="text-muted mb-0 small">VSL</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="mb-1">{{ role_stats.CSL }}</h3>
+          <p class="text-muted mb-0 small">CSL</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="mb-1">{{ role_stats.CL }}</h3>
+          <p class="text-muted mb-0 small">CL</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Age Distribution</h6>
+          <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="agePeriod" id="ageWeekFilter" value="week" checked>
+            <label class="btn btn-outline-primary" for="ageWeekFilter">Week</label>
+            
+            <input type="radio" class="btn-check" name="agePeriod" id="ageMonthFilter" value="month">
+            <label class="btn btn-outline-primary" for="ageMonthFilter">Month</label>
+            
+            <input type="radio" class="btn-check" name="agePeriod" id="ageYearFilter" value="year">
+            <label class="btn btn-outline-primary" for="ageYearFilter">Year</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <canvas id="ageChart" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">Role Distribution</h6>
+          <div class="btn-group btn-group-sm" role="group">
+            <input type="radio" class="btn-check" name="rolePeriod" id="roleWeekFilter" value="week" checked>
+            <label class="btn btn-outline-primary" for="roleWeekFilter">Week</label>
+            
+            <input type="radio" class="btn-check" name="rolePeriod" id="roleMonthFilter" value="month">
+            <label class="btn btn-outline-primary" for="roleMonthFilter">Month</label>
+            
+            <input type="radio" class="btn-check" name="rolePeriod" id="roleYearFilter" value="year">
+            <label class="btn btn-outline-primary" for="roleYearFilter">Year</label>
+          </div>
+        </div>
+        <div class="card-body">
+          <canvas id="roleChart" height="120"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">Age Bracket Breakdown</h6>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm table-bordered mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Age Bracket</th>
+                <th class="text-center">Count</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for bracket, count in age_brackets.items %}
+              <tr>
+                <td>{{ bracket }} years</td>
+                <td class="text-center"><strong>{{ count }}</strong></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header">
+          <h6 class="mb-0">Members Under Leadership</h6>
+        </div>
+        <div class="card-body">
+          <table class="table table-sm table-bordered mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Role</th>
+                <th class="text-center">Members Count</th>
+                <th class="text-center">Members Under</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>VSL</td>
+                <td class="text-center">{{ role_stats.VSL }}</td>
+                <td class="text-center"><strong>{{ members_under_stats.VSL }}</strong></td>
+              </tr>
+              <tr>
+                <td>CSL</td>
+                <td class="text-center">{{ role_stats.CSL }}</td>
+                <td class="text-center"><strong>{{ members_under_stats.CSL }}</strong></td>
+              </tr>
+              <tr>
+                <td>CL</td>
+                <td class="text-center">{{ role_stats.CL }}</td>
+                <td class="text-center"><strong>{{ members_under_stats.CL }}</strong></td>
+              </tr>
+              <tr>
+                <td>CM</td>
+                <td class="text-center">{{ role_stats.CM }}</td>
+                <td class="text-center">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  function initMembersCharts() {
+    const ageCanvas = document.getElementById('ageChart');
+    const roleCanvas = document.getElementById('roleChart');
+    
+    if (!ageCanvas || !roleCanvas) {
+      setTimeout(initMembersCharts, 100);
+      return;
+    }
+    
+    const chartData = {{ chart_data|safe }};
+    
+    let ageChart = null;
+    let roleChart = null;
+    
+    function updateAgeChart(period) {
+      if (ageChart) {
+        ageChart.destroy();
+      }
+      
+      const ageCtx = document.getElementById('ageChart').getContext('2d');
+      const totalAge = chartData.age_values.reduce((a, b) => a + b, 0);
+      
+      if (totalAge === 0) {
+        ageCtx.canvas.parentElement.innerHTML = '<div class="text-center text-muted py-5">No data available</div>';
+        return;
+      }
+      
+      const parent = ageCtx.canvas.parentElement;
+      if (parent.innerHTML.includes('No data available')) {
+        parent.innerHTML = '<canvas id="ageChart" height="120"></canvas>';
+        ageCtx = document.getElementById('ageChart').getContext('2d');
+      }
+      
+      ageChart = new Chart(ageCtx, {
+        type: 'line',
+        data: {
+          labels: chartData.age_labels,
+          datasets: [{
+            label: 'Members',
+            data: chartData.age_values,
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: false
+            },
+            title: {
+              display: true,
+              text: period === 'week' ? 'Last 7 Days' : period === 'month' ? 'Last 30 Days' : 'Last 12 Months'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    function updateRoleChart(period) {
+      if (roleChart) {
+        roleChart.destroy();
+      }
+      
+      const roleCtx = document.getElementById('roleChart').getContext('2d');
+      const totalRole = chartData.role_values.reduce((a, b) => a + b, 0);
+      
+      if (totalRole === 0) {
+        roleCtx.canvas.parentElement.innerHTML = '<div class="text-center text-muted py-5">No data available</div>';
+        return;
+      }
+      
+      const parent = roleCtx.canvas.parentElement;
+      if (parent.innerHTML.includes('No data available')) {
+        parent.innerHTML = '<canvas id="roleChart" height="120"></canvas>';
+        roleCtx = document.getElementById('roleChart').getContext('2d');
+      }
+      
+      roleChart = new Chart(roleCtx, {
+        type: 'bar',
+        data: {
+          labels: chartData.role_labels,
+          datasets: [{
+            label: 'Members',
+            data: chartData.role_values,
+            backgroundColor: [
+              'rgba(0, 123, 255, 0.7)',
+              'rgba(40, 167, 69, 0.7)',
+              'rgba(255, 193, 7, 0.7)',
+              'rgba(23, 162, 184, 0.7)'
+            ],
+            borderColor: [
+              '#007bff',
+              '#28a745',
+              '#ffc107',
+              '#17a2b8'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              display: false
+            },
+            title: {
+              display: true,
+              text: period === 'week' ? 'Last 7 Days' : period === 'month' ? 'Last 30 Days' : 'Last 12 Months'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
+            }
+          }
+        }
+      });
+      
+      window.reportChart = roleChart;
+    }
+    
+    updateAgeChart('week');
+    updateRoleChart('week');
+    
+    document.querySelectorAll('input[name="agePeriod"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        updateAgeChart(e.target.value);
+      });
+    });
+    
+    document.querySelectorAll('input[name="rolePeriod"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        updateRoleChart(e.target.value);
+      });
+    });
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMembersCharts);
+  } else {
+    initMembersCharts();
+  }
+</script>
+
