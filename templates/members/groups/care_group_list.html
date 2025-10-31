@@ -288,15 +288,17 @@
                 <div class="modal-body">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label for="member_select" class="form-label">Select Member</label>
-                        <select class="form-select" id="member_select" name="member_id" required>
-                            <option value="">Choose a member...</option>
-                        </select>
+                        <label for="member_search" class="form-label">Search Member</label>
+                        <input type="text" class="form-control" id="member_search" name="member_search" 
+                               placeholder="Type member name..." autocomplete="off">
+                        <input type="hidden" id="member_id" name="member_id">
+                        <div id="member_suggestions" class="list-group mt-2" style="max-height: 200px; overflow-y: auto; display: none;"></div>
+                        <div id="member_status" class="mt-2"></div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Add Member</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Add Member</button>
                 </div>
             </form>
         </div>
@@ -372,54 +374,131 @@ function showAlert(type, title, message) {
     }, 5000);
 }
 
+let searchTimeout = null;
+let selectedMember = null;
+
 function showAddMemberModal(groupId) {
     currentGroupId = groupId;
+    selectedMember = null;
     
-    // Load available members for this group
-    fetch(`/members/ajax/get-available-members/${groupId}/`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                throw new Error(data.error);
-            }
-            
-            const select = document.getElementById('member_select');
-            select.innerHTML = '<option value="">Choose a member...</option>';
-            
-            if (data.members && data.members.length > 0) {
-                data.members.forEach(member => {
-                    const option = document.createElement('option');
-                    option.value = member.id;
-                    option.textContent = `${member.full_name} (${member.role})`;
-                    select.appendChild(option);
-                });
-                
-                // Update form action
-                document.getElementById('addMemberForm').action = `/members/care-groups/${groupId}/add-member/`;
-                
-                // Show modal
-                new bootstrap.Modal(document.getElementById('addMemberModal')).show();
-            } else {
-                showAlert('info', 'No Available Members', 'All members are already in care groups. There are no available members to add at this time.');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading available members:', error);
-            showAlert('danger', 'Error', 'Unable to load available members. Please try again later.');
-        });
+    document.getElementById('member_search').value = '';
+    document.getElementById('member_id').value = '';
+    document.getElementById('member_suggestions').innerHTML = '';
+    document.getElementById('member_suggestions').style.display = 'none';
+    document.getElementById('member_status').innerHTML = '';
+    document.getElementById('submitBtn').disabled = true;
+    
+    document.getElementById('addMemberForm').action = `/members/care-groups/${groupId}/add-member/`;
+    new bootstrap.Modal(document.getElementById('addMemberModal')).show();
 }
 
-// Initialize tooltips
 document.addEventListener('DOMContentLoaded', function() {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    const memberSearch = document.getElementById('member_search');
+    const memberSuggestions = document.getElementById('member_suggestions');
+    const memberIdInput = document.getElementById('member_id');
+    const memberStatus = document.getElementById('member_status');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    if (memberSearch) {
+        memberSearch.addEventListener('input', function() {
+            const query = this.value.trim();
+            memberIdInput.value = '';
+            selectedMember = null;
+            submitBtn.disabled = true;
+            memberStatus.innerHTML = '';
+            
+            if (query.length < 2) {
+                memberSuggestions.innerHTML = '';
+                memberSuggestions.style.display = 'none';
+                return;
+            }
+            
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if (!currentGroupId) return;
+                
+                fetch(`/members/ajax/search-members/${currentGroupId}/?q=${encodeURIComponent(query)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            memberStatus.innerHTML = `<div class="text-danger small">${data.error}</div>`;
+                            return;
+                        }
+                        
+                        memberSuggestions.innerHTML = '';
+                        
+                        if (data.members && data.members.length > 0) {
+                            data.members.forEach(member => {
+                                const item = document.createElement('div');
+                                item.className = 'list-group-item list-group-item-action';
+                                
+                                if (member.in_group) {
+                                    item.classList.add('list-group-item-danger');
+                                    item.innerHTML = `
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <div>
+                                                <strong>${member.name}</strong>
+                                                <br><small class="text-muted">${member.role}</small>
+                                            </div>
+                                            <small class="text-danger">Already in "${member.group_name}"</small>
+                                        </div>
+                                    `;
+                                } else {
+                                    item.style.cursor = 'pointer';
+                                    item.innerHTML = `
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <div>
+                                                <strong>${member.name}</strong>
+                                                <br><small class="text-muted">${member.role}</small>
+                                            </div>
+                                        </div>
+                                    `;
+                                    item.addEventListener('click', function() {
+                                        selectedMember = member;
+                                        memberSearch.value = member.name;
+                                        memberIdInput.value = member.id;
+                                        memberSuggestions.style.display = 'none';
+                                        memberStatus.innerHTML = `<div class="text-success small"><i class="bi bi-check-circle"></i> Selected: ${member.name}</div>`;
+                                        submitBtn.disabled = false;
+                                    });
+                                }
+                                
+                                memberSuggestions.appendChild(item);
+                            });
+                            memberSuggestions.style.display = 'block';
+                        } else {
+                            memberSuggestions.innerHTML = '<div class="list-group-item text-muted">No members found</div>';
+                            memberSuggestions.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        memberStatus.innerHTML = '<div class="text-danger small">Error searching members</div>';
+                    });
+            }, 300);
+        });
+        
+        document.addEventListener('click', function(e) {
+            if (!memberSearch.contains(e.target) && !memberSuggestions.contains(e.target)) {
+                memberSuggestions.style.display = 'none';
+            }
+        });
+        
+        document.getElementById('addMemberForm').addEventListener('submit', function(e) {
+            if (!memberIdInput.value) {
+                e.preventDefault();
+                showAlert('warning', 'No Member Selected', 'Please search and select a member to add.');
+                return;
+            }
+            
+            if (selectedMember && selectedMember.in_group) {
+                e.preventDefault();
+                showAlert('danger', 'Member Already in Group', `This member is already in "${selectedMember.group_name}" care group.`);
+                return;
+            }
+        });
+    }
 });
+
 </script>
 {% endblock %} 

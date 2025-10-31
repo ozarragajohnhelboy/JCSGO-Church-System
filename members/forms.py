@@ -76,6 +76,26 @@ class NewFriendForm(forms.ModelForm):
             'placeholder': 'Enter phone number'
         })
     )
+    birth_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date'
+        }),
+        help_text='Required for accurate age categorization in reports'
+    )
+    gender = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', 'Select gender'),
+            ('MALE', 'Male'),
+            ('FEMALE', 'Female'),
+        ],
+        widget=forms.Select(attrs={
+            'class': 'form-select'
+        }),
+        help_text='Required for demographic reporting'
+    )
     invited_by = forms.ModelChoiceField(
         queryset=CustomUser.objects.none(),
         required=False,
@@ -152,7 +172,7 @@ class NewFriendForm(forms.ModelForm):
     
     class Meta:
         model = NewFriend
-        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'invited_by', 'endorsed_to', 'notes', 'timer_status', 'convert_to_regular', 'regular_role']
+        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'birth_date', 'gender', 'invited_by', 'endorsed_to', 'notes', 'timer_status', 'convert_to_regular', 'regular_role']
     
     def clean_email_prefix(self):
         email_prefix = self.cleaned_data['email_prefix']
@@ -480,7 +500,7 @@ class CareGroupMemberForm(forms.Form):
     member = forms.ModelChoiceField(
         queryset=CustomUser.objects.none(),
         widget=forms.Select(attrs={'class': 'form-select'}),
-        help_text="Select a regular member to add to this care group"
+        help_text="Select a member or new friend to add to this care group"
     )
 
     def __init__(self, *args, **kwargs):
@@ -489,14 +509,17 @@ class CareGroupMemberForm(forms.Form):
         super().__init__(*args, **kwargs)
         
         if self.church:
-            # Get available regular members who are not in any care group yet
+            from members.models import RegularMember
+            
+            regular_members_in_groups = RegularMember.objects.filter(
+                group__isnull=False
+            ).values_list('user_id', flat=True)
+            
             available_members = CustomUser.objects.filter(
                 church=self.church,
-                is_active=True,
-                is_new_friend=False,
-                role__name__in=['VSL', 'CSL', 'CL', 'CM']
+                is_active=True
             ).exclude(
-                regular_member_profile__group__isnull=False
+                id__in=regular_members_in_groups
             ).order_by('first_name', 'last_name')
             
             self.fields['member'].queryset = available_members

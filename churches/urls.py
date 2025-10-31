@@ -14,6 +14,8 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('church-report/', views.church_report, name='church_report'),
     path('church-report/export-to-sheets/', views.export_church_report_to_sheets, name='export_church_report_to_sheets'),
+    path('reports/new-friends/', views.generate_new_friends_report, name='generate_new_friends_report'),
+    path('reports/members/', views.generate_members_report, name='generate_members_report'),
     
     # Custom logout
     path('logout/', views.custom_logout, name='custom_logout'),

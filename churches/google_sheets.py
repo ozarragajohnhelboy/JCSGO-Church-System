@@ -138,7 +138,7 @@ class GoogleSheetsService:
         ])
         
         data.append([
-            'Youth Men',
+            'Youth Boys',
             target_2025['youth_men'],
             demographic_stats['registered_disciples']['youth_men'],
             0,
@@ -146,7 +146,7 @@ class GoogleSheetsService:
         ])
         
         data.append([
-            'Youth Women',
+            'Youth Girls',
             target_2025['youth_women'],
             demographic_stats['registered_disciples']['youth_women'],
             0,
@@ -180,7 +180,7 @@ class GoogleSheetsService:
         ])
         
         data.append([
-            'Youth Men',
+            'Youth Boys',
             '',
             sunday_attendance_stats['sunday_attendance']['youth_men'],
             0,
@@ -188,7 +188,7 @@ class GoogleSheetsService:
         ])
         
         data.append([
-            'Youth Women',
+            'Youth Girls',
             '',
             sunday_attendance_stats['sunday_attendance']['youth_women'],
             0,

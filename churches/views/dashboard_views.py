@@ -651,7 +651,6 @@ def export_church_report_to_sheets(request):
         'women': int(demographic_stats['registered_disciples']['women'] * 1.2),
     }
     
-    # New believers statistics for export
     from members.models import CustomUser, RegularMember
     nf = CustomUser.objects.filter(church=church, is_active=True, is_new_friend=True)
     timers = {
@@ -692,3 +691,251 @@ def export_church_report_to_sheets(request):
         from django.contrib import messages
         messages.error(request, f'Failed to export to Google Sheets: {str(e)}')
         return redirect('churches:church_report')
+
+
+@login_required
+def generate_new_friends_report(request):
+    user = request.user
+    
+    if not (user.is_superuser or user.role.name == 'ADMIN'):
+        from django.contrib import messages
+        messages.error(request, 'You do not have permission to generate this report.')
+        return redirect('churches:dashboard')
+    
+    church = user.church
+    from members.models import CustomUser
+    import json
+    
+    new_friends = CustomUser.objects.filter(
+        church=church,
+        is_new_friend=True,
+        is_active=True
+    ).select_related('role')
+    
+    timer_stats = {
+        '1st': {'boys': 0, 'girls': 0, 'men': 0, 'women': 0, 'total': 0},
+        '2nd': {'boys': 0, 'girls': 0, 'men': 0, 'women': 0, 'total': 0},
+        '3rd': {'boys': 0, 'girls': 0, 'men': 0, 'women': 0, 'total': 0},
+        '4th': {'boys': 0, 'girls': 0, 'men': 0, 'women': 0, 'total': 0},
+        '5th': {'boys': 0, 'girls': 0, 'men': 0, 'women': 0, 'total': 0},
+    }
+    
+    timer_labels = {1: '1st', 2: '2nd', 3: '3rd', 4: '4th', 5: '5th'}
+    
+    for nf in new_friends:
+        timer_status = nf.timer_status if nf.timer_status else 1
+        timer_key = timer_labels.get(timer_status, '1st')
+        
+        timer_stats[timer_key]['total'] += 1
+        
+        age = nf.age
+        gender_raw = getattr(nf, 'gender', None)
+        
+        if age is not None:
+            if gender_raw:
+                gender_str = str(gender_raw).strip().upper()
+                
+                if gender_str in ('MALE', 'FEMALE'):
+                    if age < 18:
+                        if gender_str == 'MALE':
+                            timer_stats[timer_key]['boys'] += 1
+                        elif gender_str == 'FEMALE':
+                            timer_stats[timer_key]['girls'] += 1
+                    else:
+                        if gender_str == 'MALE':
+                            timer_stats[timer_key]['men'] += 1
+                        elif gender_str == 'FEMALE':
+                            timer_stats[timer_key]['women'] += 1
+    
+    total_stats = {
+        'boys': sum(stats['boys'] for stats in timer_stats.values()),
+        'girls': sum(stats['girls'] for stats in timer_stats.values()),
+        'men': sum(stats['men'] for stats in timer_stats.values()),
+        'women': sum(stats['women'] for stats in timer_stats.values()),
+        'total': sum(stats['total'] for stats in timer_stats.values())
+    }
+    
+    chart_data = {
+        'labels': ['1st Timer', '2nd Timer', '3rd Timer', '4th Timer', '5th Timer'],
+        'boys': [timer_stats['1st']['boys'], timer_stats['2nd']['boys'], timer_stats['3rd']['boys'], 
+                 timer_stats['4th']['boys'], timer_stats['5th']['boys']],
+        'girls': [timer_stats['1st']['girls'], timer_stats['2nd']['girls'], timer_stats['3rd']['girls'], 
+                  timer_stats['4th']['girls'], timer_stats['5th']['girls']],
+        'men': [timer_stats['1st']['men'], timer_stats['2nd']['men'], timer_stats['3rd']['men'], 
+                timer_stats['4th']['men'], timer_stats['5th']['men']],
+        'women': [timer_stats['1st']['women'], timer_stats['2nd']['women'], timer_stats['3rd']['women'], 
+                  timer_stats['4th']['women'], timer_stats['5th']['women']],
+    }
+    
+    context = {
+        'church': church,
+        'user': user,
+        'timer_stats': timer_stats,
+        'total_stats': total_stats,
+        'chart_data': json.dumps(chart_data),
+        'generated_at': timezone.now(),
+        'is_preview': request.GET.get('preview') == '1'
+    }
+    
+    if request.GET.get('preview') == '1':
+        return render(request, 'churches/reports/new_friends_report_preview.html', context)
+    
+    return render(request, 'churches/reports/new_friends_report.html', context)
+
+
+@login_required
+def generate_members_report(request):
+    user = request.user
+    
+    if not (user.is_superuser or user.role.name == 'ADMIN'):
+        from django.contrib import messages
+        messages.error(request, 'You do not have permission to generate this report.')
+        return redirect('churches:dashboard')
+    
+    church = user.church
+    report_type = request.GET.get('type', 'men')
+    
+    from members.models import CustomUser, Group
+    from django.db.models import Q
+    import json
+    
+    if report_type == 'men':
+        all_members = CustomUser.objects.filter(
+            church=church,
+            is_new_friend=False,
+            is_active=True,
+            gender='MALE'
+        ).select_related('role').prefetch_related('led_groups')
+        
+        members = [m for m in all_members if m.age and m.age >= 30]
+        title = 'Men Members Report (30+ years old)'
+    elif report_type == 'women':
+        all_members = CustomUser.objects.filter(
+            church=church,
+            is_new_friend=False,
+            is_active=True,
+            gender='FEMALE'
+        ).select_related('role').prefetch_related('led_groups')
+        
+        members = [m for m in all_members if m.age and m.age >= 30]
+        title = 'Women Members Report (30+ years old)'
+    elif report_type == 'youth_men':
+        members = CustomUser.objects.filter(
+            church=church,
+            is_new_friend=False,
+            is_active=True,
+            gender='MALE'
+        ).select_related('role').prefetch_related('led_groups')
+        
+        youth_members = []
+        for member in members:
+            if member.age and 13 <= member.age <= 29:
+                youth_members.append(member)
+        
+        members = youth_members
+        title = 'Youth Boys Members Report'
+    elif report_type == 'youth_women':
+        members = CustomUser.objects.filter(
+            church=church,
+            is_new_friend=False,
+            is_active=True,
+            gender='FEMALE'
+        ).select_related('role').prefetch_related('led_groups')
+        
+        youth_members = []
+        for member in members:
+            if member.age and 13 <= member.age <= 29:
+                youth_members.append(member)
+        
+        members = youth_members
+        title = 'Youth Girls Members Report'
+    else:
+        members = []
+        title = 'Members Report'
+    
+    if report_type in ['youth_men', 'youth_women']:
+        age_brackets = {
+            '13-17': 0,
+            '18-24': 0,
+            '25-29': 0
+        }
+    else:
+        age_brackets = {
+            '30-39': 0,
+            '40-49': 0,
+            '50-59': 0,
+            '60+': 0
+        }
+    
+    role_stats = {
+        'VSL': 0,
+        'CSL': 0,
+        'CL': 0,
+        'CM': 0
+    }
+    
+    members_under_stats = {
+        'VSL': 0,
+        'CSL': 0,
+        'CL': 0
+    }
+    
+    for member in members:
+        age = member.age
+        if age:
+            if report_type in ['youth_men', 'youth_women']:
+                if 13 <= age <= 17:
+                    age_brackets['13-17'] += 1
+                elif 18 <= age <= 24:
+                    age_brackets['18-24'] += 1
+                elif 25 <= age <= 29:
+                    age_brackets['25-29'] += 1
+            else:
+                if 30 <= age <= 39:
+                    age_brackets['30-39'] += 1
+                elif 40 <= age <= 49:
+                    age_brackets['40-49'] += 1
+                elif 50 <= age <= 59:
+                    age_brackets['50-59'] += 1
+                elif age >= 60:
+                    age_brackets['60+'] += 1
+        
+        if member.role:
+            role_name = member.role.name
+            if role_name in role_stats:
+                role_stats[role_name] += 1
+            
+            if role_name in ['VSL', 'CSL', 'CL']:
+                led_groups = Group.objects.filter(
+                    leader=member,
+                    church=church,
+                    is_active=True
+                )
+                for group in led_groups:
+                    members_under_stats[role_name] += group.member_count
+    
+    chart_data = {
+        'age_labels': list(age_brackets.keys()),
+        'age_values': list(age_brackets.values()),
+        'role_labels': list(role_stats.keys()),
+        'role_values': list(role_stats.values())
+    }
+    
+    context = {
+        'church': church,
+        'user': user,
+        'title': title,
+        'report_type': report_type,
+        'age_brackets': age_brackets,
+        'role_stats': role_stats,
+        'members_under_stats': members_under_stats,
+        'total_members': len(members),
+        'chart_data': json.dumps(chart_data),
+        'generated_at': timezone.now(),
+        'is_preview': request.GET.get('preview') == '1'
+    }
+    
+    if request.GET.get('preview') == '1':
+        return render(request, 'churches/reports/members_report_preview.html', context)
+    
+    return render(request, 'churches/reports/members_report.html', context)

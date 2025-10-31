@@ -1,0 +1,245 @@
+<div class="report-preview-container">
+  <div class="text-center mb-4 pb-3 border-bottom">
+    <h4 class="mb-2">New Friends Report</h4>
+    <p class="text-muted mb-0">{{ church.name }}</p>
+    <small class="text-muted">Generated: {{ generated_at|date:"F d, Y g:i A" }}</small>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="mb-1">{{ total_stats.boys }}</h3>
+          <p class="text-muted mb-0 small">Boys</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="mb-1">{{ total_stats.girls }}</h3>
+          <p class="text-muted mb-0 small">Girls</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="mb-1">{{ total_stats.men }}</h3>
+          <p class="text-muted mb-0 small">Men</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card text-center">
+        <div class="card-body">
+          <h3 class="mb-1">{{ total_stats.women }}</h3>
+          <p class="text-muted mb-0 small">Women</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h6 class="mb-0">Timer Status Distribution</h6>
+      <div class="btn-group btn-group-sm" role="group">
+        <input type="radio" class="btn-check" name="chartPeriod" id="weekFilter" value="week" checked>
+        <label class="btn btn-outline-primary" for="weekFilter">Week</label>
+        
+        <input type="radio" class="btn-check" name="chartPeriod" id="monthFilter" value="month">
+        <label class="btn btn-outline-primary" for="monthFilter">Month</label>
+        
+        <input type="radio" class="btn-check" name="chartPeriod" id="yearFilter" value="year">
+        <label class="btn btn-outline-primary" for="yearFilter">Year</label>
+      </div>
+    </div>
+    <div class="card-body">
+      <canvas id="timerChart" height="80"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h6 class="mb-0">Detailed Breakdown</h6>
+    </div>
+    <div class="card-body">
+      <table class="table table-sm table-bordered">
+        <thead class="table-light">
+          <tr>
+            <th>Timer Status</th>
+            <th class="text-center">Boys</th>
+            <th class="text-center">Girls</th>
+            <th class="text-center">Men</th>
+            <th class="text-center">Women</th>
+            <th class="text-center">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1st Timer</td>
+            <td class="text-center">{{ timer_stats.1st.boys }}</td>
+            <td class="text-center">{{ timer_stats.1st.girls }}</td>
+            <td class="text-center">{{ timer_stats.1st.men }}</td>
+            <td class="text-center">{{ timer_stats.1st.women }}</td>
+            <td class="text-center"><strong>{{ timer_stats.1st.total }}</strong></td>
+          </tr>
+          <tr>
+            <td>2nd Timer</td>
+            <td class="text-center">{{ timer_stats.2nd.boys }}</td>
+            <td class="text-center">{{ timer_stats.2nd.girls }}</td>
+            <td class="text-center">{{ timer_stats.2nd.men }}</td>
+            <td class="text-center">{{ timer_stats.2nd.women }}</td>
+            <td class="text-center"><strong>{{ timer_stats.2nd.total }}</strong></td>
+          </tr>
+          <tr>
+            <td>3rd Timer</td>
+            <td class="text-center">{{ timer_stats.3rd.boys }}</td>
+            <td class="text-center">{{ timer_stats.3rd.girls }}</td>
+            <td class="text-center">{{ timer_stats.3rd.men }}</td>
+            <td class="text-center">{{ timer_stats.3rd.women }}</td>
+            <td class="text-center"><strong>{{ timer_stats.3rd.total }}</strong></td>
+          </tr>
+          <tr>
+            <td>4th Timer</td>
+            <td class="text-center">{{ timer_stats.4th.boys }}</td>
+            <td class="text-center">{{ timer_stats.4th.girls }}</td>
+            <td class="text-center">{{ timer_stats.4th.men }}</td>
+            <td class="text-center">{{ timer_stats.4th.women }}</td>
+            <td class="text-center"><strong>{{ timer_stats.4th.total }}</strong></td>
+          </tr>
+          <tr>
+            <td>5th Timer</td>
+            <td class="text-center">{{ timer_stats.5th.boys }}</td>
+            <td class="text-center">{{ timer_stats.5th.girls }}</td>
+            <td class="text-center">{{ timer_stats.5th.men }}</td>
+            <td class="text-center">{{ timer_stats.5th.women }}</td>
+            <td class="text-center"><strong>{{ timer_stats.5th.total }}</strong></td>
+          </tr>
+          <tr class="table-active">
+            <td><strong>Total</strong></td>
+            <td class="text-center"><strong>{{ total_stats.boys }}</strong></td>
+            <td class="text-center"><strong>{{ total_stats.girls }}</strong></td>
+            <td class="text-center"><strong>{{ total_stats.men }}</strong></td>
+            <td class="text-center"><strong>{{ total_stats.women }}</strong></td>
+            <td class="text-center"><strong>{{ total_stats.total }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  function initNewFriendsChart() {
+    const canvas = document.getElementById('timerChart');
+    if (!canvas) {
+      setTimeout(initNewFriendsChart, 100);
+      return;
+    }
+    
+    const chartData = {{ chart_data|safe }};
+    const ctx = canvas.getContext('2d');
+    
+    let currentChart = null;
+    
+    function updateChart(period) {
+      if (currentChart) {
+        currentChart.destroy();
+      }
+      
+      const totalBoys = chartData.boys.reduce((a, b) => a + b, 0);
+      const totalGirls = chartData.girls.reduce((a, b) => a + b, 0);
+      const totalMen = chartData.men.reduce((a, b) => a + b, 0);
+      const totalWomen = chartData.women.reduce((a, b) => a + b, 0);
+      
+      const parent = ctx.canvas.parentElement;
+      
+      if (totalBoys === 0 && totalGirls === 0 && totalMen === 0 && totalWomen === 0) {
+        parent.innerHTML = '<div class="text-center text-muted py-5">No data available for chart</div>';
+        return;
+      }
+      
+      if (parent.innerHTML.includes('No data available')) {
+        parent.innerHTML = '<canvas id="timerChart" height="80"></canvas>';
+        ctx = document.getElementById('timerChart').getContext('2d');
+      }
+      
+      currentChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData.labels,
+          datasets: [
+            {
+              label: 'Boys',
+              data: chartData.boys,
+              borderColor: '#007bff',
+              backgroundColor: 'rgba(0, 123, 255, 0.1)',
+              tension: 0.4
+            },
+            {
+              label: 'Girls',
+              data: chartData.girls,
+              borderColor: '#dc3545',
+              backgroundColor: 'rgba(220, 53, 69, 0.1)',
+              tension: 0.4
+            },
+            {
+              label: 'Men',
+              data: chartData.men,
+              borderColor: '#28a745',
+              backgroundColor: 'rgba(40, 167, 69, 0.1)',
+              tension: 0.4
+            },
+            {
+              label: 'Women',
+              data: chartData.women,
+              borderColor: '#ffc107',
+              backgroundColor: 'rgba(255, 193, 7, 0.1)',
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            },
+            title: {
+              display: true,
+              text: period === 'week' ? 'Last 7 Days' : period === 'month' ? 'Last 30 Days' : 'Last 12 Months'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    updateChart('week');
+    
+    document.querySelectorAll('input[name="chartPeriod"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        updateChart(e.target.value);
+      });
+    });
+    
+    window.reportChart = currentChart;
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initNewFriendsChart);
+  } else {
+    initNewFriendsChart();
+  }
+</script>
+
