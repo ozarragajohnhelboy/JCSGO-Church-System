@@ -90,27 +90,92 @@ def ajax_get_available_members(request, group_id):
     try:
         group = get_object_or_404(Group, pk=group_id)
         
-        # Check if user has permission to add members to this group
         if group.leader != request.user and request.user.role.name != 'ADMIN':
             return JsonResponse({'error': 'Permission denied'}, status=403)
         
-        # Get available members (regular members not in any group)
+        from members.models import RegularMember
+        
+        regular_members_in_groups = RegularMember.objects.filter(
+            group__isnull=False
+        ).values_list('user_id', flat=True)
+        
         available_members = CustomUser.objects.filter(
             church=group.church,
-            is_active=True,
-            is_new_friend=False,
-            role__name__in=['VSL', 'CSL', 'CL', 'CM']
+            is_active=True
         ).exclude(
-            regular_member_profile__group__isnull=False
+            id__in=regular_members_in_groups
         ).order_by('first_name', 'last_name')
         
         members_data = []
         for member in available_members:
+            role_display = member.role.name if member.role else 'No Role'
+            if member.is_new_friend:
+                role_display = f"New Friend ({member.timer_status}{'st' if member.timer_status == 1 else 'nd' if member.timer_status == 2 else 'rd' if member.timer_status == 3 else 'th'} Timer)"
+            
             members_data.append({
                 'id': member.id,
                 'name': member.full_name,
                 'email': member.email,
-                'role': member.role.name if member.role else 'No Role'
+                'role': role_display
+            })
+        
+        return JsonResponse({'members': members_data})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@login_required
+def ajax_search_members(request, group_id):
+    """AJAX endpoint to search members by name for adding to care group"""
+    try:
+        group = get_object_or_404(Group, pk=group_id)
+        
+        if group.leader != request.user and request.user.role.name != 'ADMIN':
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        search_query = request.GET.get('q', '').strip()
+        if len(search_query) < 2:
+            return JsonResponse({'members': []})
+        
+        from members.models import RegularMember
+        from django.db.models import Q
+        
+        all_members = CustomUser.objects.filter(
+            church=group.church,
+            is_active=True
+        ).filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query)
+        ).order_by('first_name', 'last_name')[:20]
+        
+        regular_members_in_groups = RegularMember.objects.filter(
+            group__isnull=False
+        ).values_list('user_id', flat=True)
+        
+        members_data = []
+        for member in all_members:
+            role_display = member.role.name if member.role else 'No Role'
+            if member.is_new_friend:
+                role_display = f"New Friend ({member.timer_status}{'st' if member.timer_status == 1 else 'nd' if member.timer_status == 2 else 'rd' if member.timer_status == 3 else 'th'} Timer)"
+            
+            in_group = member.id in regular_members_in_groups
+            group_name = None
+            if in_group:
+                try:
+                    rm = RegularMember.objects.get(user=member, group__isnull=False)
+                    group_name = rm.group.name if rm.group else None
+                except:
+                    pass
+            
+            members_data.append({
+                'id': member.id,
+                'name': member.full_name,
+                'email': member.email,
+                'role': role_display,
+                'in_group': in_group,
+                'group_name': group_name
             })
         
         return JsonResponse({'members': members_data})
@@ -1076,9 +1141,13 @@ def care_group_add_member(request, group_id):
         try:
             member_user = CustomUser.objects.get(pk=member_id, church=care_group.church)
 
+            role_type = member_user.role.name if member_user.role else 'CM'
+            if member_user.is_new_friend:
+                role_type = 'CM'
+            
             regular_member, created = RegularMember.objects.get_or_create(
                 user=member_user,
-                defaults={'role_type': member_user.role.name}
+                defaults={'role_type': role_type}
             )
 
             if regular_member.group:

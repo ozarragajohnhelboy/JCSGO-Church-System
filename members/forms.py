@@ -500,7 +500,7 @@ class CareGroupMemberForm(forms.Form):
     member = forms.ModelChoiceField(
         queryset=CustomUser.objects.none(),
         widget=forms.Select(attrs={'class': 'form-select'}),
-        help_text="Select a regular member to add to this care group"
+        help_text="Select a member or new friend to add to this care group"
     )
 
     def __init__(self, *args, **kwargs):
@@ -509,14 +509,17 @@ class CareGroupMemberForm(forms.Form):
         super().__init__(*args, **kwargs)
         
         if self.church:
-            # Get available regular members who are not in any care group yet
+            from members.models import RegularMember
+            
+            regular_members_in_groups = RegularMember.objects.filter(
+                group__isnull=False
+            ).values_list('user_id', flat=True)
+            
             available_members = CustomUser.objects.filter(
                 church=self.church,
-                is_active=True,
-                is_new_friend=False,
-                role__name__in=['VSL', 'CSL', 'CL', 'CM']
+                is_active=True
             ).exclude(
-                regular_member_profile__group__isnull=False
+                id__in=regular_members_in_groups
             ).order_by('first_name', 'last_name')
             
             self.fields['member'].queryset = available_members

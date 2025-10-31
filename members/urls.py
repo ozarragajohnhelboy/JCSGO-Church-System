@@ -43,6 +43,7 @@ urlpatterns = [
     path('ajax/get-user-details/<int:user_id>/', views.ajax_get_user_details, name='ajax_get_user_details'),
     path('ajax/bulk-role-update/', views.ajax_bulk_role_update, name='ajax_bulk_role_update'),
     path('ajax/get-available-members/<int:group_id>/', views.ajax_get_available_members, name='ajax_get_available_members'),
+    path('ajax/search-members/<int:group_id>/', views.ajax_search_members, name='ajax_search_members'),
     
     # AJAX: New Friend interactions
     path('ajax/update-timer-status/<int:user_id>/', views.ajax_update_timer_status, name='ajax_update_timer_status'),
