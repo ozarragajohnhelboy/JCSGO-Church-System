@@ -870,9 +870,14 @@
        Promise.all(chartPromises).then(() => {
          const printStyles = document.createElement('style');
          printStyles.innerHTML = `
-               @media print {
+           @media print {
              @page {
                margin: 0.8cm;
+               size: A4;
+             }
+             * {
+               -webkit-print-color-adjust: exact !important;
+               print-color-adjust: exact !important;
              }
              body * {
                visibility: hidden;
@@ -885,41 +890,92 @@
                left: 0;
                top: 0;
                width: 100%;
-               padding: 15px;
+               padding: 5px;
                background: white;
              }
              .print-content .report-preview-container {
                page-break-inside: avoid;
+               break-inside: avoid;
+             }
+             .print-content .text-center.mb-4 {
+               margin-bottom: 8px !important;
+               padding-bottom: 5px !important;
+             }
+             .print-content .text-center.mb-4 h4 {
+               font-size: 16px;
+               margin-bottom: 3px !important;
+             }
+             .print-content .text-center.mb-4 p,
+             .print-content .text-center.mb-4 small {
+               font-size: 10px;
+               margin-bottom: 2px !important;
+             }
+             .print-content .row.mb-4 {
+               margin-bottom: 8px !important;
              }
              .print-content .card {
                border: 1px solid #ddd;
-               margin-bottom: 15px;
+               margin-bottom: 6px;
                page-break-inside: avoid;
+               break-inside: avoid;
                box-shadow: none;
              }
+             .print-content .col-md-3 .card {
+               position: relative;
+             }
+             .print-content .col-md-3 .card::before {
+               content: "";
+               display: block;
+               padding-top: 100%;
+             }
+             .print-content .col-md-3 .card-body {
+               position: absolute;
+               top: 0;
+               left: 0;
+               right: 0;
+               bottom: 0;
+             }
              .print-content .card-body {
-               padding: 10px;
+               padding: 8px;
+               display: flex;
+               flex-direction: column;
+               justify-content: center;
+               align-items: center;
+             }
+             .print-content .card-body h3 {
+               font-size: 20px;
+               margin-bottom: 2px !important;
+             }
+             .print-content .card-body p {
+               font-size: 10px;
+               margin-bottom: 0 !important;
              }
              .print-content .card-header {
-               background: #f8f9fa;
+               background: #f8f9fa !important;
                border-bottom: 1px solid #ddd;
-               padding: 8px 12px;
+               padding: 4px 8px;
+             }
+             .print-content .card-header h6 {
+               font-size: 12px;
+               margin-bottom: 0 !important;
              }
              .print-content .table {
                width: 100%;
                border-collapse: collapse;
-               margin: 10px 0;
+               margin: 5px 0;
                page-break-inside: avoid;
+               break-inside: avoid;
+               font-size: 10px;
              }
              .print-content .table th,
              .print-content .table td {
-               padding: 6px 10px;
+               padding: 4px 6px;
                border: 1px solid #ddd;
                text-align: left;
-               font-size: 12px;
+               font-size: 10px;
              }
              .print-content .table th {
-               background: #f8f9fa;
+               background: #f8f9fa !important;
                font-weight: bold;
              }
              .print-content .btn-group,
@@ -930,40 +986,61 @@
              .print-content .row {
                display: flex;
                flex-wrap: wrap;
-               margin: 0 -8px;
+               margin: 0 -4px;
              }
-             .print-content .col-md-3,
-             .print-content .col-md-4,
-             .print-content .col-md-6,
+             .print-content .col-md-3 {
+               width: 25%;
+               padding: 0 4px;
+               margin-bottom: 6px;
+               flex: 0 0 25%;
+               max-width: 25%;
+             }
+             .print-content .col-md-4 {
+               width: 33.333333%;
+               padding: 0 4px;
+               margin-bottom: 6px;
+               flex: 0 0 33.333333%;
+               max-width: 33.333333%;
+             }
+             .print-content .col-md-6 {
+               width: 50%;
+               padding: 0 4px;
+               margin-bottom: 6px;
+               flex: 0 0 50%;
+               max-width: 50%;
+             }
              .print-content .col-md-8 {
-               padding: 0 8px;
-               margin-bottom: 12px;
+               width: 66.666667%;
+               padding: 0 4px;
+               margin-bottom: 6px;
+               flex: 0 0 66.666667%;
+               max-width: 66.666667%;
              }
              .print-content h3,
              .print-content h4,
              .print-content h5,
              .print-content h6 {
                margin-top: 0;
-               margin-bottom: 10px;
+               margin-bottom: 5px;
              }
              .print-content img {
                max-width: 100%;
                height: auto;
                display: block;
-               margin: 10px auto;
-               max-height: 300px;
+               margin: 5px auto;
+               max-height: 200px;
              }
              .print-content canvas {
                display: none !important;
              }
-             .print-content .text-center {
-               margin-bottom: 10px;
-             }
              .print-content .mb-4 {
-               margin-bottom: 15px !important;
+               margin-bottom: 8px !important;
+             }
+             .print-content .mb-3 {
+               margin-bottom: 6px !important;
              }
              .print-content .pb-3 {
-               padding-bottom: 10px !important;
+               padding-bottom: 5px !important;
              }
            }
            @media screen {

@@ -52,10 +52,13 @@
               <h5 class="mb-3"><i class="fas fa-crown me-2"></i>Leadership Information</h5>
 
               <div class="row">
-                {% if form.vine_servant_leader %}
-                  <div class="col-md-6 mb-3">
-                    <label for="{{ form.vine_servant_leader.id_for_label }}" class="form-label"><i class="fas fa-user-tie me-1"></i>{{ form.vine_servant_leader.label }}</label>
+                {% if form.vine_servant_leader_search %}
+                  <div class="col-md-6 mb-3" style="position: relative;">
+                    <label for="{{ form.vine_servant_leader_search.id_for_label }}" class="form-label"><i class="fas fa-user-tie me-1"></i>Vine Servant Leader</label>
+                    {{ form.vine_servant_leader_search }}
                     {{ form.vine_servant_leader }}
+                    <div id="vsl_suggestions" class="list-group mt-2" style="max-height: 200px; overflow-y: auto; display: none; position: absolute; z-index: 1000; width: calc(100% - 30px); background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); border: 1px solid #ddd; border-radius: 4px;"></div>
+                    <div id="vsl_status" class="mt-2" style="min-height: 0;"></div>
                     {% if form.vine_servant_leader.errors %}
                       <div class="text-danger small mt-1">
                         {% for error in form.vine_servant_leader.errors %}
@@ -66,10 +69,13 @@
                   </div>
                 {% endif %}
 
-                {% if form.cluster_servant_leader %}
-                  <div class="col-md-6 mb-3">
-                    <label for="{{ form.cluster_servant_leader.id_for_label }}" class="form-label"><i class="fas fa-user-tie me-1"></i>{{ form.cluster_servant_leader.label }}</label>
+                {% if form.cluster_servant_leader_search %}
+                  <div class="col-md-6 mb-3" style="position: relative;">
+                    <label for="{{ form.cluster_servant_leader_search.id_for_label }}" class="form-label"><i class="fas fa-user-tie me-1"></i>Cluster Servant Leader</label>
+                    {{ form.cluster_servant_leader_search }}
                     {{ form.cluster_servant_leader }}
+                    <div id="csl_suggestions" class="list-group mt-2" style="max-height: 200px; overflow-y: auto; display: none; position: absolute; z-index: 1000; width: calc(100% - 30px); background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); border: 1px solid #ddd; border-radius: 4px;"></div>
+                    <div id="csl_status" class="mt-2" style="min-height: 0;"></div>
                     {% if form.cluster_servant_leader.errors %}
                       <div class="text-danger small mt-1">
                         {% for error in form.cluster_servant_leader.errors %}
@@ -80,10 +86,13 @@
                   </div>
                 {% endif %}
 
-                {% if form.care_leader %}
-                  <div class="col-md-6 mb-3">
-                    <label for="{{ form.care_leader.id_for_label }}" class="form-label"><i class="fas fa-user-tie me-1"></i>{{ form.care_leader.label }}</label>
+                {% if form.care_leader_search %}
+                  <div class="col-md-6 mb-3" style="position: relative;">
+                    <label for="{{ form.care_leader_search.id_for_label }}" class="form-label"><i class="fas fa-user-tie me-1"></i>Care Leader</label>
+                    {{ form.care_leader_search }}
                     {{ form.care_leader }}
+                    <div id="cl_suggestions" class="list-group mt-2" style="max-height: 200px; overflow-y: auto; display: none; position: absolute; z-index: 1000; width: calc(100% - 30px); background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.15); border: 1px solid #ddd; border-radius: 4px;"></div>
+                    <div id="cl_status" class="mt-2" style="min-height: 0;"></div>
                     {% if form.care_leader.errors %}
                       <div class="text-danger small mt-1">
                         {% for error in form.care_leader.errors %}
@@ -193,4 +202,286 @@
       </div>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  let searchTimeouts = {
+    vsl: null,
+    csl: null,
+    cl: null
+  };
+  
+  // Setup search for VSL
+  const vslSearch = document.getElementById('vsl_search');
+  const vslSuggestions = document.getElementById('vsl_suggestions');
+  const vslStatus = document.getElementById('vsl_status');
+  const vslHidden = document.getElementById('{{ form.vine_servant_leader.id_for_label }}');
+  
+  if (vslSearch && vslHidden) {
+    vslSearch.addEventListener('input', function() {
+      const query = this.value.trim();
+      vslHidden.value = '';
+      vslStatus.innerHTML = '';
+      
+      if (query.length < 2) {
+        vslSuggestions.innerHTML = '';
+        vslSuggestions.style.display = 'none';
+        return;
+      }
+      
+      clearTimeout(searchTimeouts.vsl);
+      searchTimeouts.vsl = setTimeout(() => {
+        fetch(`{% url 'members:ajax_search_leader' %}?q=${encodeURIComponent(query)}&role=VSL`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              vslStatus.innerHTML = `<div class="text-danger small">${data.error}</div>`;
+              return;
+            }
+            
+            vslSuggestions.innerHTML = '';
+            
+            if (data.leaders && data.leaders.length > 0) {
+              data.leaders.forEach(leader => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item list-group-item-action';
+                item.style.cursor = 'pointer';
+                item.style.transition = 'background-color 0.2s';
+                item.innerHTML = `
+                  <div class="d-flex w-100 justify-content-between">
+                    <div>
+                      <strong>${leader.name}</strong>
+                      <br><small class="text-muted">${leader.email}</small>
+                    </div>
+                  </div>
+                `;
+                
+                item.addEventListener('mouseenter', function() {
+                  this.style.backgroundColor = '#28a745';
+                  this.style.color = 'white';
+                  const small = this.querySelector('small');
+                  if (small) {
+                    small.style.color = 'rgba(255, 255, 255, 0.9)';
+                  }
+                });
+                
+                item.addEventListener('mouseleave', function() {
+                  this.style.backgroundColor = '';
+                  this.style.color = '';
+                  const small = this.querySelector('small');
+                  if (small) {
+                    small.style.color = '';
+                  }
+                });
+                item.addEventListener('click', function() {
+                  vslSearch.value = leader.name;
+                  vslHidden.value = leader.id;
+                  vslSuggestions.style.display = 'none';
+                  vslStatus.innerHTML = '';
+                });
+                vslSuggestions.appendChild(item);
+              });
+              vslSuggestions.style.display = 'block';
+            } else {
+              vslSuggestions.innerHTML = '<div class="list-group-item text-muted">No leaders found</div>';
+              vslSuggestions.style.display = 'block';
+            }
+          })
+          .catch(error => {
+            console.error('Search error:', error);
+            vslStatus.innerHTML = '<div class="text-danger small">Error searching leaders</div>';
+          });
+      }, 300);
+    });
+    
+    document.addEventListener('click', function(e) {
+      if (vslSearch && vslSuggestions && !vslSearch.contains(e.target) && !vslSuggestions.contains(e.target)) {
+        vslSuggestions.style.display = 'none';
+      }
+    });
+  }
+  
+  // Setup search for CSL
+  const cslSearch = document.getElementById('csl_search');
+  const cslSuggestions = document.getElementById('csl_suggestions');
+  const cslStatus = document.getElementById('csl_status');
+  const cslHidden = document.getElementById('{{ form.cluster_servant_leader.id_for_label }}');
+  
+  if (cslSearch && cslHidden) {
+    cslSearch.addEventListener('input', function() {
+      const query = this.value.trim();
+      cslHidden.value = '';
+      cslStatus.innerHTML = '';
+      
+      if (query.length < 2) {
+        cslSuggestions.innerHTML = '';
+        cslSuggestions.style.display = 'none';
+        return;
+      }
+      
+      clearTimeout(searchTimeouts.csl);
+      searchTimeouts.csl = setTimeout(() => {
+        fetch(`{% url 'members:ajax_search_leader' %}?q=${encodeURIComponent(query)}&role=CSL`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              cslStatus.innerHTML = `<div class="text-danger small">${data.error}</div>`;
+              return;
+            }
+            
+            cslSuggestions.innerHTML = '';
+            
+            if (data.leaders && data.leaders.length > 0) {
+              data.leaders.forEach(leader => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item list-group-item-action';
+                item.style.cursor = 'pointer';
+                item.style.transition = 'background-color 0.2s';
+                item.innerHTML = `
+                  <div class="d-flex w-100 justify-content-between">
+                    <div>
+                      <strong>${leader.name}</strong>
+                      <br><small class="text-muted">${leader.email}</small>
+                    </div>
+                  </div>
+                `;
+                
+                item.addEventListener('mouseenter', function() {
+                  this.style.backgroundColor = '#28a745';
+                  this.style.color = 'white';
+                  const small = this.querySelector('small');
+                  if (small) {
+                    small.style.color = 'rgba(255, 255, 255, 0.9)';
+                  }
+                });
+                
+                item.addEventListener('mouseleave', function() {
+                  this.style.backgroundColor = '';
+                  this.style.color = '';
+                  const small = this.querySelector('small');
+                  if (small) {
+                    small.style.color = '';
+                  }
+                });
+                item.addEventListener('click', function() {
+                  cslSearch.value = leader.name;
+                  cslHidden.value = leader.id;
+                  cslSuggestions.style.display = 'none';
+                  cslStatus.innerHTML = '';
+                });
+                cslSuggestions.appendChild(item);
+              });
+              cslSuggestions.style.display = 'block';
+            } else {
+              cslSuggestions.innerHTML = '<div class="list-group-item text-muted">No leaders found</div>';
+              cslSuggestions.style.display = 'block';
+            }
+          })
+          .catch(error => {
+            console.error('Search error:', error);
+            cslStatus.innerHTML = '<div class="text-danger small">Error searching leaders</div>';
+          });
+      }, 300);
+    });
+    
+    document.addEventListener('click', function(e) {
+      if (cslSearch && cslSuggestions && !cslSearch.contains(e.target) && !cslSuggestions.contains(e.target)) {
+        cslSuggestions.style.display = 'none';
+      }
+    });
+  }
+  
+  // Setup search for CL
+  const clSearch = document.getElementById('cl_search');
+  const clSuggestions = document.getElementById('cl_suggestions');
+  const clStatus = document.getElementById('cl_status');
+  const clHidden = document.getElementById('{{ form.care_leader.id_for_label }}');
+  
+  if (clSearch && clHidden) {
+    clSearch.addEventListener('input', function() {
+      const query = this.value.trim();
+      clHidden.value = '';
+      clStatus.innerHTML = '';
+      
+      if (query.length < 2) {
+        clSuggestions.innerHTML = '';
+        clSuggestions.style.display = 'none';
+        return;
+      }
+      
+      clearTimeout(searchTimeouts.cl);
+      searchTimeouts.cl = setTimeout(() => {
+        fetch(`{% url 'members:ajax_search_leader' %}?q=${encodeURIComponent(query)}&role=CL`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.error) {
+              clStatus.innerHTML = `<div class="text-danger small">${data.error}</div>`;
+              return;
+            }
+            
+            clSuggestions.innerHTML = '';
+            
+            if (data.leaders && data.leaders.length > 0) {
+              data.leaders.forEach(leader => {
+                const item = document.createElement('div');
+                item.className = 'list-group-item list-group-item-action';
+                item.style.cursor = 'pointer';
+                item.style.transition = 'background-color 0.2s';
+                item.innerHTML = `
+                  <div class="d-flex w-100 justify-content-between">
+                    <div>
+                      <strong>${leader.name}</strong>
+                      <br><small class="text-muted">${leader.email}</small>
+                    </div>
+                  </div>
+                `;
+                
+                item.addEventListener('mouseenter', function() {
+                  this.style.backgroundColor = '#28a745';
+                  this.style.color = 'white';
+                  const small = this.querySelector('small');
+                  if (small) {
+                    small.style.color = 'rgba(255, 255, 255, 0.9)';
+                  }
+                });
+                
+                item.addEventListener('mouseleave', function() {
+                  this.style.backgroundColor = '';
+                  this.style.color = '';
+                  const small = this.querySelector('small');
+                  if (small) {
+                    small.style.color = '';
+                  }
+                });
+                item.addEventListener('click', function() {
+                  clSearch.value = leader.name;
+                  clHidden.value = leader.id;
+                  clSuggestions.style.display = 'none';
+                  clStatus.innerHTML = '';
+                });
+                clSuggestions.appendChild(item);
+              });
+              clSuggestions.style.display = 'block';
+            } else {
+              clSuggestions.innerHTML = '<div class="list-group-item text-muted">No leaders found</div>';
+              clSuggestions.style.display = 'block';
+            }
+          })
+          .catch(error => {
+            console.error('Search error:', error);
+            clStatus.innerHTML = '<div class="text-danger small">Error searching leaders</div>';
+          });
+      }, 300);
+    });
+    
+    document.addEventListener('click', function(e) {
+      if (clSearch && clSuggestions && !clSearch.contains(e.target) && !clSuggestions.contains(e.target)) {
+        clSuggestions.style.display = 'none';
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

@@ -89,6 +89,7 @@ def regular_member_edit(request, regular_member_id):
         form.fields['first_name'].initial = regular_member.user.first_name
         form.fields['last_name'].initial = regular_member.user.last_name
         form.fields['phone'].initial = regular_member.user.phone_number
+        form.fields['address'].initial = regular_member.user.address
         form.fields['role'].initial = regular_member.user.role
     
     context = {
@@ -146,6 +147,7 @@ def regular_member_import(request):
                 imported_count = 0
                 errors = []
                 
+                # Handle both CSV and Excel files
                 if file.name.endswith('.csv'):
                     decoded_file = file.read().decode('utf-8')
                     csv_data = csv.DictReader(io.StringIO(decoded_file))
@@ -181,6 +183,7 @@ def regular_member_import(request):
                                     first_name=row.get('first_name', '').strip(),
                                     last_name=row.get('last_name', '').strip(),
                                     phone_number=row.get('phone', '').strip() or None,
+                                    address=row.get('address', '').strip() or '',
                                     church=request.user.church,
                                     role=role,
                                     is_new_friend=False,
@@ -196,7 +199,73 @@ def regular_member_import(request):
                                 
                                 RegularMember.objects.create(
                                     user=user,
-                                    role_type=role,
+                                    role_type=role_name,
+                                    group=group
+                                )
+                                
+                                imported_count += 1
+                                
+                        except Exception as e:
+                            errors.append(f"Row {row_num}: {str(e)}")
+                
+                elif file.name.endswith(('.xlsx', '.xls')):
+                    # Handle Excel files
+                    import pandas as pd
+                    df = pd.read_excel(file)
+                    # Convert DataFrame to list of dicts, handling NaN values
+                    excel_data = df.replace({pd.NA: '', pd.NaT: ''}).fillna('').to_dict('records')
+                    
+                    for row_num, row in enumerate(excel_data, start=2):
+                        try:
+                            with transaction.atomic():
+                                # Convert pandas Series/values to strings
+                                row = {k: str(v).strip() if pd.notna(v) else '' for k, v in row.items()}
+                                
+                                role_name = row.get('role', 'CM').strip().upper()
+                                role, created = Role.objects.get_or_create(name=role_name)
+
+                                group = None
+                                if row.get('group'):
+                                    group_name = row.get('group', '').strip()
+                                    group, created = Group.objects.get_or_create(
+                                        name=group_name,
+                                        church=request.user.church,
+                                        defaults={'is_active': True}
+                                    )
+
+                                email_prefix = row.get('email_prefix', '').strip()
+                                if not email_prefix:
+                                    email = row.get('email', '').strip()
+                                    if '@' in email:
+                                        email_prefix = email.split('@')[0]
+                                    else:
+                                        email_prefix = email
+                                
+                                full_email = f"{email_prefix}@{request.user.church.domain}.jcsgo.com"
+
+                                default_password = f"jcsgo{request.user.church.domain}"
+                                user = CustomUser.objects.create_user(
+                                    email=full_email,
+                                    first_name=row.get('first_name', '').strip(),
+                                    last_name=row.get('last_name', '').strip(),
+                                    phone_number=row.get('phone', '').strip() or None,
+                                    address=row.get('address', '').strip() or '',
+                                    church=request.user.church,
+                                    role=role,
+                                    is_new_friend=False,
+                                    is_active=True,
+                                    password=default_password  
+                                )
+                                
+                                try:
+                                    if hasattr(user, 'new_friend_profile'):
+                                        user.new_friend_profile.delete()
+                                except NewFriend.DoesNotExist:
+                                    pass
+                                
+                                RegularMember.objects.create(
+                                    user=user,
+                                    role_type=role_name,
                                     group=group
                                 )
                                 

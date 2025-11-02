@@ -185,6 +185,50 @@ def ajax_search_members(request, group_id):
 
 @csrf_exempt
 @login_required
+def ajax_search_leader(request):
+    """AJAX endpoint to search leaders by name and role for care group reports"""
+    try:
+        user = request.user
+        if not user.church:
+            return JsonResponse({'error': 'No church assigned'}, status=400)
+        
+        search_query = request.GET.get('q', '').strip()
+        role_name = request.GET.get('role', '').strip().upper()  # VSL, CSL, or CL
+        
+        if len(search_query) < 2:
+            return JsonResponse({'leaders': []})
+        
+        if role_name not in ['VSL', 'CSL', 'CL']:
+            return JsonResponse({'error': 'Invalid role'}, status=400)
+        
+        from django.db.models import Q
+        
+        leaders = CustomUser.objects.filter(
+            church=user.church,
+            is_active=True,
+            role__name=role_name
+        ).filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query)
+        ).order_by('first_name', 'last_name')[:20]
+        
+        leaders_data = []
+        for leader in leaders:
+            leaders_data.append({
+                'id': leader.id,
+                'name': leader.full_name,
+                'email': leader.email,
+                'role': leader.role.get_name_display() if leader.role else role_name
+            })
+        
+        return JsonResponse({'leaders': leaders_data})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@login_required
 def ajax_update_timer_status(request, user_id):
     """AJAX endpoint to update timer status"""
     return JsonResponse({'success': True})
@@ -515,31 +559,101 @@ def export_members(request):
     
     from django.http import HttpResponse
     import csv
+    from members.models import NewFriend, RegularMember
     
-    # Prepare data for export
+    # Prepare data for export - match import format exactly
     data = []
     for member in members:
-        data.append({
-            'First Name': member.first_name,
-            'Last Name': member.last_name,
-            'Email': member.email,
-            'Phone': member.phone_number or '',
-            'Role': member.role.get_name_display() if member.role else '',
-            'Member Type': 'New Friend' if member.is_new_friend else 'Regular Member',
-            'Date Joined': member.date_joined.strftime('%Y-%m-%d'),
-            'Last Attendance': member.last_attendance.strftime('%Y-%m-%d %H:%M') if member.last_attendance else ''
-        })
+        # Extract email_prefix from full email
+        email_prefix = ''
+        if member.email and '@' in member.email:
+            email_prefix = member.email.split('@')[0]
+        elif member.email:
+            email_prefix = member.email
+        
+        if status == 'new_friends' or member.is_new_friend:
+            # New Friends export format: email, first_name, last_name, phone, timer_status, notes, source
+            try:
+                new_friend_profile = member.new_friend_profile
+                notes = new_friend_profile.notes or ''
+                source = new_friend_profile.source or ''
+            except:
+                notes = ''
+                source = ''
+            
+            data.append({
+                'email': email_prefix,  # Export email_prefix as 'email'
+                'first_name': member.first_name,
+                'last_name': member.last_name,
+                'phone': member.phone_number or '',
+                'address': member.address or '',
+                'timer_status': member.timer_status if member.timer_status else 1,
+                'notes': notes,
+                'source': source,
+            })
+        elif status == 'regular_members' or not member.is_new_friend:
+            # Regular Members export format: email, first_name, last_name, phone, role, group
+            role_name = ''
+            if member.role:
+                role_name = member.role.name  # Export raw role name (CM, CL, CSL, VSL)
+            
+            group_name = ''
+            try:
+                regular_member_profile = member.regular_member_profile
+                if regular_member_profile.group:
+                    group_name = regular_member_profile.group.name
+            except:
+                pass
+            
+            data.append({
+                'email': email_prefix,  # Export email_prefix as 'email'
+                'first_name': member.first_name,
+                'last_name': member.last_name,
+                'phone': member.phone_number or '',
+                'address': member.address or '',
+                'role': role_name,
+                'group': group_name,
+            })
+    
+    # Define headers based on export type
+    if status == 'new_friends':
+        headers = ['email', 'first_name', 'last_name', 'phone', 'address', 'timer_status', 'notes', 'source']
+    elif status == 'regular_members':
+        headers = ['email', 'first_name', 'last_name', 'phone', 'address', 'role', 'group']
+    else:
+        # Mixed export - determine headers based on data
+        if data:
+            # Check if all rows have timer_status (new friends) or role (regular members)
+            has_timer_status = all('timer_status' in row for row in data)
+            has_role = all('role' in row for row in data)
+            
+            if has_timer_status and not has_role:
+                headers = ['email', 'first_name', 'last_name', 'phone', 'address', 'timer_status', 'notes', 'source']
+            elif has_role and not has_timer_status:
+                headers = ['email', 'first_name', 'last_name', 'phone', 'address', 'role', 'group']
+            else:
+                # Mixed - include all columns that appear in data
+                all_possible_headers = ['email', 'first_name', 'last_name', 'phone', 'address', 'timer_status', 'notes', 'source', 'role', 'group']
+                headers = []
+                for h in all_possible_headers:
+                    if any(h in row for row in data):
+                        headers.append(h)
+                # Ensure basic columns are first
+                basic_headers = ['email', 'first_name', 'last_name', 'phone']
+                headers = basic_headers + [h for h in headers if h not in basic_headers]
+        else:
+            # No data - default to new friends format
+            headers = ['email', 'first_name', 'last_name', 'phone', 'address', 'timer_status', 'notes', 'source']
     
     if export_format == 'csv':
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f'attachment; filename="{filename_prefix}_{church.domain}_{timezone.now().strftime("%Y%m%d")}.csv"'
         
         writer = csv.writer(response)
-        headers = ['First Name', 'Last Name', 'Email', 'Phone', 'Role', 'Member Type', 'Date Joined', 'Last Attendance']
         writer.writerow(headers)
         
         for row_data in data:
-            row = [row_data[header] for header in headers]
+            row = [row_data.get(header, '') for header in headers]
             writer.writerow(row)
         
         return response
@@ -548,8 +662,15 @@ def export_members(request):
         import pandas as pd
         from io import BytesIO
         
-        # Create DataFrame from data
-        df = pd.DataFrame(data)
+        # Create DataFrame from data, ensuring all headers are present
+        df_data = []
+        for row in data:
+            row_dict = {}
+            for header in headers:
+                row_dict[header] = row.get(header, '')
+            df_data.append(row_dict)
+        
+        df = pd.DataFrame(df_data, columns=headers)
         
         # Create in-memory output file for Excel
         output = BytesIO()
@@ -566,7 +687,7 @@ def export_members(request):
                 column_letter = column[0].column_letter
                 for cell in column:
                     try:
-                        if len(str(cell.value)) > max_length:
+                        if cell.value and len(str(cell.value)) > max_length:
                             max_length = len(str(cell.value))
                     except:
                         pass
@@ -1868,9 +1989,37 @@ def profile_import(request):
     
     return render(request, 'members/reports/profile_import.html', context)
 
+def _can_user_access_report(user, report):
+    if not user.role:
+        return False
+    
+    if user.role.name == 'ADMIN':
+        return True
+    
+    if report.care_group.leader == user:
+        return True
+    
+    try:
+        user_is_member = user.regular_member_profile.group == report.care_group
+        if user_is_member:
+            return True
+    except:
+        pass
+    
+    if user.role.name in ['VSL', 'CSL']:
+        user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        member_users = CustomUser.objects.filter(
+            regular_member_profile__group__in=user_groups
+        ).exclude(id=user.id)
+        
+        if report.care_group.leader in member_users:
+            return True
+    
+    return False
+
+
 @login_required
 def care_group_report_list(request):
-    """List all care group reports for the user's church"""
     user = request.user
     church = user.church
 
@@ -1887,36 +2036,50 @@ def care_group_report_list(request):
 
     if user.role.name == 'VSL':
         user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        
         member_users = CustomUser.objects.filter(
             regular_member_profile__group__in=user_groups
         ).exclude(id=user.id)
         
-        # VSL can see reports from:
-        # 1. Their own care groups
-        # 2. Care groups led by their members
-        # 3. Care groups led by CSL, CL, CM (under their leadership hierarchy)
+        user_member_groups = Group.objects.filter(
+            group_type='CARE',
+            members__user=user
+        )
+        
         reports = reports.filter(
-            Q(care_group__leader=user) | 
-            Q(care_group__leader__in=member_users) |
-            Q(care_group__leader__role__name__in=['CSL', 'CL', 'CM'])
+            Q(care_group__leader=user) |
+            Q(care_group__in=user_member_groups) |
+            Q(care_group__leader__in=member_users)
         ).distinct()
+        
     elif user.role.name == 'CSL':
         user_groups = Group.objects.filter(leader=user, group_type='CARE')
+        
         member_users = CustomUser.objects.filter(
             regular_member_profile__group__in=user_groups
         ).exclude(id=user.id)
         
-        # CSL can see reports from:
-        # 1. Their own care groups
-        # 2. Care groups led by their members
-        # 3. Care groups led by CL, CM (under their leadership hierarchy)
+        user_member_groups = Group.objects.filter(
+            group_type='CARE',
+            members__user=user
+        )
+        
         reports = reports.filter(
-            Q(care_group__leader=user) | 
-            Q(care_group__leader__in=member_users) |
-            Q(care_group__leader__role__name__in=['CL', 'CM'])
+            Q(care_group__leader=user) |
+            Q(care_group__in=user_member_groups) |
+            Q(care_group__leader__in=member_users)
         ).distinct()
+        
     elif user.role.name == 'CL':
-        reports = reports.filter(care_group__leader=user)
+        user_member_groups = Group.objects.filter(
+            group_type='CARE',
+            members__user=user
+        )
+        
+        reports = reports.filter(
+            Q(care_group__leader=user) |
+            Q(care_group__in=user_member_groups)
+        ).distinct()
         
     elif user.role.name == 'ADMIN':
         pass
@@ -1955,10 +2118,16 @@ def care_group_report_list(request):
             regular_member_profile__group__in=user_groups
         ).exclude(id=user.id)
         
+        # Care groups where user is a member
+        user_member_groups = Group.objects.filter(
+            group_type='CARE',
+            members__user=user
+        )
+        
         care_groups = care_groups.filter(
-            Q(leader=user) | 
-            Q(leader__in=member_users) |
-            Q(leader__role__name__in=['CSL', 'CL', 'CM'])
+            Q(leader=user) |
+            Q(id__in=user_member_groups.values_list('id', flat=True)) |
+            Q(leader__in=member_users)
         ).distinct()
         
     elif user.role.name == 'CSL':
@@ -1967,13 +2136,27 @@ def care_group_report_list(request):
             regular_member_profile__group__in=user_groups
         ).exclude(id=user.id)
         
+        user_member_groups = Group.objects.filter(
+            group_type='CARE',
+            members__user=user
+        )
+        
         care_groups = care_groups.filter(
-            Q(leader=user) | 
-            Q(leader__in=member_users) |
-            Q(leader__role__name__in=['CL', 'CM'])
+            Q(leader=user) |
+            Q(id__in=user_member_groups.values_list('id', flat=True)) |
+            Q(leader__in=member_users)
         ).distinct()
+        
     elif user.role.name == 'CL':
-        care_groups = care_groups.filter(leader=user)
+        user_member_groups = Group.objects.filter(
+            group_type='CARE',
+            members__user=user
+        )
+        
+        care_groups = care_groups.filter(
+            Q(leader=user) |
+            Q(id__in=user_member_groups.values_list('id', flat=True))
+        ).distinct()
     elif user.role.name == 'ADMIN':
         pass
     
@@ -2044,22 +2227,9 @@ def care_group_member_report_create(request, report_id):
         messages.error(request, 'Care group report not found.')
         return redirect('members:care_group_report_list')
 
-    # Check permissions
-    if user.role.name == 'CL' and report.care_group.leader != user:
-        messages.error(request, 'You can only create member reports for your own care groups.')
+    if not _can_user_access_report(user, report):
+        messages.error(request, 'You do not have permission to create member reports for this care group.')
         return redirect('members:care_group_report_list')
-    elif user.role.name in ['VSL', 'CSL']:
-        # Check if user can access this report based on their leadership hierarchy
-        user_groups = Group.objects.filter(leader=user, group_type='CARE')
-        member_users = CustomUser.objects.filter(
-            regular_member_profile__group__in=user_groups
-        ).exclude(id=user.id)
-        
-        if not (report.care_group.leader == user or report.care_group.leader in member_users):
-            messages.error(request, 'You can only create member reports for care groups under your leadership.')
-            return redirect('members:care_group_report_list')
-
-    # Get care group members
     care_group_members = CustomUser.objects.filter(
         regular_member_profile__group=report.care_group,
         is_active=True
@@ -2125,36 +2295,9 @@ def care_group_report_detail(request, report_id):
         messages.error(request, 'Care group report not found.')
         return redirect('members:care_group_report_list')
 
-    # Check permissions - same logic as in care_group_report_list
-    if user.role.name == 'CL' and report.care_group.leader != user:
-        messages.error(request, 'You can only view reports for your own care groups.')
+    if not _can_user_access_report(user, report):
+        messages.error(request, 'You do not have permission to view this report.')
         return redirect('members:care_group_report_list')
-    elif user.role.name in ['VSL', 'CSL']:
-        # Check if user can access this report based on their leadership hierarchy
-        # Same logic as in care_group_report_list
-        user_groups = Group.objects.filter(leader=user, group_type='CARE')
-        member_users = CustomUser.objects.filter(
-            regular_member_profile__group__in=user_groups
-        ).exclude(id=user.id)
-        
-        # Allow access if:
-        # 1. User is the leader of this care group, OR
-        # 2. The care group leader is a member of user's care groups, OR
-        # 3. The care group leader is under user's leadership hierarchy
-        can_access = (
-            report.care_group.leader == user or 
-            report.care_group.leader in member_users or
-            # Additional check: if the care group leader is under user's leadership
-            (user.role.name == 'VSL' and report.care_group.leader.role.name in ['CSL', 'CL', 'CM']) or
-            (user.role.name == 'CSL' and report.care_group.leader.role.name in ['CL', 'CM'])
-        )
-        
-        if not can_access:
-            messages.error(request, 'You can only view reports for care groups under your leadership.')
-            return redirect('members:care_group_report_list')
-    elif user.role.name == 'ADMIN':
-        # Admin can view all reports
-        pass
 
     member_reports = report.member_reports.select_related('member').order_by('member__first_name', 'member__last_name')
     
@@ -2182,20 +2325,9 @@ def care_group_report_print(request, report_id):
         messages.error(request, 'Care group report not found.')
         return redirect('members:care_group_report_list')
 
-    # Check permissions
-    if user.role.name == 'CL' and report.care_group.leader != user:
-        messages.error(request, 'You can only print reports for your own care groups.')
+    if not _can_user_access_report(user, report):
+        messages.error(request, 'You do not have permission to print this report.')
         return redirect('members:care_group_report_list')
-    elif user.role.name in ['VSL', 'CSL']:
-        # Check if user can access this report based on their leadership hierarchy
-        user_groups = Group.objects.filter(leader=user, group_type='CARE')
-        member_users = CustomUser.objects.filter(
-            regular_member_profile__group__in=user_groups
-        ).exclude(id=user.id)
-        
-        if not (report.care_group.leader == user or report.care_group.leader in member_users):
-            messages.error(request, 'You can only print reports for care groups under your leadership.')
-            return redirect('members:care_group_report_list')
 
     member_reports = report.member_reports.select_related('member').order_by('member__first_name', 'member__last_name')
     
@@ -2223,7 +2355,10 @@ def care_group_report_edit(request, report_id):
         messages.error(request, 'Care group report not found.')
         return redirect('members:care_group_report_list')
 
-    # Check permissions - admin can edit all reports, others can only edit their own
+    if not _can_user_access_report(user, report):
+        messages.error(request, 'You do not have permission to edit this report.')
+        return redirect('members:care_group_report_list')
+    
     if user.role.name != 'ADMIN' and report.created_by != user:
         messages.error(request, 'You can only edit reports you created.')
         return redirect('members:care_group_report_detail', report_id=report_id)
@@ -2270,7 +2405,10 @@ def care_group_report_delete(request, report_id):
         messages.error(request, 'Care group report not found.')
         return redirect('members:care_group_report_list')
 
-    # Check permissions - admin can delete all reports, others can only delete their own
+    if not _can_user_access_report(user, report):
+        messages.error(request, 'You do not have permission to delete this report.')
+        return redirect('members:care_group_report_list')
+    
     if user.role.name != 'ADMIN' and report.created_by != user:
         messages.error(request, 'You can only delete reports you created.')
         return redirect('members:care_group_report_detail', report_id=report_id)
