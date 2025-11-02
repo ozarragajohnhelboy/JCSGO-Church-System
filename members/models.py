@@ -172,6 +172,20 @@ class Church(models.Model):
         # Initialize counters
         stats = {
             'sunday_attendance': {
+                'onsite': {
+                    'youth_men': 0,
+                    'youth_women': 0,
+                    'men': 0,
+                    'women': 0,
+                    'total': 0
+                },
+                'online': {
+                    'youth_men': 0,
+                    'youth_women': 0,
+                    'men': 0,
+                    'women': 0,
+                    'total': 0
+                },
                 'youth_men': 0,
                 'youth_women': 0,
                 'men': 0,
@@ -180,32 +194,62 @@ class Church(models.Model):
             }
         }
         
-        # Count unique attendees by demographic
-        unique_attendees = set()
+        unique_attendees_onsite = set()
+        unique_attendees_online = set()
+        
         for attendance in sunday_attendances:
             user = attendance.user
-            if user.birth_date and user.gender and user.id not in unique_attendees:
-                unique_attendees.add(user.id)
+            if user.birth_date and user.gender:
                 age = user.age
                 if age is not None:
-                    if 13 <= age <= 29:  # Youth
-                        if user.gender == 'MALE':
-                            stats['sunday_attendance']['youth_men'] += 1
-                        elif user.gender == 'FEMALE':
-                            stats['sunday_attendance']['youth_women'] += 1
-                    elif age >= 30:  # Adult
-                        if user.gender == 'MALE':
-                            stats['sunday_attendance']['men'] += 1
-                        elif user.gender == 'FEMALE':
-                            stats['sunday_attendance']['women'] += 1
+                    service_setup = attendance.service_setup if hasattr(attendance, 'service_setup') else 'ONSITE'
+                    
+                    if service_setup == 'ONLINE':
+                        if user.id not in unique_attendees_online:
+                            unique_attendees_online.add(user.id)
+                            if 13 <= age <= 29:
+                                if user.gender == 'MALE':
+                                    stats['sunday_attendance']['online']['youth_men'] += 1
+                                elif user.gender == 'FEMALE':
+                                    stats['sunday_attendance']['online']['youth_women'] += 1
+                            elif age >= 30:
+                                if user.gender == 'MALE':
+                                    stats['sunday_attendance']['online']['men'] += 1
+                                elif user.gender == 'FEMALE':
+                                    stats['sunday_attendance']['online']['women'] += 1
+                    else:
+                        if user.id not in unique_attendees_onsite:
+                            unique_attendees_onsite.add(user.id)
+                            if 13 <= age <= 29:
+                                if user.gender == 'MALE':
+                                    stats['sunday_attendance']['onsite']['youth_men'] += 1
+                                elif user.gender == 'FEMALE':
+                                    stats['sunday_attendance']['onsite']['youth_women'] += 1
+                            elif age >= 30:
+                                if user.gender == 'MALE':
+                                    stats['sunday_attendance']['onsite']['men'] += 1
+                                elif user.gender == 'FEMALE':
+                                    stats['sunday_attendance']['onsite']['women'] += 1
         
-        # Calculate total
-        stats['sunday_attendance']['total'] = (
-            stats['sunday_attendance']['youth_men'] +
-            stats['sunday_attendance']['youth_women'] +
-            stats['sunday_attendance']['men'] +
-            stats['sunday_attendance']['women']
+        stats['sunday_attendance']['onsite']['total'] = (
+            stats['sunday_attendance']['onsite']['youth_men'] +
+            stats['sunday_attendance']['onsite']['youth_women'] +
+            stats['sunday_attendance']['onsite']['men'] +
+            stats['sunday_attendance']['onsite']['women']
         )
+        
+        stats['sunday_attendance']['online']['total'] = (
+            stats['sunday_attendance']['online']['youth_men'] +
+            stats['sunday_attendance']['online']['youth_women'] +
+            stats['sunday_attendance']['online']['men'] +
+            stats['sunday_attendance']['online']['women']
+        )
+        
+        stats['sunday_attendance']['youth_men'] = stats['sunday_attendance']['onsite']['youth_men'] + stats['sunday_attendance']['online']['youth_men']
+        stats['sunday_attendance']['youth_women'] = stats['sunday_attendance']['onsite']['youth_women'] + stats['sunday_attendance']['online']['youth_women']
+        stats['sunday_attendance']['men'] = stats['sunday_attendance']['onsite']['men'] + stats['sunday_attendance']['online']['men']
+        stats['sunday_attendance']['women'] = stats['sunday_attendance']['onsite']['women'] + stats['sunday_attendance']['online']['women']
+        stats['sunday_attendance']['total'] = stats['sunday_attendance']['onsite']['total'] + stats['sunday_attendance']['online']['total']
         
         return stats
 
@@ -788,9 +832,14 @@ class Attendance(models.Model):
     church = models.ForeignKey(Church, on_delete=models.CASCADE, related_name='attendances')
     attendance_type = models.CharField(max_length=20, choices=ATTENDANCE_TYPES, default='SERVICE')
     
-    # Date and time fields - REMOVED auto_now_add=True from time_in
+    SERVICE_SETUP_CHOICES = [
+        ('ONSITE', 'Onsite'),
+        ('ONLINE', 'Online'),
+    ]
+    service_setup = models.CharField(max_length=10, choices=SERVICE_SETUP_CHOICES, default='ONSITE')
+    
     date = models.DateField()
-    time_in = models.TimeField()  # CHANGED: Removed auto_now_add=True
+    time_in = models.TimeField()
     time_out = models.TimeField(null=True, blank=True)
     
     # Additional information

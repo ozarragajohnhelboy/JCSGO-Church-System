@@ -76,6 +76,15 @@ class NewFriendForm(forms.ModelForm):
             'placeholder': 'Enter phone number'
         })
     )
+    address = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Enter address'
+        })
+    )
     birth_date = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={
@@ -172,7 +181,7 @@ class NewFriendForm(forms.ModelForm):
     
     class Meta:
         model = NewFriend
-        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'birth_date', 'gender', 'invited_by', 'endorsed_to', 'notes', 'timer_status', 'convert_to_regular', 'regular_role']
+        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'address', 'birth_date', 'gender', 'invited_by', 'endorsed_to', 'notes', 'timer_status', 'convert_to_regular', 'regular_role']
     
     def clean_email_prefix(self):
         email_prefix = self.cleaned_data['email_prefix']
@@ -245,6 +254,15 @@ class RegularMemberForm(forms.ModelForm):
             'placeholder': 'Enter phone number'
         })
     )
+    address = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Enter address'
+        })
+    )
     birth_date = forms.DateField(
         required=True,
         widget=forms.DateInput(attrs={
@@ -281,7 +299,7 @@ class RegularMemberForm(forms.ModelForm):
     
     class Meta:
         model = RegularMember
-        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'birth_date', 'gender', 'role', 'group']
+        fields = ['email_prefix', 'first_name', 'last_name', 'phone', 'address', 'birth_date', 'gender', 'role', 'group']
     
     def __init__(self, *args, **kwargs):
         self.church = kwargs.pop('church', None)
@@ -325,6 +343,7 @@ class RegularMemberForm(forms.ModelForm):
         first_name = self.cleaned_data['first_name']
         last_name = self.cleaned_data['last_name']
         phone = self.cleaned_data.get('phone', '')
+        address = self.cleaned_data.get('address', '')
         birth_date = self.cleaned_data['birth_date']
         gender = self.cleaned_data['gender']
         role = self.cleaned_data['role']
@@ -336,6 +355,7 @@ class RegularMemberForm(forms.ModelForm):
             user.first_name = first_name
             user.last_name = last_name
             user.phone_number = phone
+            user.address = address
             user.birth_date = birth_date
             user.gender = gender
             user.role = role
@@ -355,6 +375,7 @@ class RegularMemberForm(forms.ModelForm):
                 first_name=first_name,
                 last_name=last_name,
                 phone_number=phone,
+                address=address,
                 birth_date=birth_date,
                 gender=gender,
                 church=self.church,
@@ -897,10 +918,18 @@ class ManualAttendanceForm(forms.Form):
             'type': 'time'
         })
     )
-    member = forms.ModelChoiceField(
-        queryset=CustomUser.objects.none(),
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        help_text="Select the member to record attendance for"
+    member = forms.IntegerField(
+        widget=forms.HiddenInput(),
+        required=False
+    )
+    member_search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search member by name or email...',
+            'id': 'member_search'
+        }),
+        help_text="Type member name to search"
     )
     role_status = forms.ChoiceField(
         choices=[
@@ -930,6 +959,15 @@ class ManualAttendanceForm(forms.Form):
         initial='SERVICE',
         widget=forms.Select(attrs={'class': 'form-select'}),
         help_text="Select the type of service/event"
+    )
+    service_setup = forms.ChoiceField(
+        choices=[
+            ('ONSITE', 'Onsite'),
+            ('ONLINE', 'Online'),
+        ],
+        initial='ONSITE',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Select service setup"
     )
     notes = forms.CharField(
         required=False,
@@ -1107,6 +1145,35 @@ class ProfileImportForm(forms.Form):
 class CareGroupReportForm(forms.ModelForm):
     """Form for creating/editing Care Group Reports"""
     
+    # Search fields instead of dropdowns
+    vine_servant_leader_search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search vine servant leader...',
+            'autocomplete': 'off',
+            'id': 'vsl_search'
+        })
+    )
+    cluster_servant_leader_search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search cluster servant leader...',
+            'autocomplete': 'off',
+            'id': 'csl_search'
+        })
+    )
+    care_leader_search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search care leader...',
+            'autocomplete': 'off',
+            'id': 'cl_search'
+        })
+    )
+    
     class Meta:
         model = CareGroupReport
         fields = [
@@ -1116,9 +1183,9 @@ class CareGroupReportForm(forms.ModelForm):
         ]
         widgets = {
             'care_group': forms.Select(attrs={'class': 'form-select'}),
-            'vine_servant_leader': forms.Select(attrs={'class': 'form-select'}),
-            'cluster_servant_leader': forms.Select(attrs={'class': 'form-select'}),
-            'care_leader': forms.Select(attrs={'class': 'form-select'}),
+            'vine_servant_leader': forms.HiddenInput(),
+            'cluster_servant_leader': forms.HiddenInput(),
+            'care_leader': forms.HiddenInput(),
             'contact_number': forms.TextInput(attrs={'class': 'form-control'}),
             'venue_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'topic_discussed': forms.TextInput(attrs={'class': 'form-control'}),
@@ -1172,34 +1239,32 @@ class CareGroupReportForm(forms.ModelForm):
             
             self.fields['care_group'].queryset = care_groups
             
-            # Filter leaders to only show those from the user's church
-            church_users = CustomUser.objects.filter(church=self.user.church, is_active=True)
-            
-            # Show/hide fields and change labels based on user role
+            # Show/hide search fields based on user role
             if self.user.role and self.user.role.name == 'VSL':
-                # VSL: No higher role fields needed, use vine_servant_leader field instead of care_leader
+                # VSL: Only show vine_servant_leader search
+                self.fields.pop('cluster_servant_leader_search', None)
+                self.fields.pop('care_leader_search', None)
                 self.fields.pop('cluster_servant_leader', None)
                 self.fields.pop('care_leader', None)
-                # Use vine_servant_leader field for VSL
-                self.fields['vine_servant_leader'].label = 'Vine Servant Leader'
-                self.fields['vine_servant_leader'].queryset = church_users.filter(role__name='VSL')
             elif self.user.role and self.user.role.name == 'CSL':
-                # CSL: Show VSL field, use cluster_servant_leader field instead of care_leader
+                # CSL: Show VSL and CSL search fields
+                self.fields.pop('care_leader_search', None)
                 self.fields.pop('care_leader', None)
-                self.fields['vine_servant_leader'].queryset = church_users.filter(role__name='VSL')
-                # Use cluster_servant_leader field for CSL
-                self.fields['cluster_servant_leader'].label = 'Cluster Servant Leader'
-                self.fields['cluster_servant_leader'].queryset = church_users.filter(role__name='CSL')
             elif self.user.role and self.user.role.name == 'CL':
-                # CL: Show VSL and CSL fields, keep care_leader as is
-                self.fields['vine_servant_leader'].queryset = church_users.filter(role__name='VSL')
-                self.fields['cluster_servant_leader'].queryset = church_users.filter(role__name='CSL')
-                self.fields['care_leader'].queryset = church_users.filter(role__name='CL')
+                # CL: Show all search fields
+                pass
             else:
-                # ADMIN: Show all fields with original labels
-                self.fields['vine_servant_leader'].queryset = church_users.filter(role__name='VSL')
-                self.fields['cluster_servant_leader'].queryset = church_users.filter(role__name='CSL')
-                self.fields['care_leader'].queryset = church_users.filter(role__name='CL')
+                # ADMIN: Show all search fields
+                pass
+            
+            # Set initial values for search fields if editing
+            if self.instance.pk:
+                if self.instance.vine_servant_leader:
+                    self.fields['vine_servant_leader_search'].initial = self.instance.vine_servant_leader.full_name
+                if self.instance.cluster_servant_leader:
+                    self.fields['cluster_servant_leader_search'].initial = self.instance.cluster_servant_leader.full_name
+                if hasattr(self.instance, 'care_leader') and self.instance.care_leader:
+                    self.fields['care_leader_search'].initial = self.instance.care_leader.full_name
             
             # Set default date to today
             if not self.instance.pk:

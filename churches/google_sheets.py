@@ -174,40 +174,40 @@ class GoogleSheetsService:
         data.append([
             'Sunday Attendance',
             '',
-            sunday_attendance_stats['sunday_attendance']['total'],
-            0,
+            sunday_attendance_stats['sunday_attendance']['onsite']['total'],
+            sunday_attendance_stats['sunday_attendance']['online']['total'],
             sunday_attendance_stats['sunday_attendance']['total']
         ])
         
         data.append([
             'Youth Boys',
             '',
-            sunday_attendance_stats['sunday_attendance']['youth_men'],
-            0,
+            sunday_attendance_stats['sunday_attendance']['onsite']['youth_men'],
+            sunday_attendance_stats['sunday_attendance']['online']['youth_men'],
             sunday_attendance_stats['sunday_attendance']['youth_men']
         ])
         
         data.append([
             'Youth Girls',
             '',
-            sunday_attendance_stats['sunday_attendance']['youth_women'],
-            0,
+            sunday_attendance_stats['sunday_attendance']['onsite']['youth_women'],
+            sunday_attendance_stats['sunday_attendance']['online']['youth_women'],
             sunday_attendance_stats['sunday_attendance']['youth_women']
         ])
         
         data.append([
             'Men',
             '',
-            sunday_attendance_stats['sunday_attendance']['men'],
-            0,
+            sunday_attendance_stats['sunday_attendance']['onsite']['men'],
+            sunday_attendance_stats['sunday_attendance']['online']['men'],
             sunday_attendance_stats['sunday_attendance']['men']
         ])
         
         data.append([
             'Women',
             '',
-            sunday_attendance_stats['sunday_attendance']['women'],
-            0,
+            sunday_attendance_stats['sunday_attendance']['onsite']['women'],
+            sunday_attendance_stats['sunday_attendance']['online']['women'],
             sunday_attendance_stats['sunday_attendance']['women']
         ])
         

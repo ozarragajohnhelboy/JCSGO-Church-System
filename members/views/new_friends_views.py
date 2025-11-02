@@ -32,6 +32,7 @@ def new_friend_add(request):
                         first_name=form.cleaned_data['first_name'],
                         last_name=form.cleaned_data['last_name'],
                         phone_number=form.cleaned_data['phone'],
+                        address=form.cleaned_data.get('address', ''),
                         church=request.user.church,
                         is_new_friend=True,
                         is_active=True,
@@ -127,6 +128,7 @@ def new_friend_edit(request, new_friend_id):
                     user.first_name = form.cleaned_data['first_name']
                     user.last_name = form.cleaned_data['last_name']
                     user.phone_number = form.cleaned_data['phone']
+                    user.address = form.cleaned_data.get('address', '')
                     user.timer_status = form.cleaned_data['timer_status']
                     
                     birth_date_val = form.cleaned_data.get('birth_date')
@@ -213,6 +215,7 @@ def new_friend_edit(request, new_friend_id):
         form.fields['first_name'].initial = new_friend.user.first_name
         form.fields['last_name'].initial = new_friend.user.last_name
         form.fields['phone'].initial = new_friend.user.phone_number
+        form.fields['address'].initial = new_friend.user.address
         form.fields['birth_date'].initial = new_friend.user.birth_date
         form.fields['gender'].initial = new_friend.user.gender
         form.fields['invited_by'].initial = new_friend.invited_by
@@ -274,6 +277,7 @@ def new_friend_import(request):
                 imported_count = 0
                 errors = []
                 
+                # Handle both CSV and Excel files
                 if file.name.endswith('.csv'):
                     decoded_file = file.read().decode('utf-8')
                     csv_data = csv.DictReader(io.StringIO(decoded_file))
@@ -297,6 +301,7 @@ def new_friend_import(request):
                                     first_name=row.get('first_name', '').strip(),
                                     last_name=row.get('last_name', '').strip(),
                                     phone_number=row.get('phone', '').strip() or None,
+                                    address=row.get('address', '').strip() or '',
                                     church=request.user.church,
                                     is_new_friend=True,
                                     is_active=True,
@@ -316,7 +321,66 @@ def new_friend_import(request):
                                     user=user,
                                     invited_by=None,  
                                     endorsed_to=None,
-                                    notes=row.get('notes', '').strip() or ''
+                                    notes=row.get('notes', '').strip() or '',
+                                    source=row.get('source', '').strip() or ''
+                                )
+                                
+                                imported_count += 1
+                                
+                        except Exception as e:
+                            errors.append(f"Row {row_num}: {str(e)}")
+                
+                elif file.name.endswith(('.xlsx', '.xls')):
+                    # Handle Excel files
+                    import pandas as pd
+                    df = pd.read_excel(file)
+                    # Convert DataFrame to list of dicts, handling NaN values
+                    excel_data = df.replace({pd.NA: '', pd.NaT: ''}).fillna('').to_dict('records')
+                    
+                    for row_num, row in enumerate(excel_data, start=2):
+                        try:
+                            with transaction.atomic():
+                                # Convert pandas Series/values to strings
+                                row = {k: str(v).strip() if pd.notna(v) else '' for k, v in row.items()}
+                                
+                                email_prefix = row.get('email_prefix', '').strip()
+                                if not email_prefix:
+                                    email = row.get('email', '').strip()
+                                    if '@' in email:
+                                        email_prefix = email.split('@')[0]
+                                    else:
+                                        email_prefix = email
+                                
+                                full_email = f"{email_prefix}@{request.user.church.domain}.jcsgo.com"
+                                
+                                default_password = f"jcsgo{request.user.church.domain}"
+                                user = CustomUser.objects.create_user(
+                                    email=full_email,
+                                    first_name=row.get('first_name', '').strip(),
+                                    last_name=row.get('last_name', '').strip(),
+                                    phone_number=row.get('phone', '').strip() or None,
+                                    address=row.get('address', '').strip() or '',
+                                    church=request.user.church,
+                                    is_new_friend=True,
+                                    is_active=True,
+                                    password=default_password 
+                                )
+
+                                try:
+                                    if hasattr(user, 'regular_member_profile'):
+                                        user.regular_member_profile.delete()
+                                except RegularMember.DoesNotExist:
+                                    pass
+
+                                user.timer_status = int(row.get('timer_status', 1)) if row.get('timer_status', '') else 1
+                                user.save()
+
+                                NewFriend.objects.create(
+                                    user=user,
+                                    invited_by=None,  
+                                    endorsed_to=None,
+                                    notes=row.get('notes', '').strip() or '',
+                                    source=row.get('source', '').strip() or ''
                                 )
                                 
                                 imported_count += 1
