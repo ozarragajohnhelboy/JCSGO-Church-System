@@ -185,6 +185,50 @@ def ajax_search_members(request, group_id):
 
 @csrf_exempt
 @login_required
+def ajax_search_member_for_attendance(request):
+    try:
+        user = request.user
+        if not user.church:
+            return JsonResponse({'error': 'No church assigned'}, status=400)
+
+        search_query = request.GET.get('q', '').strip()
+        
+        if len(search_query) < 2:
+            return JsonResponse({'members': []})
+
+        from django.db.models import Q
+
+        members = CustomUser.objects.filter(
+            church=user.church,
+            is_active=True
+        ).filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query)
+        ).order_by('first_name', 'last_name')[:20]
+
+        members_data = []
+        for member in members:
+            role_display = 'No Role'
+            if member.role:
+                role_display = member.role.name
+            if member.is_new_friend:
+                role_display = f"New Friend ({member.timer_status}{'st' if member.timer_status == 1 else 'nd' if member.timer_status == 2 else 'rd' if member.timer_status == 3 else 'th'} Timer)"
+
+            members_data.append({
+                'id': member.id,
+                'name': member.full_name,
+                'email': member.email,
+                'role': role_display
+            })
+
+        return JsonResponse({'members': members_data})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@login_required
 def ajax_search_leader(request):
     """AJAX endpoint to search leaders by name and role for care group reports"""
     try:
@@ -1480,10 +1524,18 @@ def qr_scanner(request):
             form = ManualAttendanceForm(request.POST, church=church)
             if form.is_valid():
                 try:
-                    attendee = form.cleaned_data['member']
+                    member_id = form.cleaned_data.get('member')
+                    if not member_id:
+                        messages.error(request, 'Please select a member.')
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'Please select a member.'
+                        })
+                    attendee = CustomUser.objects.get(id=member_id, church=church)
                     date = form.cleaned_data['date']
                     time = form.cleaned_data['time']
                     service_type = form.cleaned_data['service_type']
+                    service_setup = form.cleaned_data['service_setup']
                     notes = form.cleaned_data['notes']
 
                     existing_attendance = Attendance.objects.filter(
@@ -1499,6 +1551,7 @@ def qr_scanner(request):
                             user=attendee,
                             church=church,
                             attendance_type=service_type,
+                            service_setup=service_setup,
                             date=date,
                             time_in=time,
                             notes=notes,
@@ -1598,6 +1651,7 @@ def qr_scanner(request):
                                         user=attendee,
                                         church=church,
                                         attendance_type=attendance_type,
+                                        service_setup='ONSITE',
                                         date=client_date,     
                                         time_in=client_time, 
                                         notes=notes,

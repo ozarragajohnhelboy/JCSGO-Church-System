@@ -210,60 +210,71 @@
           <table class="report-table">
             <thead>
               <tr>
-                <th style="width: 50%;">&nbsp;</th>
-                <th style="width: 25%;">Onsite/ Actual</th>
-                <th style="width: 25%;">TOTAL</th>
+                <th style="width: 40%;">&nbsp;</th>
+                <th style="width: 20%;">Onsite/ Actual</th>
+                <th style="width: 20%;">Online</th>
+                <th style="width: 20%;">TOTAL</th>
               </tr>
             </thead>
             <tbody>
               <tr class="category-row">
                 <td><strong>Registered Disciples</strong></td>
                 <td>{{ demographic_stats.registered_disciples.total }}</td>
+                <td>-</td>
                 <td>{{ demographic_stats.registered_disciples.total }}</td>
               </tr>
               <tr class="subcategory-row">
                 <td style="text-align: left; padding-left: 1rem;">Youth Boys</td>
                 <td>{{ demographic_stats.registered_disciples.youth_men }}</td>
+                <td>-</td>
                 <td>{{ demographic_stats.registered_disciples.youth_men }}</td>
               </tr>
               <tr class="subcategory-row">
                 <td style="text-align: left; padding-left: 1rem;">Youth Girls</td>
                 <td>{{ demographic_stats.registered_disciples.youth_women }}</td>
+                <td>-</td>
                 <td>{{ demographic_stats.registered_disciples.youth_women }}</td>
               </tr>
               <tr class="subcategory-row">
                 <td style="text-align: left; padding-left: 1rem;">Men</td>
                 <td>{{ demographic_stats.registered_disciples.men }}</td>
+                <td>-</td>
                 <td>{{ demographic_stats.registered_disciples.men }}</td>
               </tr>
               <tr class="subcategory-row">
                 <td style="text-align: left; padding-left: 1rem;">Women</td>
                 <td>{{ demographic_stats.registered_disciples.women }}</td>
+                <td>-</td>
                 <td>{{ demographic_stats.registered_disciples.women }}</td>
               </tr>
               <tr class="category-row">
                 <td><strong>Sunday Attendance</strong></td>
-                <td>{{ sunday_attendance_stats.sunday_attendance.total }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.onsite.total }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.online.total }}</td>
                 <td>{{ sunday_attendance_stats.sunday_attendance.total }}</td>
               </tr>
               <tr class="subcategory-row">
                 <td style="text-align: left; padding-left: 1rem;">Youth Boys</td>
-                <td>{{ sunday_attendance_stats.sunday_attendance.youth_men }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.onsite.youth_men }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.online.youth_men }}</td>
                 <td>{{ sunday_attendance_stats.sunday_attendance.youth_men }}</td>
               </tr>
               <tr class="subcategory-row">
                 <td style="text-align: left; padding-left: 1rem;">Youth Girls</td>
-                <td>{{ sunday_attendance_stats.sunday_attendance.youth_women }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.onsite.youth_women }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.online.youth_women }}</td>
                 <td>{{ sunday_attendance_stats.sunday_attendance.youth_women }}</td>
               </tr>
               <tr class="subcategory-row">
                 <td style="text-align: left; padding-left: 1rem;">Men</td>
-                <td>{{ sunday_attendance_stats.sunday_attendance.men }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.onsite.men }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.online.men }}</td>
                 <td>{{ sunday_attendance_stats.sunday_attendance.men }}</td>
               </tr>
               <tr class="subcategory-row">
                 <td style="text-align: left; padding-left: 1rem;">Women</td>
-                <td>{{ sunday_attendance_stats.sunday_attendance.women }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.onsite.women }}</td>
+                <td>{{ sunday_attendance_stats.sunday_attendance.online.women }}</td>
                 <td>{{ sunday_attendance_stats.sunday_attendance.women }}</td>
               </tr>
             </tbody>

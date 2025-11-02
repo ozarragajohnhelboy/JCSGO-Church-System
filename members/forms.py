@@ -918,10 +918,18 @@ class ManualAttendanceForm(forms.Form):
             'type': 'time'
         })
     )
-    member = forms.ModelChoiceField(
-        queryset=CustomUser.objects.none(),
-        widget=forms.Select(attrs={'class': 'form-select'}),
-        help_text="Select the member to record attendance for"
+    member = forms.IntegerField(
+        widget=forms.HiddenInput(),
+        required=False
+    )
+    member_search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Search member by name or email...',
+            'id': 'member_search'
+        }),
+        help_text="Type member name to search"
     )
     role_status = forms.ChoiceField(
         choices=[
@@ -951,6 +959,15 @@ class ManualAttendanceForm(forms.Form):
         initial='SERVICE',
         widget=forms.Select(attrs={'class': 'form-select'}),
         help_text="Select the type of service/event"
+    )
+    service_setup = forms.ChoiceField(
+        choices=[
+            ('ONSITE', 'Onsite'),
+            ('ONLINE', 'Online'),
+        ],
+        initial='ONSITE',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        help_text="Select service setup"
     )
     notes = forms.CharField(
         required=False,
