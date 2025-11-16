@@ -11,28 +11,49 @@ $.ajaxSetup({
     }
 });
 function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
+    const sidebar = document.querySelector('.col-md-3.col-lg-2');
     const sidebarToggle = document.getElementById('sidebarToggle');
+    const overlay = document.getElementById('mobileOverlay');
 
     if (sidebar) {
         sidebar.classList.toggle('show');
 
         if (sidebar.classList.contains('show')) {
-            sidebarToggle.innerHTML = '<i class="bi bi-x"></i>';
+            if (sidebarToggle) {
+                sidebarToggle.innerHTML = '<i class="bi bi-x"></i>';
+            }
+            if (overlay) {
+                overlay.classList.add('show');
+            }
+            document.body.style.overflow = 'hidden';
         } else {
-            sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+            if (sidebarToggle) {
+                sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+            }
+            if (overlay) {
+                overlay.classList.remove('show');
+            }
+            document.body.style.overflow = '';
         }
     }
 }
+
 document.addEventListener('click', function (event) {
-    const sidebar = document.getElementById('sidebar');
+    const sidebar = document.querySelector('.col-md-3.col-lg-2');
     const sidebarToggle = document.getElementById('sidebarToggle');
+    const overlay = document.getElementById('mobileOverlay');
 
     if (sidebar && sidebar.classList.contains('show') &&
         !sidebar.contains(event.target) &&
-        !sidebarToggle.contains(event.target)) {
+        (!sidebarToggle || !sidebarToggle.contains(event.target))) {
         sidebar.classList.remove('show');
-        sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+        if (sidebarToggle) {
+            sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+        }
+        if (overlay) {
+            overlay.classList.remove('show');
+        }
+        document.body.style.overflow = '';
     }
 });
 
@@ -109,18 +130,26 @@ document.addEventListener('DOMContentLoaded', function () {
     var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
         return new bootstrap.Popover(popoverTriggerEl);
     });
-    const sidebar = document.getElementById('sidebar');
+    const sidebar = document.querySelector('.col-md-3.col-lg-2');
     const sidebarToggle = document.getElementById('sidebarToggle');
+    const overlay = document.getElementById('mobileOverlay');
 
     if (sidebar && sidebarToggle) {
         if (window.innerWidth < 768) {
             sidebar.classList.remove('show');
+            if (overlay) {
+                overlay.classList.remove('show');
+            }
         }
 
         window.addEventListener('resize', function () {
             if (window.innerWidth >= 768) {
                 sidebar.classList.remove('show');
                 sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+                if (overlay) {
+                    overlay.classList.remove('show');
+                }
+                document.body.style.overflow = '';
             }
         });
     }

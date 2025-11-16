@@ -31,4 +31,8 @@ urlpatterns = [
     path('churches/<int:church_id>/delete/', views.delete_church, name='delete_church'),
     path('churches/<int:church_id>/detail/', views.church_detail, name='church_detail'),
     path('ajax/churches/<int:church_id>/toggle-status/', views.toggle_church_status, name='toggle_church_status'),
+    
+    path('manifest.json', views.manifest, name='manifest'),
+    path('service-worker.js', views.service_worker, name='service_worker'),
+    path('offline/', views.offline, name='offline'),
 ] 
