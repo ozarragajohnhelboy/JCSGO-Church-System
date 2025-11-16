@@ -38,6 +38,26 @@ function toggleSidebar() {
     }
 }
 
+document.addEventListener('DOMContentLoaded', function () {
+    const overlay = document.getElementById('mobileOverlay');
+    
+    if (overlay) {
+        overlay.addEventListener('click', function () {
+            const sidebar = document.querySelector('.col-md-3.col-lg-2');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            if (sidebar && sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+                if (sidebarToggle) {
+                    sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+                }
+                overlay.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        });
+    }
+});
+
 document.addEventListener('click', function (event) {
     const sidebar = document.querySelector('.col-md-3.col-lg-2');
     const sidebarToggle = document.getElementById('sidebarToggle');
