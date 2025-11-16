@@ -27,3 +27,47 @@
 .dropdown-item:hover {
     background-color: #f8f9fa;
 }
+
+@media (max-width: 991px) {
+    .navbar {
+        padding: 0.5rem 1rem;
+    }
+
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+
+    .navbar-toggler {
+        padding: 0.5rem;
+        font-size: 1rem;
+    }
+
+    .navbar-collapse {
+        margin-top: 0.5rem;
+    }
+
+    .dropdown-menu {
+        position: static;
+        float: none;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .navbar {
+        padding: 0.5rem 0.75rem;
+    }
+
+    .navbar-brand {
+        font-size: 1rem;
+    }
+
+    .nav-link {
+        padding: 0.75rem 1rem;
+    }
+
+    .dropdown-item {
+        padding: 0.75rem 1rem;
+    }
+}

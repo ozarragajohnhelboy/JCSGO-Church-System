@@ -28,3 +28,51 @@
 .btn {
     border-radius: 8px;
 }
+
+@media (max-width: 768px) {
+    .card-header {
+        padding: 1rem;
+        font-size: 1rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .activity-item {
+        padding: 0.5rem 0;
+        font-size: 0.9rem;
+    }
+
+    .progress {
+        height: 1.25rem;
+    }
+
+    .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .card-header h5 {
+        font-size: 1.1rem;
+    }
+
+    .activity-item {
+        font-size: 0.85rem;
+    }
+
+    .btn-group {
+        flex-direction: column;
+    }
+
+    .btn-group .btn {
+        width: 100%;
+        margin: 0.25rem 0;
+    }
+}
