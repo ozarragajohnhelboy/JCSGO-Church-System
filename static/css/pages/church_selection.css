@@ -6,6 +6,7 @@
   justify-content: center;
   padding: 2rem;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .selection-card {
@@ -16,6 +17,7 @@
   max-width: 600px;
   width: 100%;
   position: relative;
+  margin: 0 auto;
 }
 
 .church-logo {
@@ -64,12 +66,12 @@
   display: none;
   margin-top: 1rem;
   max-height: 240px;
-    /* Height for exactly 3 church items */
-    overflow-y: auto;
-    border: 1px solid #e9ecef;
-    border-radius: 10px;
-    padding: 0.5rem;
-    background: #f8f9fa;
+  overflow-y: auto;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  width: 100%;
 }
 
 .church-list.active {
@@ -106,10 +108,10 @@
   align-items: center;
   justify-content: space-between;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  }
-  
-  .church-item:last-child {
-    margin-bottom: 0;
+}
+
+.church-item:last-child {
+  margin-bottom: 0;
 }
 
 .church-item:hover {
@@ -159,6 +161,8 @@
 
 .admin-login-section {
   margin-top: 2rem;
+  text-align: center;
+  width: 100%;
 }
 
 .admin-login-section hr {
@@ -167,10 +171,11 @@
 }
 
 .admin-login-section .btn {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
+  padding: 0.875rem 1.5rem;
+  font-size: 0.95rem;
   border-radius: 8px;
   transition: all 0.3s;
+  min-width: 200px;
 }
 
 .admin-login-section .btn:hover {
@@ -196,15 +201,18 @@
 @media (max-width: 768px) {
   .church-selection-container {
     padding: 1rem;
-    align-items: flex-start;
-    padding-top: 2rem;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
   }
 
   .selection-card {
     padding: 1.5rem;
     border-radius: 15px;
-    max-height: 90vh;
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: visible;
+    width: 100%;
+    max-width: 100%;
   }
 
   .church-logo {
@@ -238,8 +246,9 @@
   }
 
   .church-list {
-    max-height: 250px;
+    max-height: 280px;
     margin-top: 1rem;
+    width: 100%;
   }
 
   .church-item {
@@ -263,16 +272,18 @@
 @media (max-width: 576px) {
   .church-selection-container {
     padding: 0.75rem;
-    align-items: flex-start;
-    padding-top: 1.5rem;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
   }
 
   .selection-card {
     padding: 1.25rem;
     border-radius: 12px;
     width: 100%;
-    max-height: 95vh;
-    overflow-y: auto;
+    max-width: 100%;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .church-logo {
@@ -308,12 +319,13 @@
   }
 
   .church-list {
-    max-height: 300px;
+    max-height: 320px;
     padding: 0.375rem;
+    width: 100%;
   }
 
   .church-item {
-    padding: 0.75rem;
+    padding: 0.875rem;
     margin-bottom: 0.375rem;
   }
 
@@ -327,13 +339,19 @@
   }
 
   .admin-login-section {
-    margin-top: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+  }
+
+  .admin-login-section h5 {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
   }
 
   .admin-login-section .btn {
     width: 100%;
-    margin-top: 0.5rem;
-    padding: 0.75rem;
-    font-size: 0.9rem;
+    margin-top: 0;
+    padding: 0.875rem;
+    font-size: 0.95rem;
   }
 }

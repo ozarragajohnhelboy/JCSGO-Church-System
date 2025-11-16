@@ -4,17 +4,22 @@
   {{ church.name }} - Registration
 {% endblock %}
 
+{% block extra_css %}
+  <link href="{% static 'css/pages/church_registration.css' %}" rel="stylesheet" />
+{% endblock %}
+
 {% block guest_content %}
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-lg-10">
-        <div class="card">
-          <div class="card-body p-2">
-            <div class="text-center mb-1">
-              <img src="{% static 'image/JCSGO_logo.png' %}" alt="JCSGO Logo" height="80" class="mb-1">
-              <h2 class="mt-1 mb-1">Join {{ church.name }}</h2>
-              <p class="text-muted">{{ church.location }}</p>
-            </div>
+  <div class="registration-container">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+          <div class="card registration-card">
+            <div class="card-body p-0">
+              <div class="text-center mb-3">
+                <img src="{% static 'image/JCSGO_logo.png' %}" alt="JCSGO Logo" class="registration-logo mb-2">
+                <h2 class="registration-title">Join {{ church.name }}</h2>
+                <p class="registration-subtitle">{{ church.location }}</p>
+              </div>
 
             <form method="post" enctype="multipart/form-data">
               {% csrf_token %}
@@ -22,7 +27,7 @@
               <div class="row mt-3">
                 <!-- Personal Information -->
                 <div class="col-12 col-md-6 px-4">
-                  <h5 class="text-primary mb-1 px-4"><i class="bi bi-person"></i> Personal Information</h5>
+                  <h5 class="section-title px-4"><i class="bi bi-person me-2"></i>Personal Information</h5>
 
                   <div class="mb-1 px-4">
                     <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name *</label>
@@ -81,7 +86,7 @@
 
                 <!-- Additional Information -->
                 <div class="col-12 col-md-6 px-4">
-                  <h5 class="text-primary mb-1"><i class="bi bi-info-circle"></i> Additional Information</h5>
+                  <h5 class="section-title"><i class="bi bi-info-circle me-2"></i>Additional Information</h5>
 
                   <div class="mb-1">
                     <label for="{{ form.birth_date.id_for_label }}" class="form-label">Birth Date</label>
@@ -127,7 +132,7 @@
               <!-- Password Section -->
               <div class="row mt-2 px-4">
                 <div class="col-12 px-4">
-                  <h5 class="text-primary mb-1"><i class="bi bi-shield-lock"></i> Security</h5>
+                  <h5 class="section-title"><i class="bi bi-shield-lock me-2"></i>Security</h5>
 
                   <div class="row">
                     <div class="col-12 col-md-6 px-4">
@@ -162,19 +167,26 @@
               </div>
 
               <div class="d-grid gap-2 mt-3 px-4 w-100 justify-content-center">
-                <button type="submit" class="btn btn-primary btn-lg px-4"><i class="bi bi-person-plus"></i> Create Account</button>
+                <button type="submit" class="btn btn-primary btn-create-account">
+                  <i class="bi bi-person-plus me-2"></i>Create Account
+                </button>
               </div>
             </form>
 
-            <div class="text-center mt-3">
-              <p class="text-muted mb-1">Already have an account?</p>
-              <a href="{% url 'churches:church_login' church.domain %}" class="btn btn-outline-primary"><i class="bi bi-box-arrow-in-right"></i> Sign In Here</a>
+            <div class="text-center mt-3 divider-text">
+              <p class="text-muted mb-2">Already have an account?</p>
+              <a href="{% url 'churches:church_login' church.domain %}" class="btn btn-outline-primary">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Sign In Here
+              </a>
             </div>
 
-            <hr class="my-2" />
+            <hr class="my-3" />
 
             <div class="text-center mt-3">
-              <a href="{% url 'churches:church_selection' %}" class="text-muted text-decoration-none"><i class="bi bi-arrow-left"></i> Back to Church Selection</a>
+              <a href="{% url 'churches:church_selection' %}" class="back-link">
+                <i class="bi bi-arrow-left me-1"></i> Back to Church Selection
+              </a>
+            </div>
             </div>
           </div>
         </div>

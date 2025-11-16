@@ -1,0 +1,306 @@
+.registration-container {
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.registration-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.registration-logo {
+    max-width: 100px;
+    height: auto;
+}
+
+.registration-title {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #333;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.registration-subtitle {
+    font-size: 1rem;
+    color: #6c757d;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #667eea;
+    margin-bottom: 1rem;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.form-control,
+.form-select {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.input-group {
+    margin-bottom: 0.5rem;
+}
+
+.input-group-text {
+    font-size: 0.95rem;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    border-radius: 0 8px 8px 0;
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.btn-create-account {
+    padding: 0.875rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 500;
+    border-radius: 10px;
+    min-width: 200px;
+}
+
+.divider-text {
+    text-align: center;
+    margin: 1.5rem 0;
+    color: #6c757d;
+}
+
+.back-link {
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.back-link:hover {
+    color: #495057;
+    text-decoration: underline;
+}
+
+@media (max-width: 991px) {
+    .registration-container {
+        padding: 1.5rem 0;
+    }
+
+    .registration-card {
+        padding: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .col-md-6 {
+        margin-bottom: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .registration-container {
+        padding: 1rem;
+    }
+
+    .registration-card {
+        padding: 1.5rem;
+        border-radius: 15px;
+        width: 100%;
+    }
+
+    .registration-logo {
+        max-width: 80px;
+    }
+
+    .registration-title {
+        font-size: 1.5rem;
+        margin-top: 0.75rem;
+    }
+
+    .registration-subtitle {
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .section-title {
+        font-size: 1.05rem;
+        margin-bottom: 0.75rem;
+        padding-left: 0;
+    }
+
+    .row.mt-3,
+    .row.mt-2 {
+        margin-top: 1rem !important;
+    }
+
+    .col-12.col-md-6 {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .px-4 {
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    .mb-1 {
+        margin-bottom: 0.75rem !important;
+    }
+
+    .input-group {
+        display: block;
+        width: 100%;
+    }
+
+    .input-group .form-control {
+        border-radius: 8px 8px 0 0;
+        border-bottom: 0;
+        width: 100%;
+        display: block;
+    }
+
+    .input-group .input-group-text {
+        border-radius: 0 0 8px 8px;
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+        padding: 0.625rem;
+        display: block;
+        background-color: #e9ecef;
+    }
+
+    .form-control,
+    .form-select {
+        font-size: 0.95rem;
+        padding: 0.75rem 0.875rem;
+    }
+
+    textarea.form-control {
+        min-height: 80px;
+    }
+
+    .btn-create-account {
+        padding: 0.875rem;
+        font-size: 1rem;
+        width: 100%;
+        min-width: auto;
+    }
+
+    .btn-outline-primary {
+        width: 100%;
+        padding: 0.75rem;
+    }
+
+    .d-grid.gap-2 {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    .divider-text {
+        margin: 1rem 0;
+    }
+}
+
+@media (max-width: 576px) {
+    .registration-container {
+        padding: 0.75rem;
+    }
+
+    .registration-card {
+        padding: 1.25rem;
+        border-radius: 12px;
+    }
+
+    .registration-logo {
+        max-width: 70px;
+    }
+
+    .registration-title {
+        font-size: 1.35rem;
+    }
+
+    .registration-subtitle {
+        font-size: 0.85rem;
+    }
+
+    .section-title {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .col-12.col-md-6 {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .px-4 {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    .form-label {
+        font-size: 0.9rem;
+    }
+
+    .form-control,
+    .form-select {
+        font-size: 16px;
+    }
+
+    .input-group-text {
+        font-size: 0.85rem;
+    }
+
+    .form-text {
+        font-size: 0.8rem;
+    }
+
+    textarea.form-control {
+        min-height: 70px;
+    }
+
+    .btn-create-account {
+        font-size: 0.95rem;
+        padding: 0.8rem;
+    }
+
+    .btn-outline-primary {
+        font-size: 0.9rem;
+    }
+
+    .divider-text {
+        font-size: 0.9rem;
+    }
+
+    .back-link {
+        font-size: 0.875rem;
+    }
+
+    .text-center.mt-3 {
+        margin-top: 1rem !important;
+    }
+
+    .my-2 {
+        margin-top: 0.75rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+}
+

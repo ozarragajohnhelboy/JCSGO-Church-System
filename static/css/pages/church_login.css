@@ -1,0 +1,222 @@
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.login-logo {
+    max-width: 100px;
+    height: auto;
+    margin-bottom: 1rem;
+}
+
+.login-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.login-subtitle {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin-bottom: 2rem;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.input-group {
+    margin-bottom: 1rem;
+}
+
+.input-group-text {
+    font-size: 0.9rem;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.form-control {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border-radius: 8px;
+}
+
+.input-group .form-control {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group .input-group-text {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.form-text {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+}
+
+.btn-sign-in {
+    padding: 0.875rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 10px;
+    width: 100%;
+}
+
+.divider-text {
+    text-align: center;
+    margin: 1.5rem 0;
+    color: #6c757d;
+}
+
+.back-link {
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.back-link:hover {
+    color: #495057;
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .login-container {
+        padding: 1rem;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    .login-card {
+        padding: 1.5rem;
+        border-radius: 15px;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .login-logo {
+        max-width: 80px;
+    }
+
+    .login-title {
+        font-size: 1.35rem;
+    }
+
+    .login-subtitle {
+        font-size: 0.875rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .input-group {
+        display: block;
+        width: 100%;
+    }
+
+    .input-group .form-control {
+        border-radius: 8px 8px 0 0;
+        border-bottom: 0;
+        width: 100%;
+        display: block;
+    }
+
+    .input-group .input-group-text {
+        border-radius: 0 0 8px 8px;
+        width: 100%;
+        text-align: center;
+        justify-content: center;
+        padding: 0.625rem;
+        display: block;
+        background-color: #e9ecef;
+    }
+
+    .form-control {
+        font-size: 0.95rem;
+        padding: 0.75rem 0.875rem;
+    }
+
+    .btn-sign-in {
+        padding: 0.8rem;
+        font-size: 0.95rem;
+    }
+
+    .btn-outline-primary {
+        width: 100%;
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .login-container {
+        padding: 0.75rem;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+    }
+
+    .login-card {
+        padding: 1.25rem;
+        border-radius: 12px;
+        max-width: 100%;
+    }
+
+    .login-logo {
+        max-width: 70px;
+    }
+
+    .login-title {
+        font-size: 1.25rem;
+    }
+
+    .login-subtitle {
+        font-size: 0.8rem;
+    }
+
+    .form-label {
+        font-size: 0.9rem;
+    }
+
+    .form-control {
+        font-size: 16px;
+    }
+
+    .input-group-text {
+        font-size: 0.85rem;
+    }
+
+    .form-text {
+        font-size: 0.8rem;
+    }
+
+    .divider-text {
+        font-size: 0.9rem;
+        margin: 1.25rem 0;
+    }
+
+    .back-link {
+        font-size: 0.875rem;
+    }
+
+    .btn-sign-in {
+        font-size: 0.9rem;
+    }
+
+    .btn-outline-primary {
+        font-size: 0.9rem;
+    }
+}
+
