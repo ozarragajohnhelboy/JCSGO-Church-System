@@ -30,7 +30,12 @@ from .church_management_views import (
     church_detail
 )
 
-# Make all views available when importing from churches.views
+from .pwa_views import (
+    manifest,
+    service_worker,
+    offline
+)
+
 __all__ = [
     'church_selection',
     'church_login',
@@ -50,4 +55,7 @@ __all__ = [
     'delete_church',
     'toggle_church_status',
     'church_detail',
+    'manifest',
+    'service_worker',
+    'offline',
 ]

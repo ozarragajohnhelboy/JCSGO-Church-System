@@ -1,0 +1,233 @@
+@media (max-width: 576px) {
+    .church-logo {
+        max-width: 100px;
+        margin-left: 0;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .stats-card h3 {
+        font-size: 1.8rem;
+    }
+
+    .stats-card p {
+        font-size: 0.8rem;
+    }
+
+    .row.justify-content-between .col-md-2 {
+        width: 100%;
+        margin: 0.5rem 0;
+    }
+
+    .btn {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.85rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .table {
+        font-size: 0.85rem;
+    }
+
+    .table thead th,
+    .table tbody td {
+        padding: 0.5rem;
+    }
+
+    .form-control,
+    .form-select {
+        font-size: 16px;
+    }
+
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    .navbar-brand {
+        font-size: 1rem;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    h3 {
+        font-size: 1.25rem;
+    }
+
+    h4 {
+        font-size: 1.1rem;
+    }
+
+    .sidebar-toggle {
+        display: block;
+        position: fixed;
+        top: 70px;
+        left: 10px;
+        z-index: 1040;
+        background: var(--secondary-color);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 45px;
+        height: 45px;
+        font-size: 1.5rem;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .col-md-3.col-lg-2 {
+        position: fixed;
+        top: 56px;
+        left: -100%;
+        width: 80%;
+        max-width: 300px;
+        height: calc(100vh - 56px);
+        background: white;
+        z-index: 1040;
+        transition: left 0.3s ease;
+        overflow-y: auto;
+        box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+    }
+
+    .col-md-3.col-lg-2.show {
+        left: 0;
+    }
+
+    .mobile-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1030;
+    }
+
+    .mobile-overlay.show {
+        display: block;
+    }
+
+    .col-md-9.col-lg-10 {
+        margin-left: 0;
+        width: 100%;
+        padding: 1rem;
+    }
+
+    .login-container .card {
+        margin: 1rem;
+    }
+}
+
+@media (min-width: 577px) and (max-width: 768px) {
+    .church-logo {
+        max-width: 120px;
+        margin-left: 50px;
+    }
+
+    .stats-card h3 {
+        font-size: 2rem;
+    }
+
+    .row.justify-content-between .col-md-2 {
+        width: calc(50% - 1rem);
+    }
+
+    .table {
+        font-size: 0.9rem;
+    }
+
+    .col-md-9.col-lg-10 {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 991px) {
+    .sidebar {
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    }
+
+    .navbar-collapse {
+        background: white;
+        padding: 1rem;
+        margin-top: 0.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+    .login-container {
+        padding: 1rem 0;
+    }
+
+    .login-container .card {
+        margin: 0.5rem;
+    }
+}
+
+.touch-action-manipulation {
+    touch-action: manipulation;
+}
+
+.user-select-none {
+    user-select: none;
+}
+
+@supports (-webkit-touch-callout: none) {
+    .form-control,
+    .form-select,
+    input,
+    textarea {
+        font-size: 16px;
+    }
+}
+
+.pwa-install-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, var(--secondary-color), #2980b9);
+    color: white;
+    padding: 1rem;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+    z-index: 9999;
+    display: none;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+.pwa-install-banner.show {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+@media (max-width: 576px) {
+    .pwa-install-banner {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .pwa-install-banner button {
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+}
+
