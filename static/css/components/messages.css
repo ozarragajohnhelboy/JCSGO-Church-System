@@ -3,6 +3,18 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
 
+.position-fixed.top-0.end-0.p-3,
+.position-fixed.top-0.start-0.p-3,
+.position-fixed.top-0.p-3 {
+    z-index: 10001 !important;
+}
+
+.alert.position-fixed,
+.alert[style*="position: fixed"],
+.alert[style*="position:fixed"] {
+    z-index: 10001 !important;
+}
+
 .alert-success {
     background: linear-gradient(135deg, #d4edda, #c3e6cb);
     color: #155724;

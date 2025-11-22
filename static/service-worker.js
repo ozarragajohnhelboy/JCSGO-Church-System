@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jcsgo-church-v30';
+const CACHE_NAME = 'jcsgo-church-v34';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
@@ -31,15 +31,18 @@ self.addEventListener('install', event => {
 
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
+  const requestMethod = event.request.method;
   const isLogoutPage = url.pathname.includes('/logout/');
   const isAuthPage = url.pathname.includes('/login/') || 
                      url.pathname.includes('/register/') || 
                      url.pathname.includes('/super-admin/login/');
-  const isPostRequest = event.request.method === 'POST';
-  const isPutRequest = event.request.method === 'PUT';
-  const isDeleteRequest = event.request.method === 'DELETE';
-  const isPatchRequest = event.request.method === 'PATCH';
+  const isPostRequest = requestMethod === 'POST';
+  const isPutRequest = requestMethod === 'PUT';
+  const isDeleteRequest = requestMethod === 'DELETE';
+  const isPatchRequest = requestMethod === 'PATCH';
   const isApiRequest = url.pathname.includes('/ajax/') || url.pathname.includes('/api/');
+  const isFormData = event.request.headers.get('Content-Type') && event.request.headers.get('Content-Type').includes('application/x-www-form-urlencoded');
+  const isMultipartForm = event.request.headers.get('Content-Type') && event.request.headers.get('Content-Type').includes('multipart/form-data');
   const isNavigationRequest = event.request.mode === 'navigate';
   const isRootPath = url.pathname === '/' || url.pathname === '';
   
@@ -47,13 +50,7 @@ self.addEventListener('fetch', event => {
     return;
   }
   
-  if (isAuthPage || isPostRequest || isPutRequest || isDeleteRequest || isPatchRequest || isApiRequest) {
-    event.respondWith(
-      fetch(event.request, {
-        credentials: 'include',
-        cache: 'no-store'
-      })
-    );
+  if (isAuthPage || isPostRequest || isPutRequest || isDeleteRequest || isPatchRequest || isApiRequest || isFormData || isMultipartForm) {
     return;
   }
   
