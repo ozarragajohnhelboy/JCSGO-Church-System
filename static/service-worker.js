@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jcsgo-church-v29';
+const CACHE_NAME = 'jcsgo-church-v30';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
@@ -31,10 +31,10 @@ self.addEventListener('install', event => {
 
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
+  const isLogoutPage = url.pathname.includes('/logout/');
   const isAuthPage = url.pathname.includes('/login/') || 
                      url.pathname.includes('/register/') || 
-                     url.pathname.includes('/super-admin/login/') ||
-                     url.pathname.includes('/logout/');
+                     url.pathname.includes('/super-admin/login/');
   const isPostRequest = event.request.method === 'POST';
   const isPutRequest = event.request.method === 'PUT';
   const isDeleteRequest = event.request.method === 'DELETE';
@@ -42,6 +42,10 @@ self.addEventListener('fetch', event => {
   const isApiRequest = url.pathname.includes('/ajax/') || url.pathname.includes('/api/');
   const isNavigationRequest = event.request.mode === 'navigate';
   const isRootPath = url.pathname === '/' || url.pathname === '';
+  
+  if (isLogoutPage) {
+    return;
+  }
   
   if (isAuthPage || isPostRequest || isPutRequest || isDeleteRequest || isPatchRequest || isApiRequest) {
     event.respondWith(

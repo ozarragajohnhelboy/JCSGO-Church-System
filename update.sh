@@ -4,6 +4,9 @@
 echo "Activating virtual environment..."
 source venv/bin/activate
 
+echo "Pulling latest changes..."
+git pull origin main
+
 # Run database migrations
 echo "Running database migrations..."
 python manage.py migrate --settings=church.settings_production
