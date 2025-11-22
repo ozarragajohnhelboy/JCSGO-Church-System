@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jcsgo-church-v34';
+const CACHE_NAME = 'jcsgo-church-v36';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
@@ -36,6 +36,12 @@ self.addEventListener('fetch', event => {
   const isAuthPage = url.pathname.includes('/login/') || 
                      url.pathname.includes('/register/') || 
                      url.pathname.includes('/super-admin/login/');
+  const isAuthenticatedPage = url.pathname.includes('/dashboard/') ||
+                              url.pathname.includes('/members/') ||
+                              url.pathname.includes('/groups/') ||
+                              url.pathname.includes('/reports/') ||
+                              url.pathname.includes('/profile/') ||
+                              url.pathname.includes('/attendance/');
   const isPostRequest = requestMethod === 'POST';
   const isPutRequest = requestMethod === 'PUT';
   const isDeleteRequest = requestMethod === 'DELETE';
@@ -50,27 +56,24 @@ self.addEventListener('fetch', event => {
     return;
   }
   
-  if (isAuthPage || isPostRequest || isPutRequest || isDeleteRequest || isPatchRequest || isApiRequest || isFormData || isMultipartForm) {
+  if (isAuthPage || isAuthenticatedPage || isPostRequest || isPutRequest || isDeleteRequest || isPatchRequest || isApiRequest || isFormData || isMultipartForm) {
     return;
   }
   
-  if (isNavigationRequest && isRootPath) {
-    event.respondWith(
-      fetch(event.request).then(response => {
-        if (response.status >= 300 && response.status < 400) {
+  if (isNavigationRequest) {
+    if (isRootPath) {
+      event.respondWith(
+        fetch(event.request, {
+          cache: 'no-store',
+          credentials: 'include'
+        }).then(response => {
           return response;
-        }
-        if (response.status === 200) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return response;
-      }).catch(() => {
-        return caches.match('/offline/');
-      })
-    );
+        }).catch(() => {
+          return caches.match('/offline/');
+        })
+      );
+      return;
+    }
     return;
   }
   
@@ -116,5 +119,25 @@ self.addEventListener('activate', event => {
       );
     }).then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'CLEAR_CACHE') {
+    event.waitUntil(
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            return caches.delete(cacheName);
+          })
+        );
+      }).then(() => {
+        return self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+            client.postMessage({ type: 'CACHE_CLEARED' });
+          });
+        });
+      })
+    );
+  }
 });
 
