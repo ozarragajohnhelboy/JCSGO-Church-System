@@ -1,0 +1,32 @@
+main {
+    min-height: calc(100vh - 64px);
+}
+
+.container-fluid {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+@media (min-width: 992px) {
+    .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    main .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .col-md-9.col-lg-10 {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+@media (max-width: 991px) {
+    main {
+        min-height: auto;
+    }
+}
+

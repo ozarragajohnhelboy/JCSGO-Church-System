@@ -1,11 +1,17 @@
-const CACHE_NAME = 'jcsgo-church-v1';
+const CACHE_NAME = 'jcsgo-church-v10';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
+  '/static/css/mobile.css',
   '/static/css/components/navbar.css',
   '/static/css/components/sidebar.css',
   '/static/css/components/footer.css',
   '/static/css/components/messages.css',
+  '/static/css/pages/dashboard.css',
+  '/static/css/pages/church_selection.css',
+  '/static/css/pages/church_login.css',
+  '/static/css/pages/church_registration.css',
+  '/static/css/pages/new_friends.css',
   '/static/js/main.js',
   '/static/js/components/main.js',
   '/static/image/JCSGO_logo.png',
@@ -16,6 +22,7 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(urlsToCache))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -57,7 +64,7 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });
 

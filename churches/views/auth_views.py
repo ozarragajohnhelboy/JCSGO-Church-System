@@ -3,6 +3,8 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
 
 from members.models import Church, CustomUser, NewFriend, ActivityLog
 from churches.models import ChurchSettings
@@ -152,6 +154,8 @@ def super_admin_login(request):
     return render(request, 'churches/auth/super_admin_login.html')
 
 
+@require_POST
+@csrf_protect
 def custom_logout(request):
     """Custom logout view that logs out directly without confirmation"""
     logout(request)

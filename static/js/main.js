@@ -1,4 +1,12 @@
 function getCSRFToken() {
+    const metaToken = document.querySelector('meta[name="csrf-token"]');
+    if (metaToken) {
+        return metaToken.getAttribute('content');
+    }
+    const hiddenToken = document.querySelector('#csrf-token');
+    if (hiddenToken) {
+        return hiddenToken.value;
+    }
     const token = document.querySelector('[name=csrfmiddlewaretoken]');
     return token ? token.value : '';
 }
@@ -138,7 +146,21 @@ window.JCSGOCMS = {
 };
 
 function confirmLogout() {
-    window.location.href = logoutUrl;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = window.logoutUrl || '/logout/';
+    
+    const csrfTokenValue = getCSRFToken();
+    if (csrfTokenValue) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfTokenValue;
+        form.appendChild(csrfInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
 }
 
 $(document).ready(function () {

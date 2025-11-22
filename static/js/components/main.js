@@ -1,4 +1,12 @@
 function getCSRFToken() {
+    const metaToken = document.querySelector('meta[name="csrf-token"]');
+    if (metaToken) {
+        return metaToken.getAttribute('content');
+    }
+    const hiddenToken = document.querySelector('#csrf-token');
+    if (hiddenToken) {
+        return hiddenToken.value;
+    }
     const token = document.querySelector('[name=csrfmiddlewaretoken]');
     return token ? token.value : '';
 }
@@ -37,6 +45,26 @@ function toggleSidebar() {
         }
     }
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+    const overlay = document.getElementById('mobileOverlay');
+    
+    if (overlay) {
+        overlay.addEventListener('click', function () {
+            const sidebar = document.querySelector('.col-md-3.col-lg-2');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            
+            if (sidebar && sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+                if (sidebarToggle) {
+                    sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+                }
+                overlay.classList.remove('show');
+                document.body.style.overflow = '';
+            }
+        });
+    }
+});
 
 document.addEventListener('click', function (event) {
     const sidebar = document.querySelector('.col-md-3.col-lg-2');
@@ -167,7 +195,21 @@ window.JCSGOCMS = {
 };
 
 function confirmLogout() {
-    window.location.href = logoutUrl;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = window.logoutUrl || '/logout/';
+    
+    const csrfTokenValue = getCSRFToken();
+    if (csrfTokenValue) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfTokenValue;
+        form.appendChild(csrfInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
 }
 
 $(document).ready(function () {

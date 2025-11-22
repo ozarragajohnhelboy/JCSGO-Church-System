@@ -54,3 +54,60 @@
 .trend-indicator.down {
     border-top: 8px solid #dc3545;
 }
+
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+        margin-bottom: 1.5rem;
+    }
+
+    .metric-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .metric-card .metric-value {
+        font-size: 2rem;
+    }
+
+    .metric-card h4 {
+        font-size: 0.85rem;
+    }
+
+    .metric-card .metric-change {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .chart-container {
+        height: 200px;
+        margin-bottom: 1rem;
+    }
+
+    .metric-card {
+        padding: 0.875rem;
+        border-left-width: 3px;
+    }
+
+    .metric-card .metric-value {
+        font-size: 1.75rem;
+    }
+
+    .metric-card h4 {
+        font-size: 0.8rem;
+    }
+
+    .trend-indicator {
+        border-left-width: 4px;
+        border-right-width: 4px;
+    }
+
+    .trend-indicator.up {
+        border-bottom-width: 6px;
+    }
+
+    .trend-indicator.down {
+        border-top-width: 6px;
+    }
+}

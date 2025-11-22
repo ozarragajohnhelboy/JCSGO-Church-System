@@ -10,6 +10,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="JCSGO Church" />
+    <meta name="csrf-token" content="{{ csrf_token }}" />
     
     <title>
       {% block title %}
@@ -22,16 +23,14 @@
     <link rel="apple-touch-icon" href="{% static 'image/JCSGO_logo.png' %}" />
     <link rel="manifest" href="{% url 'churches:manifest' %}" />
 
-    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet" />
-    <!-- Custom CSS -->
     <link href="{% static 'css/style.css' %}" rel="stylesheet" />
     <link href="{% static 'css/components/navbar.css' %}" rel="stylesheet" />
     <link href="{% static 'css/components/sidebar.css' %}" rel="stylesheet" />
     <link href="{% static 'css/components/footer.css' %}" rel="stylesheet" />
     <link href="{% static 'css/components/messages.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/pages/dashboard.css' %}" rel="stylesheet" />
     <link href="{% static 'css/mobile.css' %}" rel="stylesheet" />
 
     {% block extra_css %}
@@ -47,10 +46,8 @@
 
     {% include 'components/messages.html' %}
 
-    <!-- CSRF Token -->
-    {% csrf_token %}
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" id="csrf-token" />
     
-    <!-- Main Content with Sidebar -->
     <main class="{% if not user.is_authenticated %}login-container{% endif %}">
       {% if user.is_authenticated %}
         {% if user.is_superuser or user.role.name == 'ADMIN' or user.role.name == 'VSL' or user.role.name == 'CSL' or user.role.name == 'CL' or user.role.name == 'CM' %}
@@ -62,27 +59,21 @@
             <div class="row">
               {% include 'components/sidebar.html' %}
               
-              <!-- Main content area -->
               <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4">
                 {% block content %}
-                  <!-- Content will be overridden by child templates -->
                 {% endblock %}
               </div>
             </div>
           </div>
         {% else %}
-          <!-- For users without sidebar (NEW_FRIEND), show content without sidebar -->
           <div class="container">
             {% block non_admin_content %}
-              <!-- Content will be overridden by child templates -->
             {% endblock %}
           </div>
         {% endif %}
       {% else %}
-        <!-- For non-authenticated users -->
         <div class="container">
           {% block guest_content %}
-            <!-- Content will be overridden by child templates -->
           {% endblock %}
         </div>
       {% endif %}
