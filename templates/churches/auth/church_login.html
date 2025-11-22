@@ -81,5 +81,28 @@
       </div>
     </div>
   </div>
-  <script src="{% static 'js/pages/church_login.js' %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const emailInput = document.getElementById('login-email-prefix');
+        const emailPreview = document.getElementById('email-preview');
+        
+        if (emailInput && emailPreview) {
+            function updateLoginEmailPreview() {
+                const prefix = emailInput.value;
+                if (prefix && window.churchDomain) {
+                    const fullEmail = prefix + '@' + window.churchDomain + '.jcsgo.com';
+                    emailPreview.textContent = fullEmail;
+                } else {
+                    emailPreview.textContent = '';
+                }
+            }
+            
+            emailInput.addEventListener('input', updateLoginEmailPreview);
+            updateLoginEmailPreview();
+        }
+    });
+  </script>
 {% endblock %}

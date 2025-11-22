@@ -52,7 +52,12 @@
               <hr class="dropdown-divider" />
             </li>
             <li>
-              <a class="dropdown-item d-flex align-items-center text-danger" href="{% url 'churches:custom_logout' %}"><i class="bi bi-box-arrow-right me-2"></i> Sign Out</a>
+              <form method="post" action="{% url 'churches:custom_logout' %}" style="margin: 0;">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item d-flex align-items-center text-danger" style="border: none; background: none; width: 100%; text-align: left; cursor: pointer;">
+                  <i class="bi bi-box-arrow-right me-2"></i> Sign Out
+                </button>
+              </form>
             </li>
           </ul>
         </li>
