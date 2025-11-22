@@ -50,6 +50,40 @@
     white-space: nowrap;
 }
 
+.table thead th {
+    background-color: #f8f9fa !important;
+    color: #333 !important;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+.table tbody td {
+    padding: 0.75rem 1rem;
+    vertical-align: middle;
+}
+
+.table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: #ffffff;
+}
+
+.table-striped tbody tr:nth-of-type(even) {
+    background-color: #f8f9fa;
+}
+
+.table-striped tbody tr:hover {
+    background-color: #e9ecef;
+}
+
 .btn-group {
     white-space: nowrap;
 }
@@ -119,7 +153,7 @@
 
     .table th,
     .table td {
-        padding: 0.75rem 0.5rem;
+        padding: 0.5rem 0.75rem;
         vertical-align: middle;
     }
 
@@ -133,8 +167,21 @@
     }
 
     .table thead th:first-child {
-        background: #212529;
+        background: #f8f9fa !important;
+        color: #333 !important;
         z-index: 11;
+    }
+
+    .table tbody tr {
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .table tbody td:first-child {
+        background: white;
+    }
+
+    .table-striped tbody tr:nth-of-type(even) td:first-child {
+        background: #f8f9fa;
     }
 
     .btn-group {
@@ -206,7 +253,12 @@
 
     .table th,
     .table td {
-        padding: 0.625rem 0.375rem;
+        padding: 0.5rem 0.625rem;
+    }
+
+    .table thead th {
+        padding: 0.625rem 0.75rem;
+        font-size: 0.85rem;
     }
 
     .badge {
@@ -282,7 +334,12 @@
 
     .table th,
     .table td {
-        padding: 0.5rem 0.25rem;
+        padding: 0.5rem 0.5rem;
+    }
+
+    .table thead th {
+        padding: 0.625rem 0.625rem;
+        font-size: 0.8rem;
     }
 
     .table th:first-child,
