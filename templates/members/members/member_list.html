@@ -3,8 +3,12 @@
 
 {% block title %}All Members - {{ block.super }}{% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'css/pages/all_members.css' %}" rel="stylesheet" />
+{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+<div class="all-members-header pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">All Members</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
@@ -87,7 +91,7 @@
 <!-- Members Table -->
 <div class="table-responsive">
     <table class="table table-striped table-hover">
-        <thead class="table-dark">
+        <thead>
             <tr>
                 <th>Name</th>
                 <th>Email</th>
@@ -291,5 +295,6 @@
 
 {% block extra_js %}
   {{ block.super }}
+  <script src="{% static 'js/pages/all_members.js' %}"></script>
   <script src="{% static 'js/pages/member_list.js' %}"></script>
 {% endblock %} 

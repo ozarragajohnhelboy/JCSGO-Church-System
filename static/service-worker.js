@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jcsgo-church-v21';
+const CACHE_NAME = 'jcsgo-church-v29';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
@@ -12,8 +12,11 @@ const urlsToCache = [
   '/static/css/pages/church_login.css',
   '/static/css/pages/church_registration.css',
   '/static/css/pages/new_friends.css',
+  '/static/css/pages/all_members.css',
   '/static/js/main.js',
   '/static/js/components/main.js',
+  '/static/js/pages/new_friends.js',
+  '/static/js/pages/all_members.js',
   '/static/image/JCSGO_logo.png',
   '/static/manifest.json'
 ];
