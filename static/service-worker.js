@@ -27,6 +27,19 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  const isAuthPage = url.pathname.includes('/login/') || 
+                     url.pathname.includes('/register/') || 
+                     url.pathname.includes('/super-admin/login/') ||
+                     url.pathname.includes('/logout/');
+  const isPostRequest = event.request.method === 'POST';
+  const isApiRequest = url.pathname.includes('/ajax/') || url.pathname.includes('/api/');
+  
+  if (isAuthPage || isPostRequest || isApiRequest) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  
   event.respondWith(
     caches.match(event.request)
       .then(response => {
