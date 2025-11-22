@@ -7,6 +7,10 @@
 <link href="{% static 'css/pages/new_friends.css' %}" rel="stylesheet" />
 {% endblock %}
 
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/pages/new_friends.js' %}"></script>
+
 {% block content %}
 <div class="new-friends-header pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">New Friends</h1>
@@ -359,8 +363,6 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
-{{ block.super }}
 <script>
 function showConfirmModal(title, message, confirmText, confirmType, onConfirm) {
     // Create confirmation modal
