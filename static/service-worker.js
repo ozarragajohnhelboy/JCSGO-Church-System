@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jcsgo-church-v11';
+const CACHE_NAME = 'jcsgo-church-v21';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
@@ -33,10 +33,40 @@ self.addEventListener('fetch', event => {
                      url.pathname.includes('/super-admin/login/') ||
                      url.pathname.includes('/logout/');
   const isPostRequest = event.request.method === 'POST';
+  const isPutRequest = event.request.method === 'PUT';
+  const isDeleteRequest = event.request.method === 'DELETE';
+  const isPatchRequest = event.request.method === 'PATCH';
   const isApiRequest = url.pathname.includes('/ajax/') || url.pathname.includes('/api/');
+  const isNavigationRequest = event.request.mode === 'navigate';
+  const isRootPath = url.pathname === '/' || url.pathname === '';
   
-  if (isAuthPage || isPostRequest || isApiRequest) {
-    event.respondWith(fetch(event.request));
+  if (isAuthPage || isPostRequest || isPutRequest || isDeleteRequest || isPatchRequest || isApiRequest) {
+    event.respondWith(
+      fetch(event.request, {
+        credentials: 'include',
+        cache: 'no-store'
+      })
+    );
+    return;
+  }
+  
+  if (isNavigationRequest && isRootPath) {
+    event.respondWith(
+      fetch(event.request).then(response => {
+        if (response.status >= 300 && response.status < 400) {
+          return response;
+        }
+        if (response.status === 200) {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return response;
+      }).catch(() => {
+        return caches.match('/offline/');
+      })
+    );
     return;
   }
   
@@ -49,6 +79,9 @@ self.addEventListener('fetch', event => {
         return fetch(event.request).then(
           response => {
             if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+            if (response.status >= 300 && response.status < 400) {
               return response;
             }
             const responseToCache = response.clone();

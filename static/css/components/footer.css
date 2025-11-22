@@ -1,14 +1,20 @@
-.footer {
-    background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
-    color: #333;
-    padding: 2rem 0;
-    margin-top: 2rem;
-    position: relative;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    z-index: 100;
-}
+    .footer {
+        background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+        color: #333;
+        padding: 2rem 0;
+        margin-top: 2rem;
+        position: relative;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        z-index: 100;
+    }
+
+    @media (max-width: 991px) {
+        .footer {
+            z-index: 1;
+        }
+    }
 
 .footer-title {
     font-size: 1.1rem;
