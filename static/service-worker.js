@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jcsgo-church-v8';
+const CACHE_NAME = 'jcsgo-church-v9';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
