@@ -1593,6 +1593,7 @@ def qr_scanner(request):
                                 'name': attendee.full_name,
                                 'role': attendee.role.get_name_display() if attendee.role else 'No Role',
                                 'time': attendance.time_in.strftime('%I:%M %p'),
+                                'attendance_type': attendance.get_attendance_type_display(),
                                 'timer_status': attendee.timer_status if attendee.is_new_friend else None,
                                 'is_new_friend': attendee.is_new_friend
                             }
@@ -1693,6 +1694,7 @@ def qr_scanner(request):
                                             'name': attendee.full_name,
                                             'role': attendee.role.get_name_display() if attendee.role else 'No Role',
                                             'time': attendance.time_in.strftime('%I:%M %p'),
+                                            'attendance_type': attendance.get_attendance_type_display(),
                                             'timer_status': attendee.timer_status if attendee.is_new_friend else None,
                                             'is_new_friend': attendee.is_new_friend
                                         }

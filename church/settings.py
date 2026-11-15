@@ -3,6 +3,8 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
+from church.database import get_databases
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -72,12 +74,7 @@ WSGI_APPLICATION = 'church.wsgi.application'
 
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+DATABASES = get_databases()
 
 
 

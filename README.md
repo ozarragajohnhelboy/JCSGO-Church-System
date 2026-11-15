@@ -100,41 +100,79 @@ This system manages church members, groups, and activities across multiple churc
 - **Growth Trends**: Monthly member growth
 - **Group Analytics**: Group performance metrics
 
-## 🛠️ Installation
+## 🛠️ How to Run
+
+This project runs with **Docker Compose and PostgreSQL only**. Do not use a local SQLite file or `python manage.py runserver` on the host — accounts created that way will not appear in the app.
 
 ### Prerequisites
-- Python 3.8+
-- Django 5.2+
-- SQLite (development) / PostgreSQL (production)
+- Docker Desktop
+- Git (only if you are cloning)
 
-### Setup
+### 1. Open the project folder
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd HB
-
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run migrations
-python manage.py migrate
-
-# Create superuser
-python manage.py createsuperuser
-
-# Setup initial data
-python manage.py setup_initial_data
-
-# Set up admins role per church
-python manage.py update_roles_and_create_admins
-
-# Run development server
-python manage.py runserver
+cd JCSGO-Church-System
 ```
+
+### 2. Create a `.env` file
+```powershell
+copy .env.example .env
+```
+
+macOS / Linux:
+```bash
+cp .env.example .env
+```
+
+Set at least:
+
+```env
+SECRET_KEY=replace-this-with-a-long-random-string
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
+POSTGRES_PASSWORD=replace-this-with-a-strong-password
+RUN_INITIAL_SETUP=true
+```
+
+Do not commit `.env`. It is already gitignored.
+
+### 3. Build and start
+```bash
+docker compose up --build
+```
+
+The first start installs dependencies, migrates the database, collects static files, and seeds churches/roles. Open [http://127.0.0.1:8000/](http://127.0.0.1:8000/).
+
+### 4. Useful Compose commands
+```bash
+docker compose up --build
+docker compose up -d
+docker compose logs -f web
+docker compose down
+```
+
+Stop and remove containers, but keep the database and uploads:
+```bash
+docker compose down
+```
+
+Reset the Docker database and uploaded files:
+```bash
+docker compose down -v
+```
+
+Run a management command inside the container:
+```bash
+docker compose exec web python manage.py createsuperuser
+```
+
+Change `DEBUG` to `False` and use a strong `SECRET_KEY` and `POSTGRES_PASSWORD` before any public deployment.
+
+### Useful URLs
+- Church selection: `/`
+- Super admin login: `/super-admin/login/`
+- Church login: `/login/<church-domain>/`
+- Django admin: `/admin/`
 
 ## 📁 Project Structure
 
@@ -164,29 +202,17 @@ HB/
 
 ### Data Setup
 ```bash
-# Setup initial data (churches, roles, superuser)
-python manage.py setup_initial_data
-
-# Set up admin per church
-python manage.py update_roles_and_create_admins
-
-# Update church locations
-python manage.py update_church_locations
+docker compose exec web python manage.py setup_initial_data
+docker compose exec web python manage.py update_roles_and_create_admins
+docker compose exec web python manage.py update_church_locations
 ```
 
 ### Import/Export
 ```bash
-# Export all data
-python manage.py import_export_data export all --format csv
-
-# Export specific model
-python manage.py import_export_data export user --format xlsx
-
-# Import data
-python manage.py import_export_data import user --file users.csv
-
-# Export with church filter
-python manage.py import_export_data export user --church kasiglahan
+docker compose exec web python manage.py import_export_data export all --format csv
+docker compose exec web python manage.py import_export_data export user --format xlsx
+docker compose exec web python manage.py import_export_data import user --file users.csv
+docker compose exec web python manage.py import_export_data export user --church kasiglahan
 ```
 
 ## 🌐 URL Structure
@@ -294,17 +320,11 @@ python manage.py import_export_data export user --church kasiglahan
 
 ### Development
 ```bash
-python manage.py runserver
+docker compose up --build
 ```
 
 ### Production
-```bash
-# Collect static files
-python manage.py collectstatic
-
-# Run with production server
-gunicorn church.wsgi:application
-```
+Use Docker Compose and set `DEBUG=False` in `.env`, with a strong `SECRET_KEY` and `POSTGRES_PASSWORD`.
 
 ## 🤝 Contributing
 

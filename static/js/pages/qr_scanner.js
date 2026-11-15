@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let scanInterval = null;
     let debugInterval = null;
     let isProcessing = false;
+    const recordedQrCodes = new Set();
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -66,17 +67,23 @@ document.addEventListener('DOMContentLoaded', function () {
                         document.querySelector('.scanner-container').appendChild(timerInfo);
                     }
 
-                    updateScannerStatus('Attendance recorded! Scanning for next QR code...', 'success');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 2000);
+                    const qrData = formData.get('qr_data');
+                    if (qrData) {
+                        recordedQrCodes.add(qrData);
+                    }
+                    prependAttendanceToList(data.user);
+                    updateScannerStatus('Attendance recorded. Ready for the next QR code.', 'success');
                 } else {
+                    const qrData = formData.get('qr_data');
                     if (data.message && data.message.toLowerCase() === 'qr is already scanned') {
-                        showMessage('error', 'qr is already scanned');
-                        updateScannerStatus('qr is already scanned', 'error');
+                        if (qrData) {
+                            recordedQrCodes.add(qrData);
+                        }
+                        showMessage('error', 'This QR code was already scanned.');
+                        updateScannerStatus('Already recorded. Ready for the next QR code.', 'error');
                     } else {
                         showMessage('error', data.message);
-                        updateScannerStatus('Error: ' + data.message, 'error');
+                        updateScannerStatus('Scan failed. Point the QR code again to retry.', 'error');
                     }
                 }
             })
@@ -122,10 +129,8 @@ document.addEventListener('DOMContentLoaded', function () {
                         document.querySelector('.scanner-container').appendChild(timerInfo);
                     }
 
+                    prependAttendanceToList(data.user);
                     manualForm.reset();
-                    setTimeout(() => {
-                        location.reload();
-                    }, 2000);
                 } else {
                     showMessage('error', data.message);
                 }
@@ -134,6 +139,52 @@ document.addEventListener('DOMContentLoaded', function () {
                 showMessage('error', 'An error occurred while recording manual attendance.');
             });
     });
+
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = value == null ? '' : String(value);
+        return div.innerHTML;
+    }
+
+    function prependAttendanceToList(user) {
+        if (!user) {
+            return;
+        }
+
+        const list = document.getElementById('today-attendances-list');
+        if (!list) {
+            return;
+        }
+
+        const emptyState = list.querySelector('.text-center.py-4');
+        if (emptyState) {
+            emptyState.remove();
+        }
+
+        const eventLabel = user.attendance_type
+            || (eventSelect && eventSelect.selectedIndex >= 0
+                ? eventSelect.options[eventSelect.selectedIndex].text
+                : '');
+        const roleHtml = user.role
+            ? `<br><small class="text-info">${escapeHtml(user.role)}</small>`
+            : '';
+
+        const card = document.createElement('div');
+        card.className = 'attendance-card p-3';
+        card.innerHTML = `
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="mb-1">${escapeHtml(user.name)}</h6>
+                    <small class="text-muted">${escapeHtml(eventLabel)}</small>
+                </div>
+                <div class="text-end">
+                    <small class="text-success">${escapeHtml(user.time)}</small>
+                    ${roleHtml}
+                </div>
+            </div>
+        `;
+        list.insertBefore(card, list.firstChild);
+    }
 
     function showMessage(type, message) {
         const alertClass = type === 'success' ? 'success-alert' : 'error-alert';
@@ -268,7 +319,10 @@ document.addEventListener('DOMContentLoaded', function () {
         let scanCount = 0;
 
         scanInterval = setInterval(() => {
-            if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0 && video.videoHeight > 0 && !isProcessing) {
+            if (!isScanning || isProcessing) {
+                return;
+            }
+            if (video.readyState === video.HAVE_ENOUGH_DATA && video.videoWidth > 0 && video.videoHeight > 0) {
                 try {
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
@@ -292,38 +346,21 @@ document.addEventListener('DOMContentLoaded', function () {
                     });
 
                     if (code && code.data) {
-                        console.log('QR Code detected:', code.data);
-
-                        if (code.data.startsWith('CHURCH_ATTENDANCE:')) {
-                            console.log('Valid church attendance QR code detected!');
-                            isScanning = false;
-                            updateScannerStatus('QR Code detected! Recording attendance...', 'processing');
-
-                            document.getElementById('hidden-qr-data').value = code.data;
-                            form.dispatchEvent(new Event('submit'));
-
-                            setTimeout(() => {
-                                if (!isProcessing) {
-                                    isScanning = true;
-                                    updateScannerStatus('Camera active - Point at QR code to automatically record attendance', 'scanning');
-                                }
-                            }, 3000);
-                        } else {
-                            console.log('Invalid QR code format:', code.data);
+                        if (!code.data.startsWith('CHURCH_ATTENDANCE:')) {
                             updateScannerStatus('Invalid QR code detected - Please scan a church attendance QR code', 'error');
+                            return;
                         }
+
+                        if (recordedQrCodes.has(code.data)) {
+                            return;
+                        }
+
+                        updateScannerStatus('QR code detected. Recording attendance...', 'processing');
+                        document.getElementById('hidden-qr-data').value = code.data;
+                        form.dispatchEvent(new Event('submit'));
                     }
                 } catch (error) {
                     console.error('QR scanning error:', error);
-                }
-            } else {
-                if (scanCount % 100 === 0) {
-                    console.log('QR Scanning conditions not met:', {
-                        videoReadyState: video.readyState,
-                        videoWidth: video.videoWidth,
-                        videoHeight: video.videoHeight,
-                        isProcessing: isProcessing
-                    });
                 }
             }
         }, 200);

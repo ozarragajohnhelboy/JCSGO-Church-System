@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 
 from members.models import Church, CustomUser, NewFriend, ActivityLog
 from churches.models import ChurchSettings
@@ -134,6 +134,7 @@ def church_registration(request, church_domain):
     return render(request, 'churches/auth/church_registration.html', context)
 
 
+@ensure_csrf_cookie
 def super_admin_login(request):
     """Super admin login page"""
     if request.method == 'POST':

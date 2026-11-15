@@ -175,7 +175,7 @@ sudo certbot --nginx -d your-domain.com
 
 3. **Environment Variables**: Never commit your `.env` file to version control. Keep your `SECRET_KEY` secure.
 
-4. **Database**: For production, consider using a managed database service like AWS RDS instead of SQLite.
+4. **Database**: This project uses PostgreSQL. For production, consider a managed database such as AWS RDS.
 
 ## Troubleshooting
 
@@ -229,7 +229,7 @@ sudo chmod -R 755 /var/www/church
 ├── .env                    # Environment variables
 ├── manage.py               # Django management script
 ├── requirements.txt        # Python dependencies
-└── db.sqlite3             # SQLite database
+└── docker-compose.yml      # PostgreSQL + app containers
 ```
 
 ## Support
