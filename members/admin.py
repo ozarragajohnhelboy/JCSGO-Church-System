@@ -150,7 +150,7 @@ class CustomUserAdmin(UserAdmin, ImportExportModelAdmin):
         }),
     )
     
-    readonly_fields = ('date_joined', 'last_login', 'transition_date')
+    readonly_fields = ('date_joined', 'last_login', 'transition_date', 'qr_code_id')
     
     def full_name(self, obj):
         return obj.full_name
