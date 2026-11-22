@@ -3,6 +3,21 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }
 
+.toast-alerts {
+    top: 64px;
+    z-index: 1035;
+    max-width: min(420px, calc(100vw - 1rem));
+}
+
+@media (max-width: 768px) {
+    .toast-alerts {
+        top: 56px;
+        left: 0.5rem;
+        right: 0.5rem;
+        max-width: none;
+    }
+}
+
 .position-fixed.top-0.end-0.p-3,
 .position-fixed.top-0.start-0.p-3,
 .position-fixed.top-0.p-3 {

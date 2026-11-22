@@ -8,7 +8,7 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2 page-header">
                     <h3 class="card-title mb-0">
                         <i class="fas fa-calendar-check me-2"></i>Care Group Attendance Tracking
                     </h3>
@@ -23,15 +23,17 @@
                             <h5 class="text-primary mb-3">
                                 <i class="fas fa-users me-2"></i>{{ care_group.name }}
                             </h5>
-                            <p class="text-muted">
+                            <p class="text-muted mb-1">
                                 <strong>Leader:</strong> {{ care_group.leader.full_name }}<br>
                                 <strong>Members:</strong> {{ care_group_members.count }} active members
+                            </p>
+                            <p class="text-muted small mb-0">
+                                Care Group and Sunday Service can be marked here. Sunday is also checked automatically when the member is present on this week's care group report or already scanned at Sunday service. Other events are recorded by admin.
                             </p>
                         </div>
                     </div>
 
-                    <!-- Attendance Form -->
-                    <form method="post" class="mb-4">
+                    <form method="post" class="mb-4" id="care-group-attendance-form">
                         {% csrf_token %}
                         
                         <div class="row mb-3">
@@ -41,7 +43,7 @@
                                 </label>
                                 <input type="date" name="attendance_date" id="attendance_date" 
                                        class="form-control" required 
-                                       value="{% now 'Y-m-d' %}">
+                                       value="{{ selected_date|date:'Y-m-d' }}">
                             </div>
                         </div>
 
@@ -51,12 +53,14 @@
                                     <tr>
                                         <th>Member Name</th>
                                         <th>Role</th>
-                                        <th class="text-center">Present</th>
+                                        <th class="text-center">Care Group</th>
+                                        <th class="text-center">Sunday Service</th>
                                         <th>Last Attendance</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for member in care_group_members %}
+                                    {% for row in member_rows %}
+                                        {% with member=row.member %}
                                         <tr>
                                             <td>
                                                 <div class="d-flex align-items-center">
@@ -78,28 +82,38 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <span class="badge bg-secondary">{{ member.role.get_name_display }}</span>
+                                                <span class="badge bg-secondary">{{ member.get_role_display }}</span>
                                             </td>
                                             <td class="text-center">
                                                 <div class="form-check d-flex justify-content-center">
-                                                    <input type="checkbox" name="attended_{{ member.id }}" 
-                                                           class="form-check-input" 
-                                                           id="attended_{{ member.id }}">
+                                                    <input type="checkbox" name="care_group_{{ member.id }}" 
+                                                           class="form-check-input js-care-group-present" 
+                                                           id="care_group_{{ member.id }}"
+                                                           {% if row.care_group_present %}checked{% endif %}>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="form-check d-flex justify-content-center">
+                                                    <input type="checkbox" name="sunday_{{ member.id }}" 
+                                                           class="form-check-input js-sunday-present" 
+                                                           id="sunday_{{ member.id }}"
+                                                           {% if row.sunday_present %}checked{% endif %}>
                                                 </div>
                                             </td>
                                             <td>
-                                                {% if member.last_attendance %}
+                                                {% if row.last_attendance %}
                                                     <small class="text-muted">
-                                                        {{ member.last_attendance|date:"M d, Y" }}
+                                                        {{ row.last_attendance|date:"M d, Y" }}
                                                     </small>
                                                 {% else %}
                                                     <small class="text-muted">Never</small>
                                                 {% endif %}
                                             </td>
                                         </tr>
+                                        {% endwith %}
                                     {% empty %}
                                         <tr>
-                                            <td colspan="4" class="text-center text-muted py-4">
+                                            <td colspan="5" class="text-center text-muted py-4">
                                                 <i class="fas fa-users fa-2x mb-2"></i>
                                                 <br>No members found in this care group.
                                             </td>
@@ -109,9 +123,9 @@
                             </table>
                         </div>
 
-                        {% if care_group_members %}
+                        {% if member_rows %}
                             <div class="row mt-3">
-                                <div class="col-12">
+                                <div class="col-12 form-actions d-flex flex-wrap gap-2">
                                     <button type="submit" class="btn btn-success">
                                         <i class="fas fa-save me-1"></i>Record Attendance
                                     </button>
@@ -120,7 +134,6 @@
                         {% endif %}
                     </form>
 
-                    <!-- Recent Attendance Records -->
                     {% if recent_attendances %}
                         <hr class="my-4">
                         
@@ -134,6 +147,7 @@
                                     <tr>
                                         <th>Date</th>
                                         <th>Member</th>
+                                        <th>Type</th>
                                         <th>Time In</th>
                                         <th>Recorded By</th>
                                     </tr>
@@ -143,6 +157,9 @@
                                         <tr>
                                             <td>{{ attendance.date|date:"M d, Y" }}</td>
                                             <td>{{ attendance.user.full_name }}</td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ attendance.get_attendance_type_display }}</span>
+                                            </td>
                                             <td>{{ attendance.time_in|time:"H:i" }}</td>
                                             <td>
                                                 {% if attendance.scanned_by %}
@@ -162,38 +179,8 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Set default date to today
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('attendance_date').value = today;
-    
-    // Add select all/none functionality
-    const checkboxes = document.querySelectorAll('input[type="checkbox"][name^="attended_"]');
-    if (checkboxes.length > 0) {
-        // Add select all button
-        const selectAllBtn = document.createElement('button');
-        selectAllBtn.type = 'button';
-        selectAllBtn.className = 'btn btn-outline-primary btn-sm me-2';
-        selectAllBtn.innerHTML = '<i class="fas fa-check-square me-1"></i>Select All';
-        selectAllBtn.onclick = function() {
-            checkboxes.forEach(cb => cb.checked = true);
-        };
-        
-        const selectNoneBtn = document.createElement('button');
-        selectNoneBtn.type = 'button';
-        selectNoneBtn.className = 'btn btn-outline-secondary btn-sm';
-        selectNoneBtn.innerHTML = '<i class="fas fa-square me-1"></i>Select None';
-        selectNoneBtn.onclick = function() {
-            checkboxes.forEach(cb => cb.checked = false);
-        };
-        
-        const form = document.querySelector('form');
-        const submitBtn = form.querySelector('button[type="submit"]');
-        submitBtn.parentNode.insertBefore(selectAllBtn, submitBtn);
-        submitBtn.parentNode.insertBefore(selectNoneBtn, submitBtn);
-    }
-});
-</script>
+{% block extra_js %}
+<script src="{% static 'js/pages/care_group_attendance_tracking.js' %}"></script>
 {% endblock %}

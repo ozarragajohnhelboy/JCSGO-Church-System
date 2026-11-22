@@ -1,3 +1,5 @@
+import logging
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
@@ -11,6 +13,7 @@ from churches.models import ChurchSettings
 from ..forms import ChurchSelectionForm, ChurchLoginForm, ChurchRegistrationForm
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 def church_selection(request):
@@ -122,8 +125,11 @@ def church_registration(request, church_domain):
                         messages.success(request, f'Registration successful! Please check your email to verify your account.')
                         return redirect('churches:church_login', church_domain=church_domain)
                         
-            except Exception as e:
-                messages.error(request, f'Registration failed: {str(e)}')
+            except Exception:
+                logger.exception('Registration failed for church %s', church.domain)
+                messages.error(request, 'Registration failed. Please try again or contact your church admin.')
+        else:
+            messages.error(request, 'Registration failed. Please fix the highlighted fields below.')
     else:
         form = ChurchRegistrationForm(church=church)
     

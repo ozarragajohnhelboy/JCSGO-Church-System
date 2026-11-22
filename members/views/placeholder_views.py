@@ -13,10 +13,24 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Count
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from datetime import timedelta
 
 from ..models import *
 from ..forms import *
+from ..services.care_group_attendance import (
+    last_attendance_dates,
+    present_member_ids,
+    save_tracker_attendance,
+    sunday_on_or_before,
+    sync_report_member_attendance,
+)
+from ..services.care_group_hierarchy import (
+    can_access_report,
+    can_manage_care_group,
+    filter_visible_care_groups,
+    filter_visible_reports,
+)
 
 User = get_user_model()
 
@@ -1222,7 +1236,7 @@ def care_group_detail(request, group_id):
                 messages.error(request, 'You can only view care groups you lead or are a member of.')
                 return redirect('members:care_group_list')
 
-    members = care_group.members.select_related('user').order_by('user__first_name')
+    members = care_group.members.select_related('user', 'user__role').order_by('user__first_name')
 
     recent_activity = ActivityLog.objects.filter(
         user__regular_member_profile__group=care_group
@@ -2046,32 +2060,7 @@ def profile_import(request):
     return render(request, 'members/reports/profile_import.html', context)
 
 def _can_user_access_report(user, report):
-    if not user.role:
-        return False
-    
-    if user.role.name == 'ADMIN':
-        return True
-    
-    if report.care_group.leader == user:
-        return True
-    
-    try:
-        user_is_member = user.regular_member_profile.group == report.care_group
-        if user_is_member:
-            return True
-    except:
-        pass
-    
-    if user.role.name in ['VSL', 'CSL']:
-        user_groups = Group.objects.filter(leader=user, group_type='CARE')
-        member_users = CustomUser.objects.filter(
-            regular_member_profile__group__in=user_groups
-        ).exclude(id=user.id)
-        
-        if report.care_group.leader in member_users:
-            return True
-    
-    return False
+    return can_access_report(user, report)
 
 
 @login_required
@@ -2090,55 +2079,7 @@ def care_group_report_list(request):
 
     reports = CareGroupReport.objects.filter(church=church)
 
-    if user.role.name == 'VSL':
-        user_groups = Group.objects.filter(leader=user, group_type='CARE')
-        
-        member_users = CustomUser.objects.filter(
-            regular_member_profile__group__in=user_groups
-        ).exclude(id=user.id)
-        
-        user_member_groups = Group.objects.filter(
-            group_type='CARE',
-            members__user=user
-        )
-        
-        reports = reports.filter(
-            Q(care_group__leader=user) |
-            Q(care_group__in=user_member_groups) |
-            Q(care_group__leader__in=member_users)
-        ).distinct()
-        
-    elif user.role.name == 'CSL':
-        user_groups = Group.objects.filter(leader=user, group_type='CARE')
-        
-        member_users = CustomUser.objects.filter(
-            regular_member_profile__group__in=user_groups
-        ).exclude(id=user.id)
-        
-        user_member_groups = Group.objects.filter(
-            group_type='CARE',
-            members__user=user
-        )
-        
-        reports = reports.filter(
-            Q(care_group__leader=user) |
-            Q(care_group__in=user_member_groups) |
-            Q(care_group__leader__in=member_users)
-        ).distinct()
-        
-    elif user.role.name == 'CL':
-        user_member_groups = Group.objects.filter(
-            group_type='CARE',
-            members__user=user
-        )
-        
-        reports = reports.filter(
-            Q(care_group__leader=user) |
-            Q(care_group__in=user_member_groups)
-        ).distinct()
-        
-    elif user.role.name == 'ADMIN':
-        pass
+    reports = filter_visible_reports(user, reports)
 
     if search:
         reports = reports.filter(
@@ -2168,53 +2109,7 @@ def care_group_report_list(request):
         is_active=True
     )
 
-    if user.role.name == 'VSL':
-        user_groups = Group.objects.filter(leader=user, group_type='CARE')
-        member_users = CustomUser.objects.filter(
-            regular_member_profile__group__in=user_groups
-        ).exclude(id=user.id)
-        
-        # Care groups where user is a member
-        user_member_groups = Group.objects.filter(
-            group_type='CARE',
-            members__user=user
-        )
-        
-        care_groups = care_groups.filter(
-            Q(leader=user) |
-            Q(id__in=user_member_groups.values_list('id', flat=True)) |
-            Q(leader__in=member_users)
-        ).distinct()
-        
-    elif user.role.name == 'CSL':
-        user_groups = Group.objects.filter(leader=user, group_type='CARE')
-        member_users = CustomUser.objects.filter(
-            regular_member_profile__group__in=user_groups
-        ).exclude(id=user.id)
-        
-        user_member_groups = Group.objects.filter(
-            group_type='CARE',
-            members__user=user
-        )
-        
-        care_groups = care_groups.filter(
-            Q(leader=user) |
-            Q(id__in=user_member_groups.values_list('id', flat=True)) |
-            Q(leader__in=member_users)
-        ).distinct()
-        
-    elif user.role.name == 'CL':
-        user_member_groups = Group.objects.filter(
-            group_type='CARE',
-            members__user=user
-        )
-        
-        care_groups = care_groups.filter(
-            Q(leader=user) |
-            Q(id__in=user_member_groups.values_list('id', flat=True))
-        ).distinct()
-    elif user.role.name == 'ADMIN':
-        pass
+    care_groups = filter_visible_care_groups(user, care_groups)
     
     care_groups = care_groups.order_by('name')
     
@@ -2254,7 +2149,7 @@ def care_group_report_create(request):
                 description=f'Created care group report: {report.care_group.name} - {report.date_of_cg}'
             )
             
-            messages.success(request, f'Care group report created successfully!')
+            messages.success(request, 'Care group report saved. Mark member attendance next.')
             return redirect('members:care_group_member_report_create', report_id=report.pk)
     else:
         form = CareGroupReportForm(user=user)
@@ -2289,20 +2184,17 @@ def care_group_member_report_create(request, report_id):
     care_group_members = CustomUser.objects.filter(
         regular_member_profile__group=report.care_group,
         is_active=True
-    ).order_by('first_name', 'last_name')
+    ).select_related('role', 'regular_member_profile').order_by('first_name', 'last_name')
 
-    # Get existing member reports for this care group report
-    existing_reports = {}
-    for member_report in report.member_reports.all():
-        existing_reports[member_report.member.id] = member_report
+    existing_reports = {
+        member_report.member_id: member_report
+        for member_report in report.member_reports.select_related('member', 'member__role')
+    }
 
     if request.method == 'POST':
-        # Process form submission
         for member in care_group_members:
             member_id = str(member.id)
-            
-            # Get or create member report
-            member_report, created = CareGroupMemberReport.objects.get_or_create(
+            member_report, _created = CareGroupMemberReport.objects.get_or_create(
                 report=report,
                 member=member,
                 defaults={
@@ -2314,21 +2206,50 @@ def care_group_member_report_create(request, report_id):
                     'notes': ''
                 }
             )
-            
-            # Update fields based on form data
+
+            status = request.POST.get(f'status_{member_id}', 'ACTIVE')
+            if status not in ['ACTIVE', 'INACTIVE', 'ABSENT', 'EXCUSED']:
+                status = 'ACTIVE'
+
+            member_report.status = status
             member_report.sunday_attendance = f'sunday_attendance_{member_id}' in request.POST
             member_report.group_attendance = f'group_attendance_{member_id}' in request.POST
-            member_report.new_disciples_invited = int(request.POST.get(f'new_disciples_invited_{member_id}', 0))
-            member_report.follow_ups = int(request.POST.get(f'follow_ups_{member_id}', 0))
+            member_report.new_disciples_invited = int(request.POST.get(f'new_disciples_invited_{member_id}', 0) or 0)
+            member_report.follow_ups = int(request.POST.get(f'follow_ups_{member_id}', 0) or 0)
             member_report.notes = request.POST.get(f'notes_{member_id}', '')
             member_report.save()
 
-        messages.success(request, 'Member reports saved successfully!')
+        sync_report_member_attendance(report, user)
+        messages.success(request, 'Care group report updated successfully.')
         return redirect('members:care_group_report_detail', report_id=report.id)
-    
+
+    care_group_present_ids, _ = present_member_ids(
+        report.care_group, care_group_members, report.date_of_cg
+    )
+    _, sunday_present_ids = present_member_ids(
+        report.care_group, care_group_members, sunday_on_or_before(report.date_of_cg)
+    )
+
+    member_rows = []
+    for member in care_group_members:
+        member_report = existing_reports.get(member.id)
+        member_rows.append({
+            'member': member,
+            'member_report': member_report,
+            'sunday_attendance': bool(
+                (member_report and member_report.sunday_attendance)
+                or member.id in sunday_present_ids
+            ),
+            'group_attendance': bool(
+                (member_report and member_report.group_attendance)
+                or member.id in care_group_present_ids
+            ),
+        })
+
     context = {
         'report': report,
         'care_group_members': care_group_members,
+        'member_rows': member_rows,
         'existing_reports': existing_reports,
         'user_role': user.role.name,
     }
@@ -2355,7 +2276,7 @@ def care_group_report_detail(request, report_id):
         messages.error(request, 'You do not have permission to view this report.')
         return redirect('members:care_group_report_list')
 
-    member_reports = report.member_reports.select_related('member').order_by('member__first_name', 'member__last_name')
+    member_reports = report.member_reports.select_related('member', 'member__role').order_by('member__first_name', 'member__last_name')
     
     context = {
         'report': report,
@@ -2432,8 +2353,8 @@ def care_group_report_edit(request, report_id):
                 description=f'Updated care group report: {updated_report.care_group.name} - {updated_report.date_of_cg}'
             )
             
-            messages.success(request, f'Care group report updated successfully!')
-            return redirect('members:care_group_report_detail', report_id=report_id)
+            messages.success(request, 'Report details saved. Continue to member attendance.')
+            return redirect('members:care_group_member_report_create', report_id=report_id)
     else:
         form = CareGroupReportForm(instance=report, user=user)
     
@@ -2492,8 +2413,75 @@ def care_group_report_delete(request, report_id):
 
 @login_required
 def care_group_attendance_tracking(request, group_id):
-    """Care group attendance tracking"""
-    return render(request, 'members/attendance/care_group_attendance_tracking.html', {})
+    """Record and review care group attendance for a group the user leads or oversees."""
+    user = request.user
+    care_group = get_object_or_404(Group, pk=group_id, group_type='CARE')
+
+    if not can_manage_care_group(user, care_group):
+        messages.error(request, 'You do not have permission to track attendance for this care group.')
+        return redirect('members:care_group_list')
+
+    care_group_members = CustomUser.objects.filter(
+        regular_member_profile__group=care_group,
+        is_active=True,
+    ).select_related('role').order_by('first_name', 'last_name')
+
+    selected_date = parse_date(request.POST.get('attendance_date') or request.GET.get('date') or '')
+    if selected_date is None:
+        selected_date = timezone.localdate()
+
+    if request.method == 'POST':
+        care_group_present_ids = {
+            member.id for member in care_group_members
+            if f'care_group_{member.id}' in request.POST
+        }
+        sunday_present_ids = {
+            member.id for member in care_group_members
+            if f'sunday_{member.id}' in request.POST
+        }
+        care_group_count, sunday_count = save_tracker_attendance(
+            care_group=care_group,
+            members=care_group_members,
+            selected_date=selected_date,
+            recorded_by=user,
+            care_group_present_ids=care_group_present_ids,
+            sunday_present_ids=sunday_present_ids,
+        )
+        messages.success(
+            request,
+            f'Attendance saved for {selected_date:%b %d, %Y}: '
+            f'{care_group_count} present at care group, {sunday_count} present at Sunday service.',
+        )
+        return redirect(f"{request.path}?date={selected_date.isoformat()}")
+
+    care_group_present_ids, sunday_present_ids = present_member_ids(
+        care_group, care_group_members, selected_date
+    )
+    last_dates = last_attendance_dates(care_group_members)
+    member_rows = []
+    for member in care_group_members:
+        member_rows.append({
+            'member': member,
+            'care_group_present': member.id in care_group_present_ids,
+            'sunday_present': member.id in sunday_present_ids,
+            'last_attendance': last_dates.get(member.id),
+        })
+
+    recent_attendances = Attendance.objects.filter(
+        user__in=care_group_members,
+        attendance_type__in=('CARE_GROUP', 'SUNDAY'),
+        date__gte=timezone.localdate() - timedelta(days=30),
+    ).select_related('user', 'scanned_by').order_by('-date', '-time_in')
+
+    context = {
+        'care_group': care_group,
+        'care_group_members': care_group_members,
+        'member_rows': member_rows,
+        'selected_date': selected_date,
+        'recent_attendances': recent_attendances,
+        'user_role': user.role.name,
+    }
+    return render(request, 'members/attendance/care_group_attendance_tracking.html', context)
 
 @login_required
 def care_group_report_export(request):
@@ -2514,28 +2502,7 @@ def care_group_report_export(request):
         'care_group', 'vine_servant_leader', 'cluster_servant_leader', 'care_leader', 'created_by'
     ).prefetch_related('member_reports__member')
 
-    if user.role.name == 'VSL':
-        user_groups = Group.objects.filter(leader=user, group_type='CARE')
-        member_users = CustomUser.objects.filter(
-            regular_member_profile__group__in=user_groups
-        ).exclude(id=user.id)
-        
-        reports = reports.filter(
-            Q(care_group__leader=user) | 
-            Q(care_group__leader__in=member_users)
-        ).distinct()
-    elif user.role.name == 'CSL':
-        user_groups = Group.objects.filter(leader=user, group_type='CARE')
-        member_users = CustomUser.objects.filter(
-            regular_member_profile__group__in=user_groups
-        ).exclude(id=user.id)
-        
-        reports = reports.filter(
-            Q(care_group__leader=user) | 
-            Q(care_group__leader__in=member_users)
-        ).distinct()
-    elif user.role.name == 'CL':
-        reports = reports.filter(care_group__leader=user)
+    reports = filter_visible_reports(user, reports)
 
     if care_group_id:
         reports = reports.filter(care_group_id=care_group_id)

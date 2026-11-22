@@ -51,10 +51,6 @@
     <main class="{% if not user.is_authenticated %}login-container{% endif %}">
       {% if user.is_authenticated %}
         {% if user.is_superuser or user.role.name == 'ADMIN' or user.role.name == 'VSL' or user.role.name == 'CSL' or user.role.name == 'CL' or user.role.name == 'CM' %}
-          <button class="sidebar-toggle" onclick="toggleSidebar()" id="sidebarToggle">
-            <i class="bi bi-list"></i>
-          </button>
-          
           <div class="container-fluid">
             <div class="row">
               {% include 'components/sidebar.html' %}

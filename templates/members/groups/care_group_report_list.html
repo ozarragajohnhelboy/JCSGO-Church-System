@@ -10,16 +10,16 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title mb-0">
-                        <i class="fas fa-chart-line me-2"></i>Care Group Reports
+                        <i class="bi bi-graph-up-arrow me-2"></i>Care Group Reports
                     </h3>
-                    <div class="btn-group">
+                    <div class="page-actions">
                         {% if user.role.name == 'ADMIN' %}
                         <button type="button" class="btn btn-success" onclick="exportCareGroupReports()">
-                            <i class="fas fa-download me-1"></i>Export
+                            <i class="bi bi-download"></i>Export
                         </button>
                         {% endif %}
                         <a href="{% url 'members:care_group_report_create' %}" class="btn btn-primary">
-                            <i class="fas fa-plus me-1"></i>Create Report
+                            <i class="bi bi-plus-lg"></i>Create Report
                         </a>
                     </div>
                 </div>
@@ -90,7 +90,7 @@
                                             </td>
                                             <td>{{ report.created_by.full_name }}</td>
                                             <td>
-                                                <div class="d-flex gap-1 align-items-center">
+                                                <div class="table-actions">
                                                     <a href="{% url 'members:care_group_report_detail' report.id %}" 
                                                        class="btn btn-outline-primary btn-sm" title="View Details">
                                                         View
@@ -108,9 +108,8 @@
                                                     {% if user.role.name == 'ADMIN' %}
                                                     <a href="{% url 'members:care_group_report_delete' report.id %}" 
                                                        class="btn btn-danger btn-sm" title="Delete Report"
-                                                       style="pointer-events: auto; z-index: 10; position: relative; min-width: 60px;"
                                                        onclick="showDeleteModal({{ report.id }}, '{{ report.care_group.name|escapejs }}'); return false;">
-                                                        <i class="fas fa-trash"></i> Delete
+                                                        <i class="bi bi-trash"></i>Delete
                                                     </a>
                                                     {% endif %}
                                                 </div>
@@ -385,24 +384,15 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="printModal{{ report.id }}()">Print</button>
+                <button type="button" class="btn btn-primary" onclick="printCareGroupReport(this)">Print</button>
             </div>
         </div>
     </div>
 </div>
 
-<script>
-    function printModal{{ report.id }}() {
-        var printContent = document.querySelector('#printModal{{ report.id }} .print-container').innerHTML;
-        var originalContent = document.body.innerHTML;
-        
-        document.body.innerHTML = printContent;
-        window.print();
-        document.body.innerHTML = originalContent;
-        location.reload();
-    }
-</script>
 {% endfor %}
+
+<script src="{% static 'js/pages/care_group_report_print.js' %}"></script>
 
 <script>
 function exportCareGroupReports() {
