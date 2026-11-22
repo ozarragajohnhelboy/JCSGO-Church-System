@@ -236,7 +236,7 @@
   <!-- Header -->
   <div class="row mb-4">
     <div class="col-12">
-      <div class="d-flex justify-content-between align-items-center">
+      <div class="page-header d-flex justify-content-between align-items-center">
         <div>
           <h1 class="h3 mb-0">
             <i class="bi bi-people-fill"></i> 
@@ -250,7 +250,7 @@
           </h1>
           <p class="text-muted mb-0">Welcome back, {{ user.full_name }} - {{ user.church.name }}</p>
         </div>
-        <div class="text-end">
+        <div class="page-actions">
           <span class="badge bg-primary fs-6">{{ user.role.get_name_display }}</span>
         </div>
       </div>

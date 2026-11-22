@@ -193,5 +193,11 @@
       </div>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    window.registrationChurchDomain = "{{ church.domain|escapejs }}";
+  </script>
   <script src="{% static 'js/pages/church_registration.js' %}"></script>
 {% endblock %}

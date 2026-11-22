@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import authenticate, get_user_model
 from django.db.models import Q
+from .services.care_group_hierarchy import filter_visible_care_groups
 from .models import CustomUser, NewFriend, RegularMember, Group, Role, Church, Attendance, CareGroupReport, CareGroupMemberReport
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.utils import timezone
@@ -1207,36 +1208,10 @@ class CareGroupReportForm(forms.ModelForm):
                 is_active=True
             )
             
-            # Apply role-based filtering
-            if self.user.role and self.user.role.name == 'VSL':
-                # VSL can create reports for their own care groups + care groups of their members (CSL/CL)
-                # Get members under this VSL through the group relationship
-                user_groups = Group.objects.filter(leader=self.user, group_type='CARE')
-                member_users = CustomUser.objects.filter(
-                    regular_member_profile__group__in=user_groups
-                ).exclude(id=self.user.id)
-                
-                care_groups = care_groups.filter(
-                    Q(leader=self.user) | 
-                    Q(leader__in=member_users)  # Care groups led by members under this VSL
-                ).distinct()
-            elif self.user.role and self.user.role.name == 'CSL':
-                # CSL can create reports for their own care groups + care groups of their members (CL)
-                # Get members under this CSL through the group relationship
-                user_groups = Group.objects.filter(leader=self.user, group_type='CARE')
-                member_users = CustomUser.objects.filter(
-                    regular_member_profile__group__in=user_groups
-                ).exclude(id=self.user.id)
-                
-                care_groups = care_groups.filter(
-                    Q(leader=self.user) | 
-                    Q(leader__in=member_users)  # Care groups led by members under this CSL
-                ).distinct()
-            elif self.user.role and self.user.role.name == 'CL':
-                # CL can only create reports for care groups they lead
-                care_groups = care_groups.filter(leader=self.user)
-            # ADMIN can create reports for all care groups
-            
+            # Leaders see their own care groups and every care group below them;
+            # ADMIN can create reports for all care groups in the church.
+            care_groups = filter_visible_care_groups(self.user, care_groups)
+
             self.fields['care_group'].queryset = care_groups
             
             # Show/hide search fields based on user role

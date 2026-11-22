@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from django.db.models import Count
 
 from members.models import Church, Role, CustomUser, ActivityLog
+from members.services.care_group_hierarchy import filter_visible_reports, get_scope_user_ids
 
 User = get_user_model()
 
@@ -459,19 +460,20 @@ def dashboard(request):
                 'recent_activities': recent_group_activities
             })
         
-        # Get recent group activities
+        # Get recent group activities (self + downline only, same as care group reports)
+        from members.models import CareGroupReport
+        scope_user_ids = get_scope_user_ids(user)
         recent_group_activities = ActivityLog.objects.filter(
+            user_id__in=scope_user_ids,
             user__church=user.church,
             action__in=['GROUP_JOIN', 'GROUP_LEAVE', 'ATTENDANCE'],
             timestamp__gte=timezone.now() - timedelta(days=7)
-        ).select_related('user')[:10]
+        ).select_related('user').order_by('-timestamp')[:10]
         
-        # Get care group reports for this leader
-        from members.models import CareGroupReport
-        recent_reports = CareGroupReport.objects.filter(
-            care_group__leader=user,
-            church=user.church
-        ).order_by('-date_of_cg')[:5]
+        recent_reports = filter_visible_reports(
+            user,
+            CareGroupReport.objects.filter(church=user.church)
+        ).select_related('care_group').order_by('-date_of_cg', '-created_at')[:5]
         
         context.update({
             'led_groups': led_groups,

@@ -24,6 +24,7 @@
                   <thead class="table-dark">
                     <tr>
                       <th>Names</th>
+                      <th>Role</th>
                       <th>Status</th>
                       <th colspan="2" class="text-center">ATTENDANCE</th>
                       <th>Total New Disc. Invite</th>
@@ -33,107 +34,66 @@
                     <tr>
                       <th></th>
                       <th></th>
+                      <th></th>
                       <th class="text-center">Sunday</th>
-                       <th class="text-center">Care Group</th>
+                      <th class="text-center">Care Group</th>
                       <th></th>
                       <th></th>
                       <th></th>
                     </tr>
                   </thead>
                   <tbody>
-                     {% for member in care_group_members %}
-                       {% for existing_report in existing_reports %}
-                         {% if existing_report.member.id == member.id %}
-                           {% with member_report=existing_report %}
-                             <tr>
-                               <td>
-                                 <strong>{{ member.full_name }}</strong>
-                                 <br />
-                                 <small class="text-muted">{{ member.role.get_name_display }}</small>
-                               </td>
-
-                               <td>
-                                 <select name="status_{{ member.id }}" class="form-select form-select-sm">
-                                   <option value="ACTIVE" {% if member_report.status == 'ACTIVE' %}selected{% endif %}>Active</option>
-                                   <option value="INACTIVE" {% if member_report.status == 'INACTIVE' %}selected{% endif %}>Inactive</option>
-                                   <option value="ABSENT" {% if member_report.status == 'ABSENT' %}selected{% endif %}>Absent</option>
-                                   <option value="EXCUSED" {% if member_report.status == 'EXCUSED' %}selected{% endif %}>Excused</option>
-                                 </select>
-                               </td>
-
-                               <td class="text-center">
-                                 <div class="form-check d-flex justify-content-center">
-                                   <input type="checkbox" name="sunday_attendance_{{ member.id }}" class="form-check-input" {% if member_report.sunday_attendance %}checked{% endif %} />
-                                 </div>
-                               </td>
-
-                               <td class="text-center">
-                                 <div class="form-check d-flex justify-content-center">
-                                   <input type="checkbox" name="group_attendance_{{ member.id }}" class="form-check-input" {% if member_report.group_attendance %}checked{% endif %} />
-                                 </div>
-                               </td>
-
-                               <td>
-                                 <input type="number" name="new_disciples_invited_{{ member.id }}" class="form-control form-control-sm" min="0" value="{{ member_report.new_disciples_invited }}" />
-                               </td>
-
-                               <td>
-                                 <input type="number" name="follow_ups_{{ member.id }}" class="form-control form-control-sm" min="0" value="{{ member_report.follow_ups }}" />
-                               </td>
-
-                               <td>
-                                 <textarea name="notes_{{ member.id }}" class="form-control form-control-sm" rows="2" placeholder="Notes...">{{ member_report.notes }}</textarea>
-                               </td>
-                             </tr>
-                           {% endwith %}
-                         {% endif %}
-                       {% empty %}
-                         <tr>
-                           <td>
-                             <strong>{{ member.full_name }}</strong>
-                             <br />
-                             <small class="text-muted">{{ member.role.get_name_display }}</small>
-                           </td>
-
-                           <td>
-                             <select name="status_{{ member.id }}" class="form-select form-select-sm">
-                               <option value="ACTIVE" selected>Active</option>
-                               <option value="INACTIVE">Inactive</option>
-                               <option value="ABSENT">Absent</option>
-                               <option value="EXCUSED">Excused</option>
-                             </select>
-                           </td>
-
-                           <td class="text-center">
-                             <div class="form-check d-flex justify-content-center">
-                               <input type="checkbox" name="sunday_attendance_{{ member.id }}" class="form-check-input" />
-                             </div>
-                           </td>
-
-                           <td class="text-center">
-                             <div class="form-check d-flex justify-content-center">
-                               <input type="checkbox" name="group_attendance_{{ member.id }}" class="form-check-input" />
-                             </div>
-                           </td>
-
-                           <td>
-                             <input type="number" name="new_disciples_invited_{{ member.id }}" class="form-control form-control-sm" min="0" value="0" />
-                           </td>
-
-                           <td>
-                             <input type="number" name="follow_ups_{{ member.id }}" class="form-control form-control-sm" min="0" value="0" />
-                           </td>
-
-                           <td>
-                             <textarea name="notes_{{ member.id }}" class="form-control form-control-sm" rows="2" placeholder="Notes..."></textarea>
-                           </td>
-                         </tr>
-                       {% endfor %}
+                    {% for row in member_rows %}
+                      {% with member=row.member member_report=row.member_report %}
+                        <tr>
+                          <td>
+                            <strong>{{ member.full_name }}</strong>
+                          </td>
+                          <td>
+                            <span class="badge bg-secondary">
+                              {% if member.role %}
+                                {{ member.role.get_name_display }}
+                              {% elif member.regular_member_profile %}
+                                {{ member.regular_member_profile.get_role_type_display }}
+                              {% else %}
+                                No Role
+                              {% endif %}
+                            </span>
+                          </td>
+                          <td>
+                            <select name="status_{{ member.id }}" class="form-select form-select-sm">
+                              <option value="ACTIVE" {% if member_report.status == 'ACTIVE' or not member_report %}selected{% endif %}>Active</option>
+                              <option value="INACTIVE" {% if member_report.status == 'INACTIVE' %}selected{% endif %}>Inactive</option>
+                              <option value="ABSENT" {% if member_report.status == 'ABSENT' %}selected{% endif %}>Absent</option>
+                              <option value="EXCUSED" {% if member_report.status == 'EXCUSED' %}selected{% endif %}>Excused</option>
+                            </select>
+                          </td>
+                          <td class="text-center">
+                            <div class="form-check d-flex justify-content-center">
+                              <input type="checkbox" name="sunday_attendance_{{ member.id }}" class="form-check-input" {% if row.sunday_attendance %}checked{% endif %} />
+                            </div>
+                          </td>
+                          <td class="text-center">
+                            <div class="form-check d-flex justify-content-center">
+                              <input type="checkbox" name="group_attendance_{{ member.id }}" class="form-check-input" {% if row.group_attendance %}checked{% endif %} />
+                            </div>
+                          </td>
+                          <td>
+                            <input type="number" name="new_disciples_invited_{{ member.id }}" class="form-control form-control-sm" min="0" value="{% if member_report %}{{ member_report.new_disciples_invited }}{% else %}0{% endif %}" />
+                          </td>
+                          <td>
+                            <input type="number" name="follow_ups_{{ member.id }}" class="form-control form-control-sm" min="0" value="{% if member_report %}{{ member_report.follow_ups }}{% else %}0{% endif %}" />
+                          </td>
+                          <td>
+                            <textarea name="notes_{{ member.id }}" class="form-control form-control-sm" rows="2" placeholder="Notes...">{% if member_report %}{{ member_report.notes }}{% endif %}</textarea>
+                          </td>
+                        </tr>
+                      {% endwith %}
                     {% empty %}
                       <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
-                          <i class="fas fa-users fa-2x mb-2"></i>
-                          <br />No members found in this care group.
+                        <td colspan="8" class="text-center text-muted py-4">
+                          <i class="bi bi-people fs-2 mb-2 d-block"></i>
+                          No members found in this care group.
                         </td>
                       </tr>
                     {% endfor %}
@@ -141,12 +101,20 @@
                 </table>
               </div>
 
-              <!-- Form Actions -->
               <div class="row mt-4">
                 <div class="col-12">
-                  <div class="d-flex justify-content-between">
-                    <a href="{% url 'members:care_group_report_list' %}" class="btn btn-secondary"><i class="fas fa-arrow-left me-1"></i>Back to Reports</a>
-                    <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i>Save Member Reports</button>
+                  <div class="form-actions d-flex justify-content-between">
+                    <a href="{% url 'members:care_group_report_edit' report.id %}" class="btn btn-outline-secondary">
+                      <i class="bi bi-arrow-left"></i>Back
+                    </a>
+                    <div class="page-actions">
+                      <button type="submit" name="action" value="view" class="btn btn-outline-primary">
+                        <i class="bi bi-eye"></i>View
+                      </button>
+                      <button type="submit" name="action" value="update" class="btn btn-primary">
+                        <i class="bi bi-check2-circle"></i>Update Report
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

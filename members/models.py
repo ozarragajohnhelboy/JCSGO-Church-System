@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.db.models import Count, Q
@@ -365,6 +366,14 @@ class CustomUser(AbstractUser):
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+
+    def get_role_display(self):
+        if self.role:
+            return self.role.get_name_display()
+        try:
+            return self.regular_member_profile.get_role_type_display()
+        except ObjectDoesNotExist:
+            return ''
 
     @property
     def age(self):

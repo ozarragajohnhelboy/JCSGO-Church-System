@@ -1,15 +1,20 @@
 $(document).ready(function () {
-    // Email preview functionality
-    $('#email-prefix').on('input', function () {
-        var prefix = $(this).val()
-        if (prefix) {
-            var fullEmail = prefix + '@{{ church.domain }}.jcsgo.com'
-            $('#email-preview').text(fullEmail)
-        } else {
-            $('#email-preview').text('')
-        }
-    })
+    var churchDomain = window.registrationChurchDomain || '';
 
-    // Trigger on page load to show initial preview
-    $('#email-prefix').trigger('input')
-})
+    $('#email-prefix').on('input', function () {
+        var prefix = $(this).val();
+        if (prefix) {
+            $('#email-preview').text(prefix + '@' + churchDomain + '.jcsgo.com');
+        } else {
+            $('#email-preview').text('');
+        }
+    });
+
+    $('#email-prefix').trigger('input');
+
+    // After a failed submit, bring the first field error into view so it is not missed below the fold.
+    var firstError = document.querySelector('.registration-card .text-danger');
+    if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});

@@ -4,27 +4,25 @@
 {% block title %}{{ group.name }} - Care Group - {{ block.super }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">
+<div class="page-header d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 mb-0">
         <i class="bi bi-collection me-2"></i>
         {{ group.name }}
     </h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <a href="{% url 'members:care_group_list' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Care Groups
-            </a>
-            {% if is_leader %}
-            <a href="{% url 'members:care_group_edit' group.pk %}" class="btn btn-sm btn-outline-primary">
-                <i class="bi bi-pencil"></i> Edit Group
-            </a>
-            {% endif %}
-            {% if user.role.name in 'VSL,CSL,CL,ADMIN' %}
-            <a href="{% url 'members:care_group_attendance_tracking' group.pk %}" class="btn btn-sm btn-outline-success">
-                <i class="bi bi-calendar-check"></i> Track Attendance
-            </a>
-            {% endif %}
-        </div>
+    <div class="page-actions">
+        <a href="{% url 'members:care_group_list' %}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i>Back to Care Groups
+        </a>
+        {% if is_leader %}
+        <a href="{% url 'members:care_group_edit' group.pk %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-pencil"></i>Edit Group
+        </a>
+        {% endif %}
+        {% if user.role.name == 'VSL' or user.role.name == 'CSL' or user.role.name == 'CL' or user.role.name == 'ADMIN' %}
+        <a href="{% url 'members:care_group_attendance_tracking' group.pk %}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-calendar-check"></i>Track Attendance
+        </a>
+        {% endif %}
     </div>
 </div>
 
@@ -55,7 +53,7 @@
                             {% endif %}
                             <div>
                                 <div class="fw-bold">{{ group.leader.full_name }}</div>
-                                <small class="text-muted">{{ group.leader.get_role_display }}</small>
+                                <small class="text-muted">{% if group.leader.role %}{{ group.leader.role.get_name_display }}{% endif %}</small>
                             </div>
                         </div>
                         
@@ -209,7 +207,15 @@
                             </div>
                         </td>
                         <td>
-                            <span class="badge bg-info">{{ member.user.get_role_display }}</span>
+                            <span class="badge bg-info">
+                                {% if member.user.role %}
+                                    {{ member.user.role.get_name_display }}
+                                {% elif member.role_type %}
+                                    {{ member.get_role_type_display }}
+                                {% else %}
+                                    No Role
+                                {% endif %}
+                            </span>
                         </td>
                         <td>
                             <div>
