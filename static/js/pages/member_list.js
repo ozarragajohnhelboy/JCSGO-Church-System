@@ -83,7 +83,13 @@ function submitTimerOrRegular() {
 }
 
 function recordAttendance(userId) {
-    if (confirm('Record attendance for this member?')) {
+    window.appConfirm('Record attendance for this member?', {
+        title: 'Record attendance',
+        confirmLabel: 'Record',
+    }).then(function (ok) {
+        if (!ok) {
+            return;
+        }
         $.ajax({
             url: `/members/ajax/record-attendance/${userId}/`,
             method: 'POST',
@@ -101,5 +107,5 @@ function recordAttendance(userId) {
                 showError('Failed to record attendance');
             }
         });
-    }
+    });
 }

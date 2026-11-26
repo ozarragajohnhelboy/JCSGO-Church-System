@@ -1253,6 +1253,13 @@ def care_group_detail(request, group_id):
             regular_member_profile__group__isnull=False
         ).order_by('first_name', 'last_name')
     
+    leave_requests = GroupLeaveRequest.objects.none()
+    if can_manage_care_group(user, care_group):
+        leave_requests = GroupLeaveRequest.objects.filter(
+            group=care_group,
+            status='PENDING',
+        ).select_related('member', 'member__role').order_by('created_at')
+
     context = {
         'group': care_group,
         'members': members,
@@ -1261,6 +1268,7 @@ def care_group_detail(request, group_id):
         'is_full': care_group.is_full,
         'is_leader': care_group.leader == user or user.role.name == 'ADMIN',
         'available_members': available_members,
+        'leave_requests': leave_requests,
         'user_role': user.role.name,
     }
     

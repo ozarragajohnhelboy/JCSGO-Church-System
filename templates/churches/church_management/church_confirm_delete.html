@@ -3,78 +3,48 @@
 
 {% block title %}Delete Church - {{ block.super }}{% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'css/components/member_record.css' %}" rel="stylesheet" />
+{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">
-        <i class="bi bi-exclamation-triangle me-2 text-danger"></i>
-        Delete Church
-    </h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <a href="{% url 'churches:church_list' %}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Churches
-            </a>
-        </div>
-    </div>
+    <h1 class="h2">Delete church</h1>
+    <a href="{% url 'churches:church_list' %}" class="btn btn-sm btn-outline-secondary">Back to Churches</a>
 </div>
 
 <div class="row justify-content-center">
     <div class="col-lg-8">
-        <div class="card border-danger">
-            <div class="card-header bg-danger text-white">
-                <h5 class="card-title mb-0">
-                    <i class="bi bi-exclamation-triangle me-2"></i>
-                    Confirm Church Deletion
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="text-center mb-4">
-                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
-                    <h4 class="text-danger mt-3">This action cannot be undone!</h4>
-                    <p class="text-muted">Please review the church details below before confirming deletion.</p>
-                </div>
-                
-                <!-- Church Information -->
-                <div class="alert alert-light border">
-                    <div class="row align-items-center">
-                        <div class="col-md-3 text-center">
-                            {% if church.logo %}
-                                <img src="{{ church.logo.url }}" alt="{{ church.name }}" class="img-thumbnail" style="max-width: 80px; max-height: 80px;">
-                            {% else %}
-                                <div class="bg-light d-flex align-items-center justify-content-center rounded" style="width: 80px; height: 80px; margin: 0 auto;">
-                                    <i class="bi bi-building text-muted fs-2"></i>
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-9">
-                            <h5 class="mb-2">{{ church.name }}</h5>
-                            <p class="text-muted mb-1">
-                                <i class="bi bi-geo-alt me-2"></i>{{ church.location }}
-                            </p>
-                            <p class="text-muted mb-1">
-                                <i class="bi bi-globe me-2"></i>Domain: <code>{{ church.domain }}</code>
-                            </p>
-                            <p class="text-muted mb-0">
-                                <i class="bi bi-people me-2"></i>{{ church.total_members }} members
-                            </p>
-                        </div>
+        <section class="member-record mb-4">
+            <div class="member-record__head">
+                <div class="member-record__who">
+                    {% if church.logo %}
+                    <img src="{{ church.logo.url }}" alt="" class="member-record__mark">
+                    {% else %}
+                    <img src="{% static 'image/JCSGO_logo.png' %}" alt="" class="member-record__mark">
+                    {% endif %}
+                    <div>
+                        <p class="member-assignment__kicker mb-1">Church</p>
+                        <h2 class="h5 mb-0">{{ church.name }}</h2>
+                        <p class="text-muted mb-0">{{ church.location }}</p>
                     </div>
                 </div>
-                
-                <!-- Warning Box -->
-                <div class="alert alert-warning">
-                    <h6 class="alert-heading">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        Warning: This action is irreversible!
-                    </h6>
-                    <ul class="mb-0">
-                        <li><strong>All members</strong> associated with this church will be permanently deleted</li>
-                        <li><strong>All attendance records</strong> will be lost</li>
-                        <li><strong>All care groups</strong> and their data will be removed</li>
-                        <li><strong>All activity logs</strong> will be deleted</li>
-                        <li><strong>Church settings</strong> and configurations will be lost</li>
-                    </ul>
+            </div>
+            <dl class="member-record__facts">
+                <div>
+                    <dt>Domain</dt>
+                    <dd>{{ church.domain }}</dd>
                 </div>
+                <div>
+                    <dt>Members</dt>
+                    <dd>{{ church.total_members }}</dd>
+                </div>
+            </dl>
+            <p class="member-assignment__status mt-3 mb-0">This cannot be undone. Members, attendance, care groups, activity logs, and church settings for this church will be deleted.</p>
+        </section>
+
+        <div class="card">
+            <div class="card-body">
           
                 <!-- Confirmation Form -->
                 <form method="post" class="mt-4">

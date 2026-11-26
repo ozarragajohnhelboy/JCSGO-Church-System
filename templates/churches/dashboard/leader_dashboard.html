@@ -6,229 +6,7 @@
 {% endblock %}
 
 {% block extra_css %}
-  <style>
-    .stats-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .stats-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    }
-    
-    .stats-card:nth-child(2) {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-    
-    .stats-card:nth-child(3) {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-    
-    .stats-card:nth-child(4) {
-      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    }
-    
-    .group-card {
-      background: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      border-left: 4px solid #007bff;
-      transition: transform 0.2s;
-    }
-    
-    .group-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-    }
-    
-    .group-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-    
-    .group-name {
-      font-size: 1.25rem;
-      font-weight: bold;
-      color: #007bff;
-    }
-    
-    .group-type-badge {
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: bold;
-    }
-    
-    .type-care {
-      background: #d4edda;
-      color: #155724;
-    }
-    
-    .type-ministry {
-      background: #fff3cd;
-      color: #856404;
-    }
-    
-    .capacity-bar {
-      height: 20px;
-      border-radius: 10px;
-      background-color: #e9ecef;
-      overflow: hidden;
-      margin: 0.5rem 0;
-    }
-    
-    .capacity-fill {
-      height: 100%;
-      border-radius: 10px;
-      transition: width 0.3s ease;
-    }
-    
-    .capacity-low {
-      background: linear-gradient(90deg, #28a745, #20c997);
-    }
-    
-    .capacity-medium {
-      background: linear-gradient(90deg, #ffc107, #fd7e14);
-    }
-    
-    .capacity-high {
-      background: linear-gradient(90deg, #dc3545, #e83e8c);
-    }
-    
-    .activity-feed {
-      background: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .activity-item {
-      padding: 0.75rem 0;
-      border-bottom: 1px solid #f1f3f4;
-    }
-    
-    .activity-item:last-child {
-      border-bottom: none;
-    }
-    
-    .quick-actions {
-      background: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .action-button {
-      display: inline-block;
-      padding: 0.75rem 1.5rem;
-      margin: 0.5rem;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      text-decoration: none;
-      border-radius: 10px;
-      transition: transform 0.2s;
-      border: none;
-      font-weight: 500;
-    }
-    
-    .action-button:hover {
-      color: white;
-      text-decoration: none;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-    
-    .action-button.secondary {
-      background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
-    }
-    
-    .action-button.secondary:hover {
-      box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
-    }
-    
-    .action-button.success {
-      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    }
-    
-    .action-button.success:hover {
-      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
-    }
-    
-    .empty-state {
-      text-align: center;
-      padding: 3rem;
-      color: #6c757d;
-    }
-    
-    .empty-state i {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-      opacity: 0.5;
-    }
-    
-    .chart-container {
-      background: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      margin-bottom: 1.5rem;
-      position: relative;
-      height: 400px;
-    }
-    
-    .chart-container canvas {
-      max-height: 350px !important;
-      width: 100% !important;
-    }
-    
-    
-    .care-group-list {
-      background: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .care-group-item {
-      padding: 1rem;
-      border: 1px solid #e9ecef;
-      border-radius: 10px;
-      margin-bottom: 1rem;
-      transition: all 0.3s ease;
-    }
-    
-    .care-group-item:hover {
-      border-color: #007bff;
-      box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
-    }
-    
-    .care-group-item:last-child {
-      margin-bottom: 0;
-    }
-    
-    .btn-action {
-      padding: 0.5rem 1rem;
-      margin: 0.25rem;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 500;
-      transition: all 0.3s ease;
-    }
-    
-    .btn-action:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    }
-  </style>
+<link href="{% static 'css/components/member_record.css' %}" rel="stylesheet" />
 {% endblock %}
 
 {% block content %}
@@ -236,97 +14,71 @@
   <!-- Header -->
   <div class="row mb-4">
     <div class="col-12">
-      <div class="page-header d-flex justify-content-between align-items-center">
-        <div>
-          <h1 class="h3 mb-0">
-            <i class="bi bi-people-fill"></i> 
-            {% if user.role.name == 'VSL' %}
-              Vine Servant Leader Dashboard
-            {% elif user.role.name == 'CSL' %}
-              Cluster Servant Leader Dashboard
-            {% else %}
-              Care Leader Dashboard
-            {% endif %}
-          </h1>
-          <p class="text-muted mb-0">Welcome back, {{ user.full_name }} - {{ user.church.name }}</p>
-        </div>
-        <div class="page-actions">
-          <span class="badge bg-primary fs-6">{{ user.role.get_name_display }}</span>
-        </div>
+      <div class="page-header">
+        <h1 class="h2 mb-0">{{ user.role.get_name_display }}</h1>
+        <p class="text-muted mb-0">{{ user.church.name }} · {{ user.full_name }}</p>
       </div>
     </div>
   </div>
 
-  <!-- Enhanced Statistics Cards -->
-  <div class="row mb-4">
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card stats-card">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h5 class="card-title text-white">Direct Members</h5>
-              <h2 class="text-white mb-0">{{ direct_members_count }}</h2>
-              <small class="text-white-50">In your care groups</small>
-            </div>
-            <div class="align-self-center">
-              <i class="bi bi-people display-4 text-white-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+      {% include 'components/stats_card.html' with variant='primary' label='Direct Members' value=direct_members_count hint='In your care groups' icon='people' %}
     </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card stats-card">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h5 class="card-title text-white">Nested Members</h5>
-              <h2 class="text-white mb-0">{{ nested_members_count }}</h2>
-              <small class="text-white-50">Members of your members' groups</small>
-            </div>
-            <div class="align-self-center">
-              <i class="bi bi-diagram-3 display-4 text-white-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="col-xl-3 col-md-6">
+      {% include 'components/stats_card.html' with variant='secondary' label='Nested Members' value=nested_members_count hint="Members of your members' groups" icon='diagram-3' %}
     </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card stats-card">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h5 class="card-title text-white">Total Care Group</h5>
-              <h2 class="text-white mb-0">{{ total_care_group_members }}</h2>
-              <small class="text-white-50">All members under you</small>
-            </div>
-            <div class="align-self-center">
-              <i class="bi bi-collection display-4 text-white-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="col-xl-3 col-md-6">
+      {% include 'components/stats_card.html' with variant='info' label='Total Care Group' value=total_care_group_members hint='All members under you' icon='collection' %}
     </div>
-
-    <div class="col-xl-3 col-md-6 mb-4">
-      <div class="card stats-card">
-        <div class="card-body">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h5 class="card-title text-white">Groups Led</h5>
-              <h2 class="text-white mb-0">{{ led_groups.count }}</h2>
-              <small class="text-white-50">Active care groups</small>
-            </div>
-            <div class="align-self-center">
-              <i class="bi bi-house display-4 text-white-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="col-xl-3 col-md-6">
+      {% include 'components/stats_card.html' with variant='success' label='Groups Led' value=led_groups.count hint='Active care groups' icon='house' %}
     </div>
   </div>
+
+  {% if pending_leave_requests %}
+  <section class="member-assignment mb-4">
+    <p class="member-assignment__kicker">Pending leave</p>
+    <h2 class="h5 mb-1">Leave requests ({{ pending_leave_requests|length }})</h2>
+    <p class="text-muted mb-3">Approve to remove the member from the group, or decline to keep them.</p>
+    {% for leave_request in pending_leave_requests %}
+      <div class="mb-3{% if not forloop.last %} pb-3 border-bottom{% endif %}">
+        <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+          <strong>{{ leave_request.member.full_name }}</strong>
+          <small class="text-muted">{{ leave_request.group.name }} · {{ leave_request.created_at|timesince }} ago</small>
+        </div>
+        <p class="mb-3">{{ leave_request.reason }}</p>
+        <div class="member-assignment__actions">
+          <form method="post" action="{% url 'members:group_leave_review' leave_request.pk %}" class="d-inline" data-confirm="Approve this leave request? {{ leave_request.member.full_name }} will be removed from {{ leave_request.group.name }}." data-confirm-title="Approve leave" data-confirm-label="Approve">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="approve">
+            <button type="submit" class="btn btn-sm btn-outline-primary">Approve leave</button>
+          </form>
+          <form method="post" action="{% url 'members:group_leave_review' leave_request.pk %}" class="d-inline" data-confirm="Decline this leave request? {{ leave_request.member.full_name }} will stay in {{ leave_request.group.name }}." data-confirm-title="Decline leave" data-confirm-label="Decline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="reject">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">Decline</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if user_group and user_group.leader_id != user.id %}
+  <section class="member-assignment mb-4">
+    <p class="member-assignment__kicker">{{ user_group.get_group_type_display }}</p>
+    <h2 class="h5 mb-1">{{ user_group.name }}</h2>
+    <p class="text-muted mb-3">Led by {{ user_group.leader.full_name }}</p>
+    {% if pending_leave_request %}
+      <p class="member-assignment__status">Leave request sent. Waiting for {{ user_group.leader.full_name }} to review.</p>
+    {% else %}
+      <div class="member-assignment__actions">
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#leaveGroupModal">Request to leave</button>
+      </div>
+    {% endif %}
+  </section>
+  {% endif %}
 
   <!-- Charts and Analytics Section -->
   <div class="row mb-4">
@@ -354,42 +106,31 @@
   </div>
 
 
-  <!-- Care Group List with Quick Actions -->
   <div class="care-group-list">
-    <h5 class="mb-3">
-      <i class="bi bi-collection me-2"></i>
-      Care Groups with Quick Actions
-    </h5>
+    <h2 class="h5 mb-3">Your care groups</h2>
     {% if led_groups %}
       {% for group in group_stats %}
-        <div class="care-group-item">
-          <div class="row align-items-center">
-            <div class="col-md-6">
-              <h6 class="mb-1">{{ group.group.name }}</h6>
-              <p class="text-muted mb-1">{{ group.group.description|truncatechars:100 }}</p>
-              <small class="text-muted">
-                <i class="bi bi-people me-1"></i>{{ group.member_count }}/{{ group.group.max_members }} members
-                <span class="ms-2 badge {% if group.is_full %}bg-danger{% else %}bg-success{% endif %}">
-                  {% if group.is_full %}Full{% else %}Available{% endif %}
-                </span>
-              </small>
-            </div>
-            <div class="col-md-6 text-end">
-              <a href="{% url 'members:care_group_detail' group.group.id %}" class="btn btn-primary btn-action">
-                <i class="bi bi-eye me-1"></i>View
-              </a>
-            </div>
+        <section class="member-assignment mb-3">
+          <p class="member-assignment__kicker">{{ group.group.get_group_type_display }}{% if group.is_full %} · Full{% endif %}</p>
+          <h3 class="h6 mb-1">{{ group.group.name }}</h3>
+          {% if group.group.description %}
+          <p class="text-muted mb-2">{{ group.group.description|truncatechars:100 }}</p>
+          {% endif %}
+          <ul class="member-assignment__meta">
+            <li>{{ group.member_count }}/{{ group.group.max_members }} members</li>
+            {% if group.pending_leave_count %}
+            <li>{{ group.pending_leave_count }} pending leave request{{ group.pending_leave_count|pluralize }}</li>
+            {% endif %}
+          </ul>
+          <div class="member-assignment__actions">
+            <a href="{% url 'members:care_group_detail' group.group.id %}" class="btn btn-sm btn-outline-secondary">View group</a>
           </div>
-        </div>
+        </section>
       {% endfor %}
     {% else %}
-      <div class="empty-state">
-        <i class="bi bi-collection"></i>
-        <h5>No Care Groups Yet</h5>
-        <p class="mb-3">You haven't created any care groups yet.</p>
-        <a href="{% url 'members:care_group_create' %}" class="btn btn-primary">
-          Create Your First Care Group
-        </a>
+      {% include 'components/empty_state.html' with icon='collection' message='You have not created any care groups yet.' %}
+      <div class="text-center mt-3">
+        <a href="{% url 'members:care_group_create' %}" class="btn btn-sm btn-primary">Create care group</a>
       </div>
     {% endif %}
   </div>
@@ -420,10 +161,7 @@
               {% endfor %}
             </div>
           {% else %}
-            <div class="text-center text-muted py-3">
-              <i class="bi bi-activity fs-1"></i>
-              <p>No recent activities</p>
-            </div>
+            {% include 'components/empty_state.html' with icon='activity' message='No recent activities.' %}
           {% endif %}
         </div>
       </div>
@@ -453,16 +191,14 @@
               {% endfor %}
             </div>
           {% else %}
-            <div class="text-center text-muted py-3">
-              <i class="bi bi-file-text fs-1"></i>
-              <p>No recent reports</p>
-            </div>
+            {% include 'components/empty_state.html' with icon='file-text' message='No recent reports.' %}
           {% endif %}
         </div>
       </div>
     </div>
   </div>
 </div>
+{% include 'members/groups/_leave_request_modal.html' %}
 
 <!-- Chart.js Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -484,11 +220,11 @@
           {% endfor %}
         ],
         backgroundColor: [
-          '#667eea',
-          '#f093fb',
-          '#4facfe',
-          '#43e97b',
-          '#f5576c'
+          '#2c3e50',
+          '#3498db',
+          '#17a2b8',
+          '#27ae60',
+          '#e74c3c'
         ],
         borderWidth: 2,
         borderColor: '#fff'
@@ -529,8 +265,8 @@
             {{ count }},
           {% endfor %}
         ],
-        borderColor: '#667eea',
-        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+        borderColor: '#3498db',
+        backgroundColor: 'rgba(52, 152, 219, 0.1)',
         borderWidth: 3,
         fill: true,
         tension: 0.4

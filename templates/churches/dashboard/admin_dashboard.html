@@ -4,148 +4,6 @@
   {{ church.name }} - Admin Dashboard
 {% endblock %}
 
-{% block extra_css %}
-  <style>
-    .stats-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    .stats-card:nth-child(2) {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-    
-    .stats-card:nth-child(3) {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-    
-    .stats-card:nth-child(4) {
-      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    }
-    
-    .chart-container {
-      position: relative;
-      height: 300px;
-      margin-bottom: 2rem;
-    }
-    
-    .metric-card {
-      background: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      border-left: 4px solid #007bff;
-    }
-    
-    .role-distribution-card {
-      background: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .progress-bar-custom {
-      height: 25px;
-      border-radius: 12px;
-      background-color: #e9ecef;
-    }
-    
-    .progress-bar-custom .progress-bar {
-      border-radius: 12px;
-      font-weight: bold;
-      line-height: 25px;
-    }
-    
-
-    
-    .activity-feed {
-      background: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .activity-item {
-      padding: 0.75rem 0;
-      border-bottom: 1px solid #f1f3f4;
-    }
-    
-    .activity-item:last-child {
-      border-bottom: none;
-    }
-    
-    .timer-status-card {
-      background: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .group-capacity-card {
-      background: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    .scrollable-container {
-      max-height: 300px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: #c1c1c1 #f1f1f1;
-    }
-    
-    .scrollable-container::-webkit-scrollbar {
-      width: 6px;
-    }
-    
-    .scrollable-container::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 3px;
-    }
-    
-    .scrollable-container::-webkit-scrollbar-thumb {
-      background: #c1c1c1;
-      border-radius: 3px;
-    }
-    
-    .scrollable-container::-webkit-scrollbar-thumb:hover {
-      background: #a8a8a8;
-    }
-    
-    #reportModal .report-type-icon {
-      font-size: 1.5rem;
-      width: 1.5rem;
-      height: 1.5rem;
-      line-height: 1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    
-    .date-filter-container {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .date-filter-container .form-control-sm {
-      font-size: 0.85rem;
-      padding: 0.25rem 0.5rem;
-    }
-    
-    .clear-filter-btn {
-      font-size: 0.75rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.25rem;
-    }
-  </style>
-{% endblock %}
-
 {% block content %}
 <form method="get" id="dashboardForm">
 <div class="container-fluid">
@@ -154,88 +12,28 @@
       <div class="col-12">
         <div class="page-header d-flex justify-content-between align-items-center">
           <div>
-            <h1 class="h3 mb-0"><i class="bi bi-speedometer2"></i> {{ church.name }} Admin Dashboard</h1>
-            <p class="text-muted mb-0">Welcome back, {{ user.full_name }}</p>
+            <h1 class="h2 mb-0">{{ church.name }}</h1>
+            <p class="text-muted mb-0">Admin dashboard · {{ user.full_name }}</p>
           </div>
-          <div class="page-actions">
-            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#reportModal">
-                <i class="bi bi-file-text"></i>Generate Report
-              </button>
-            <span class="badge bg-primary fs-6">{{ user.get_role_display }}</span>
-            <span class="badge bg-info fs-6">{{ church.name }}</span>
-          </div>
+          <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reportModal">
+            Generate report
+          </button>
         </div>
       </div>
     </div>
 
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h5 class="card-title text-white">Total Members</h5>
-                <h2 class="text-white mb-0">{{ total_members }}</h2>
-                <small class="text-white-50">Active members</small>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-people display-4 text-white-50"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div class="row g-3 mb-4">
+      <div class="col-xl-3 col-md-6">
+        {% include 'components/stats_card.html' with variant='primary' label='Total Members' value=total_members hint='Active members' icon='people' %}
       </div>
-
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h5 class="card-title text-white">New Friends</h5>
-                <h2 class="text-white mb-0">{{ new_friends_count }}</h2>
-                <small class="text-white-50">1st-5th Timer</small>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-person-plus display-4 text-white-50"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="col-xl-3 col-md-6">
+        {% include 'components/stats_card.html' with variant='secondary' label='New Friends' value=new_friends_count hint='1st-5th Timer' icon='person-plus' %}
       </div>
-
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h5 class="card-title text-white">Regular Members</h5>
-                <h2 class="text-white mb-0">{{ regulars_count }}</h2>
-                <small class="text-white-50">VSL, CSL, CL, CM</small>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-person-check display-4 text-white-50"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="col-xl-3 col-md-6">
+        {% include 'components/stats_card.html' with variant='info' label='Regular Members' value=regulars_count hint='VSL, CSL, CL, CM' icon='person-check' %}
       </div>
-
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h5 class="card-title text-white">Active Groups</h5>
-                <h2 class="text-white mb-0">{{ active_groups_count }}</h2>
-                <small class="text-white-50">Care & Ministry</small>
-              </div>
-              <div class="align-self-center">
-                <i class="bi bi-collection display-4 text-white-50"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="col-xl-3 col-md-6">
+        {% include 'components/stats_card.html' with variant='success' label='Active Groups' value=active_groups_count hint='Care & Ministry' icon='collection' %}
       </div>
     </div>
 
@@ -270,7 +68,7 @@
     <div class="row mb-4">
       <!-- Role Distribution Details -->
       <div class="col-lg-6 mb-4">
-        <div class="role-distribution-card">
+        <div class="dashboard-panel">
           <h5 class="card-title mb-3"><i class="bi bi-people-fill"></i> Role Breakdown</h5>
           <div class="mb-3">
             <div class="d-flex justify-content-between mb-2">
@@ -316,7 +114,7 @@
 
       <!-- Timer Status Distribution -->
       <div class="col-lg-6 mb-4">
-        <div class="timer-status-card">
+        <div class="dashboard-panel">
           <h5 class="card-title mb-3"><i class="bi bi-clock-history"></i> New Friends Timer Status</h5>
           {% for timer in timer_distribution %}
             <div class="mb-3">
@@ -356,11 +154,10 @@
             <h5 class="card-title mb-0"><i class="bi bi-graph-up-arrow"></i> Transition Summary</h5>
           </div>
           <div class="card-body">
-            <div class="text-center mb-3">
-              <div class="display-4 text-success">{{ current_month_transitions }}</div>
-              <div class="text-muted">Transitions This Month</div>
+            <div class="mb-3">
+              {% include 'components/stats_card.html' with variant='success' label='Transitions this month' value=current_month_transitions hint='New friends to regular' icon='arrow-up-circle' %}
             </div>
-            
+
             <div class="mb-3">
               <div class="d-flex justify-content-between mb-2">
                 <span>Transition Rate</span>
@@ -394,7 +191,7 @@
     <div class="row mb-4">
       <!-- Group Capacity -->
       <div class="col-lg-6 mb-4">
-        <div class="group-capacity-card">
+        <div class="dashboard-panel">
           <h5 class="card-title mb-3"><i class="bi bi-collection-fill"></i> Group Capacity Overview</h5>
           <div class="scrollable-container">
           {% for group in group_capacity_data %}
@@ -418,17 +215,16 @@
 
       <!-- Recent Activity -->
       <div class="col-lg-6 mb-4" id="recent-activity-section">
-        <div class="activity-feed">
-          <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="dashboard-panel">
+          <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
             <h5 class="card-title mb-0"><i class="bi bi-activity"></i> Recent Activity</h5>
             <div class="date-filter-container">
-              <label for="activity_date" class="form-label me-2 mb-0" style="font-size: 0.9rem;">Date:</label>
+              <label for="activity_date" class="form-label me-2 mb-0">Date:</label>
               <input type="date" 
                      class="form-control form-control-sm" 
                      id="activity_date" 
                      name="activity_date" 
-                     value="{{ activity_date_filter|default:'' }}"
-                     style="width: auto;">
+                     value="{{ activity_date_filter|default:'' }}">
               <button type="submit" class="btn btn-primary btn-sm ms-2">
                 <i class="bi bi-funnel"></i> Filter
               </button>
@@ -583,15 +379,15 @@
         datasets: [{
           label: 'New Friends',
           data: {{ new_friends_monthly|safe }},
-          borderColor: '#f093fb',
-          backgroundColor: 'rgba(240, 147, 251, 0.1)',
+          borderColor: '#3498db',
+          backgroundColor: 'rgba(52, 152, 219, 0.1)',
           tension: 0.4,
           fill: true
         }, {
           label: 'Regular Members',
           data: {{ regulars_monthly|safe }},
-          borderColor: '#4facfe',
-          backgroundColor: 'rgba(79, 172, 254, 0.1)',
+          borderColor: '#17a2b8',
+          backgroundColor: 'rgba(23, 162, 184, 0.1)',
           tension: 0.4,
           fill: true
         }]
@@ -628,8 +424,8 @@
         datasets: [{
           data: [{{ vsl_count }}, {{ csl_count }}, {{ cl_count }}, {{ cm_count }}],
           backgroundColor: [
-            '#007bff',
-            '#28a745',
+            '#3498db',
+            '#27ae60',
             '#ffc107',
             '#17a2b8'
           ],
@@ -661,8 +457,8 @@
          datasets: [{
            label: 'Daily Activities',
            data: [{% for trend in activity_trends %}{{ trend.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-           backgroundColor: 'rgba(79, 172, 254, 0.8)',
-           borderColor: '#4facfe',
+           backgroundColor: 'rgba(23, 162, 184, 0.8)',
+           borderColor: '#17a2b8',
            borderWidth: 1
          }]
        },
@@ -698,11 +494,11 @@
          datasets: [{
            label: 'Transitions',
            data: [{% for count in transition_counts %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-           borderColor: '#28a745',
-           backgroundColor: 'rgba(40, 167, 69, 0.1)',
+           borderColor: '#27ae60',
+           backgroundColor: 'rgba(39, 174, 96, 0.1)',
            tension: 0.4,
            fill: true,
-           pointBackgroundColor: '#28a745',
+           pointBackgroundColor: '#27ae60',
            pointBorderColor: '#fff',
            pointBorderWidth: 2,
            pointRadius: 6

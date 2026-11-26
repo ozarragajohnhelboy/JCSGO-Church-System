@@ -1,16 +1,4 @@
-/* Care Group Detail Page Styles */
-.card {
-    border-radius: 15px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    border: none;
-}
-
-.card-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 15px 15px 0 0 !important;
-    border-bottom: none;
-}
+/* Care group detail: activity list only. Record layout lives in member_record.css. */
 
 .activity-item {
     padding: 0.75rem 0;
@@ -21,58 +9,9 @@
     border-bottom: none;
 }
 
-.progress {
-    border-radius: 10px;
-}
-
-.btn {
-    border-radius: 8px;
-}
-
 @media (max-width: 768px) {
-    .card-header {
-        padding: 1rem;
-        font-size: 1rem;
-    }
-
-    .card-body {
-        padding: 1rem;
-    }
-
     .activity-item {
         padding: 0.5rem 0;
         font-size: 0.9rem;
-    }
-
-    .progress {
-        height: 1.25rem;
-    }
-
-    .btn {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.875rem;
-    }
-}
-
-@media (max-width: 576px) {
-    .card {
-        margin-bottom: 1rem;
-    }
-
-    .card-header h5 {
-        font-size: 1.1rem;
-    }
-
-    .activity-item {
-        font-size: 0.85rem;
-    }
-
-    .btn-group {
-        flex-direction: column;
-    }
-
-    .btn-group .btn {
-        width: 100%;
-        margin: 0.25rem 0;
     }
 }

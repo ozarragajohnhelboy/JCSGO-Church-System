@@ -18,71 +18,12 @@
     </div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stats-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h5 class="card-title text-white">Total Churches</h5>
-                        <h2 class="text-white mb-0">{{ total_churches }}</h2>
-                        <small class="text-white-50">All branches</small>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-building display-4 text-white-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        {% include 'components/stats_card.html' with variant='primary' label='Total Churches' value=total_churches hint='All branches' icon='building' %}
     </div>
-    <div class="col-md-3">
-        <div class="card stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h5 class="card-title text-white">Active Churches</h5>
-                        <h2 class="text-white mb-0">{{ active_churches_count }}</h2>
-                        <small class="text-white-50">Currently active</small>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-check-circle display-4 text-white-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h5 class="card-title text-white">Showing</h5>
-                        <h2 class="text-white mb-0">{{ page_obj.object_list|length }}</h2>
-                        <small class="text-white-50">This page</small>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-eye display-4 text-white-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h5 class="card-title text-white">Total Pages</h5>
-                        <h2 class="text-white mb-0">{{ page_obj.paginator.num_pages }}</h2>
-                        <small class="text-white-50">Page {{ page_obj.number }}</small>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-file-text display-4 text-white-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="col-md-6">
+        {% include 'components/stats_card.html' with variant='success' label='Active Churches' value=active_churches_count hint='Currently active' icon='check-circle' %}
     </div>
 </div>
 
@@ -121,7 +62,7 @@
             </select>
         </div>
         <div class="col-md-2">
-            <label class="form-label">&nbsp;</label>
+            <label class="form-label d-none d-md-block">&nbsp;</label>
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-search"></i> Filter
@@ -133,7 +74,7 @@
 
 <!-- Churches Table -->
 <div class="table-responsive">
-    <table class="table table-striped table-hover">
+    <table class="table table-striped table-hover table-stack">
         <thead class="table-dark">
             <tr>
                 <th>Church</th>
@@ -148,7 +89,7 @@
         <tbody>
             {% for church in churches %}
             <tr>
-                <td>
+                <td data-label="Church">
                     <div class="d-flex align-items-center">
                         <img src="{% static 'image/JCSGO_logo.png' %}" alt="{{ church.name }}" 
                              class="rounded me-3" style="width: 40px; height: 40px; object-fit: cover;">
@@ -157,14 +98,14 @@
                         </div>
                     </div>
                 </td>
-                <td>{{ church.location }}</td>
-                <td>
+                <td data-label="Location">{{ church.location }}</td>
+                <td data-label="Sector">
                     <span class="badge bg-primary">{{ church.sector }}</span>
                 </td>
-                <td>
+                <td data-label="Members">
                     <span class="badge bg-info">{{ church.total_members }}</span>
                 </td>
-                <td>
+                <td data-label="Status">
                     {% if church.is_active %}
                         <span class="badge bg-success">
                             <i class="bi bi-check-circle me-1"></i>Active
@@ -175,38 +116,36 @@
                         </span>
                     {% endif %}
                 </td>
-                <td>{{ church.created_at|date:"M d, Y" }}</td>
-                <td>
+                <td data-label="Created">{{ church.created_at|date:"M d, Y" }}</td>
+                <td data-label="Actions">
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-primary" onclick="viewChurch({{ church.id }})" 
                                 title="View Details">
-                            <i class="bi bi-eye"></i>
+                            <i class="bi bi-eye me-0"></i>
                         </button>
                         <button type="button" class="btn btn-outline-warning" onclick="editChurch({{ church.id }})" 
                                 title="Edit Church">
-                            <i class="bi bi-pencil"></i>
+                            <i class="bi bi-pencil me-0"></i>
                         </button>
                         <button type="button" class="btn btn-outline-{% if church.is_active %}secondary{% else %}success{% endif %}" 
                                 onclick="toggleChurchStatus({{ church.id }})" 
                                 title="{% if church.is_active %}Deactivate{% else %}Activate{% endif %}">
-                            <i class="bi bi-{% if church.is_active %}pause{% else %}play{% endif %}"></i>
+                            <i class="bi bi-{% if church.is_active %}pause{% else %}play{% endif %} me-0"></i>
                         </button>
                         <button type="button" class="btn btn-outline-danger" onclick="deleteChurch({{ church.id }}, '{{ church.name }}')" 
                                 title="Delete Church">
-                            <i class="bi bi-trash"></i>
+                            <i class="bi bi-trash me-0"></i>
                         </button>
                     </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" class="text-center py-5">
-                    <i class="bi bi-building text-muted" style="font-size: 3rem;"></i>
-                    <h5 class="text-muted mt-3">No churches found</h5>
-                    <p class="text-muted">Start by adding your first church branch.</p>
-                    <a href="{% url 'churches:add_church' %}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle me-2"></i>Add New Church
-                    </a>
+                <td colspan="7">
+                    {% include 'components/empty_state.html' with icon='building' message='No churches found. Add a branch to get started.' %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'churches:add_church' %}" class="btn btn-sm btn-primary">Add church</a>
+                    </div>
                 </td>
             </tr>
             {% endfor %}

@@ -1,0 +1,37 @@
+.app-dialog {
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.app-dialog .modal-header {
+    background: var(--primary-color);
+    color: #fff;
+    border-bottom: 0;
+}
+
+.app-dialog .modal-header .btn-close {
+    filter: invert(1);
+}
+
+.app-dialog .modal-title {
+    font-weight: 600;
+}
+
+.app-dialog .modal-body {
+    color: var(--primary-color);
+    font-size: 1rem;
+}
+
+.app-dialog .modal-footer {
+    border-top: 1px solid var(--border-subtle, #e9ecef);
+}
+
+.app-dialog--danger .modal-header {
+    background: var(--accent-color);
+}
+
+.app-dialog--danger #appDialogConfirm {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+}

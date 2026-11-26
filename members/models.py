@@ -741,6 +741,58 @@ class Group(models.Model):
         return ' | '.join(info) if info else 'No meeting info'
 
 
+class GroupLeaveRequest(models.Model):
+    """Member-requested exit from a group; the group leader must approve."""
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    member = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='group_leave_requests',
+    )
+    group = models.ForeignKey(
+        Group,
+        on_delete=models.CASCADE,
+        related_name='leave_requests',
+    )
+    church = models.ForeignKey(
+        Church,
+        on_delete=models.CASCADE,
+        related_name='group_leave_requests',
+    )
+    reason = models.TextField()
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDING')
+    reviewed_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_leave_requests',
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Group Leave Request"
+        verbose_name_plural = "Group Leave Requests"
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['member', 'group'],
+                condition=Q(status='PENDING'),
+                name='unique_pending_group_leave',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.member.full_name} leave {self.group.name} ({self.status})"
+
+
 class ActivityLog(models.Model):
     """System activity logging"""
     ACTION_CHOICES = [

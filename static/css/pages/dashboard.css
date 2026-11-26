@@ -30,3 +30,143 @@ main {
     }
 }
 
+/* Shared dashboard panels (leader, admin, member) */
+.dashboard-panel,
+.chart-container,
+.care-group-list {
+    background: #fff;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--box-shadow);
+}
+
+.dashboard-panel--accent {
+    border-left: 4px solid var(--secondary-color);
+}
+
+.chart-container {
+    position: relative;
+    min-height: 280px;
+}
+
+.chart-container canvas {
+    max-height: 320px;
+    width: 100% !important;
+}
+
+.activity-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.progress-bar-custom {
+    height: 12px;
+    border-radius: 8px;
+    background-color: #e9ecef;
+    overflow: hidden;
+}
+
+.progress-bar-custom .progress-bar {
+    border-radius: 8px;
+}
+
+.scrollable-container {
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.scrollable-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.scrollable-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.scrollable-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.date-filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-filter-container .form-control-sm {
+    width: auto;
+    font-size: 0.85rem;
+}
+
+#reportModal .report-type-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.care-group-item {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border-subtle, #e9ecef);
+    border-radius: 10px;
+}
+
+.care-group-item:hover {
+    border-color: var(--secondary-color);
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.12);
+}
+
+.care-group-item:last-child {
+    margin-bottom: 0;
+}
+
+.btn-action {
+    padding: 0.5rem 1rem;
+    margin: 0.25rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+@media (max-width: 767.98px) {
+    .dashboard-panel,
+    .chart-container,
+    .care-group-list {
+        padding: 1rem;
+    }
+
+    .date-filter-container {
+        width: 100%;
+    }
+
+    .date-filter-container .form-control-sm,
+    .date-filter-container .btn {
+        width: 100%;
+    }
+
+    .care-group-item .text-end {
+        margin-top: 0.75rem;
+        text-align: left !important;
+    }
+
+    .care-group-item .btn-action {
+        display: block;
+        width: 100%;
+        margin: 0.25rem 0;
+    }
+}

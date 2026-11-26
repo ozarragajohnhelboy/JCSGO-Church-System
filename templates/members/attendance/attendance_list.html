@@ -10,68 +10,31 @@
     <div class="row">
       <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <h2><i class="fas fa-calendar-check"></i> Attendance Records</h2>
+          <h2><i class="bi bi-calendar-check"></i> Attendance Records</h2>
           <div>
-            <a href="{% url 'members:qr_scanner' %}" class="btn btn-primary me-2"><i class="fas fa-qrcode"></i> QR Scanner</a>
-            <a href="{% url 'members:attendance_export' %}" class="btn btn-outline-primary"><i class="fas fa-download"></i> Export</a>
+            <a href="{% url 'members:qr_scanner' %}" class="btn btn-primary me-2"><i class="bi bi-qr-code"></i> QR Scanner</a>
+            <a href="{% url 'members:attendance_export' %}" class="btn btn-outline-primary"><i class="bi bi-download"></i> Export</a>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="row mb-4">
+    <div class="row g-3 mb-4">
       <div class="col-md-4">
-        <div class="card bg-primary text-white">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h4>{{ today_attendances }}</h4>
-                <p class="mb-0">Today's Attendances</p>
-              </div>
-              <div class="align-self-center">
-                <i class="fas fa-calendar-day fa-2x"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+        {% include 'components/stats_card.html' with variant='primary' label='Today' value=today_attendances hint='Attendances today' icon='calendar-day' %}
       </div>
       <div class="col-md-4">
-        <div class="card bg-success text-white">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h4>{{ this_week_attendances }}</h4>
-                <p class="mb-0">This Week</p>
-              </div>
-              <div class="align-self-center">
-                <i class="fas fa-calendar-week fa-2x"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+        {% include 'components/stats_card.html' with variant='success' label='This Week' value=this_week_attendances hint='Current week' icon='calendar-week' %}
       </div>
       <div class="col-md-4">
-        <div class="card bg-info text-white">
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <div>
-                <h4>{{ page_obj.paginator.count }}</h4>
-                <p class="mb-0">Total Records</p>
-              </div>
-              <div class="align-self-center">
-                <i class="fas fa-list fa-2x"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+        {% include 'components/stats_card.html' with variant='info' label='Total Records' value=page_obj.paginator.count hint='Matching filters' icon='list-ul' %}
       </div>
     </div>
 
     <!-- Filters -->
     <div class="card mb-4">
       <div class="card-header">
-        <h5 class="card-title mb-0"><i class="fas fa-filter"></i> Filters</h5>
+        <h5 class="card-title mb-0"><i class="bi bi-funnel"></i> Filters</h5>
       </div>
       <div class="card-body">
         <form method="get" class="row g-3">
@@ -92,8 +55,8 @@
             {{ form.user }}
           </div>
           <div class="col-12">
-            <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Apply Filters</button>
-            <a href="{% url 'members:attendance_list' %}" class="btn btn-outline-secondary"><i class="fas fa-times"></i> Clear Filters</a>
+            <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Apply Filters</button>
+            <a href="{% url 'members:attendance_list' %}" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i> Clear Filters</a>
           </div>
         </form>
       </div>
@@ -102,12 +65,12 @@
     <!-- Attendance List -->
     <div class="card">
       <div class="card-header">
-        <h5 class="card-title mb-0"><i class="fas fa-list"></i> Attendance Records</h5>
+        <h5 class="card-title mb-0"><i class="bi bi-list-ul"></i> Attendance Records</h5>
       </div>
       <div class="card-body">
         {% if page_obj %}
           <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover table-stack">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -123,23 +86,23 @@
               <tbody>
                 {% for attendance in page_obj %}
                   <tr>
-                    <td>
+                    <td data-label="Date">
                       <span class="badge bg-secondary">{{ attendance.date|date:'M d, Y' }}</span>
                       <br /><small class="text-muted">{{ attendance.day_of_week }}</small>
                     </td>
-                    <td>
+                    <td data-label="Time">
                       <strong>{{ attendance.time_in|time:'g:i A' }}</strong>
                       {% if attendance.time_out %}
                         <br /><small class="text-muted">Out: {{ attendance.time_out|time:'g:i A' }}</small>
                       {% endif %}
                     </td>
-                    <td>
+                    <td data-label="Member">
                       <div class="d-flex align-items-center">
                         {% if attendance.user.profile_picture %}
                           <img src="{{ attendance.user.profile_picture.url }}" alt="{{ attendance.user.full_name }}" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;" />
                         {% else %}
                           <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                            <i class="fas fa-user text-white"></i>
+                            <i class="bi bi-person text-white"></i>
                           </div>
                         {% endif %}
                         <div>
@@ -148,33 +111,33 @@
                         </div>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Role">
                       {% if attendance.user.role %}
                         <span class="badge bg-info">{{ attendance.user.role.get_name_display }}</span>
                       {% else %}
                         <span class="text-muted">No Role</span>
                       {% endif %}
                     </td>
-                    <td>
+                    <td data-label="Type">
                       <span class="badge bg-primary">{{ attendance.get_attendance_type_display }}</span>
                     </td>
-                    <td>
+                    <td data-label="Scanned By">
                       {% if attendance.scanned_by %}
                         <small>{{ attendance.scanned_by.full_name }}</small>
                       {% else %}
                         <span class="text-muted">System</span>
                       {% endif %}
                     </td>
-                    <td>
+                    <td data-label="Notes">
                       {% if attendance.notes %}
                         <span class="text-truncate d-inline-block" style="max-width: 150px;" title="{{ attendance.notes }}">{{ attendance.notes }}</span>
                       {% else %}
                         <span class="text-muted">-</span>
                       {% endif %}
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#attendanceModal{{ attendance.id }}"><i class="fas fa-eye"></i></button>
+                        <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#attendanceModal{{ attendance.id }}"><i class="bi bi-eye me-0"></i></button>
                       </div>
                     </td>
                   </tr>
@@ -310,11 +273,9 @@
             </nav>
           {% endif %}
         {% else %}
-          <div class="text-center py-5">
-            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">No attendance records found</h5>
-            <p class="text-muted">Try adjusting your filters or start recording attendance using the QR scanner.</p>
-            <a href="{% url 'members:qr_scanner' %}" class="btn btn-primary"><i class="fas fa-qrcode"></i> Start Scanning</a>
+          {% include 'components/empty_state.html' with icon='calendar-x' message='No attendance records match these filters.' %}
+          <div class="text-center mt-3">
+            <a href="{% url 'members:qr_scanner' %}" class="btn btn-sm btn-outline-primary">Open QR scanner</a>
           </div>
         {% endif %}
       </div>
