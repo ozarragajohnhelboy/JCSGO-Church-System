@@ -26,58 +26,15 @@
 </div>
 
 <!-- Statistics Cards -->
-<div class="row mb-4">
+<div class="row g-3 mb-4">
     <div class="col-md-4">
-        <div class="card stats-card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h5 class="card-title text-white">Total Care Groups</h5>
-                        <h2 class="text-white mb-0">{{ total_care_groups }}</h2>
-                        <small class="text-white-50">Active groups</small>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-collection display-4 text-white-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% include 'components/stats_card.html' with variant='primary' label='Total Care Groups' value=total_care_groups hint='Active groups' icon='collection' %}
     </div>
     <div class="col-md-4">
-        <div class="card stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h5 class="card-title text-white">Groups I Lead</h5>
-                        <h2 class="text-white mb-0">{{ led_groups_count }}</h2>
-                        <small class="text-white-50">Your groups</small>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-person-badge display-4 text-white-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% include 'components/stats_card.html' with variant='secondary' label='Groups I Lead' value=led_groups_count hint='Your groups' icon='person-badge' %}
     </div>
     <div class="col-md-4">
-        <div class="card stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h5 class="card-title text-white">Your Role</h5>
-                        <h2 class="text-white mb-0">
-                            {% if user_role == 'VSL' %}VSL{% elif user_role == 'CSL' %}CSL{% elif user_role == 'CL' %}CL{% elif user_role == 'ADMIN' %}ADMIN{% endif %}
-                        </h2>
-                        <small class="text-white-50">
-                            {% if user_role == 'VSL' %}Vine Leader{% elif user_role == 'CSL' %}Cluster Leader{% elif user_role == 'CL' %}Care Leader{% elif user_role == 'ADMIN' %}Administrator{% endif %}
-                        </small>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="bi bi-shield-check display-4 text-white-50"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {% include 'components/stats_card.html' with variant='info' label='Your Role' value=user_role hint=user.role.get_name_display icon='shield-check' %}
     </div>
 </div>
 
@@ -90,7 +47,7 @@
                    value="{{ search }}" placeholder="Search by name, description, or leader...">
         </div>
         <div class="col-md-4">
-            <label class="form-label">&nbsp;</label>
+            <label class="form-label d-none d-md-block">&nbsp;</label>
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-search"></i> Search
@@ -102,7 +59,7 @@
 
 <!-- Care Groups Table -->
 <div class="table-responsive">
-    <table class="table table-striped table-hover">
+    <table class="table table-striped table-hover table-stack">
         <thead class="table-dark">
             <tr>
                 <th>Group Name</th>
@@ -117,7 +74,7 @@
         <tbody>
             {% for group in page_obj %}
             <tr>
-                <td>
+                <td data-label="Group Name">
                     <div>
                         <strong>{{ group.name }}</strong>
                         {% if group.description %}
@@ -125,7 +82,7 @@
                         {% endif %}
                     </div>
                 </td>
-                <td>
+                <td data-label="Leader">
                     <div class="d-flex align-items-center">
                         {% if group.leader.profile_picture %}
                         <img src="{{ group.leader.profile_picture.url }}" alt="Leader" class="rounded-circle me-2" width="24" height="24">
@@ -138,10 +95,10 @@
                         </div>
                     </div>
                 </td>
-                <td>
+                <td data-label="Members">
                     <span class="badge bg-primary">{{ group.member_count }}</span>
                 </td>
-                <td>
+                <td data-label="Capacity">
                     <div class="progress" style="height: 20px;">
                         <div class="progress-bar {% if group.capacity_percentage >= 80 %}bg-danger{% elif group.capacity_percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
                              role="progressbar" style="width: {{ group.capacity_percentage }}%">
@@ -150,30 +107,30 @@
                     </div>
                     <small class="text-muted">{{ group.member_count }}/{{ group.max_members }}</small>
                 </td>
-                <td>
+                <td data-label="Meeting Info">
                     {% if group.get_meeting_info %}
                     <small>{{ group.get_meeting_info }}</small>
                     {% else %}
                     <span class="text-muted">No meeting info</span>
                     {% endif %}
                 </td>
-                <td>
+                <td data-label="Status">
                     {% if group.is_active %}
                     <span class="badge bg-success">Active</span>
                     {% else %}
                     <span class="badge bg-danger">Inactive</span>
                     {% endif %}
                 </td>
-                <td>
+                <td data-label="Actions">
                     <div class="btn-group" role="group">
                         <a href="{% url 'members:care_group_detail' group.pk %}" class="btn btn-sm btn-outline-primary btn-action" 
                            data-bs-toggle="tooltip" title="View Details">
-                            <i class="bi bi-eye"></i>
+                            <i class="bi bi-eye me-0"></i>
                         </a>
                         {% if group.leader == user or user.role.name == 'ADMIN' %}
                         <a href="{% url 'members:care_group_edit' group.pk %}" class="btn btn-sm btn-outline-secondary btn-action" 
                            data-bs-toggle="tooltip" title="Edit Group">
-                            <i class="bi bi-pencil"></i>
+                            <i class="bi bi-pencil me-0"></i>
                         </a>
                         {% endif %}
                         {% if group.leader == user or user.role.name == 'ADMIN' %}
@@ -181,7 +138,7 @@
                             <button type="button" class="btn btn-sm btn-outline-success btn-action" 
                                     onclick="showAddMemberModal({{ group.pk }})"
                                     data-bs-toggle="tooltip" title="Add Member">
-                                <i class="bi bi-person-plus"></i>
+                                <i class="bi bi-person-plus me-0"></i>
                             </button>
                             {% else %}
                             <span class="btn btn-sm btn-outline-danger disabled" title="Group is full">
@@ -193,7 +150,7 @@
                         <a href="{% url 'members:care_group_report_create' %}?care_group={{ group.pk }}" 
                            class="btn btn-sm btn-outline-info btn-action" 
                            data-bs-toggle="tooltip" title="Create Report">
-                            <i class="bi bi-file-earmark-text"></i>
+                            <i class="bi bi-file-earmark-text me-0"></i>
                         </a>
                         {% endif %}
                     </div>
@@ -201,17 +158,13 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="text-center py-4">
-                    <div class="text-muted">
-                        <i class="bi bi-collection display-4"></i>
-                        <p class="mt-2">No care groups found.</p>
-                        {% if can_create_group %}
-                        <p>Start by creating your first care group!</p>
-                        <a href="{% url 'members:care_group_create' %}" class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> Create Care Group
-                        </a>
-                        {% endif %}
+                <td colspan="7">
+                    {% include 'components/empty_state.html' with icon='collection' message='No care groups found.' %}
+                    {% if can_create_group %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'members:care_group_create' %}" class="btn btn-sm btn-primary">Create care group</a>
                     </div>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
@@ -307,13 +260,6 @@
 
 {% block extra_css %}
 <style>
-    .stats-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
     .search-form {
         background: white;
         border-radius: 15px;

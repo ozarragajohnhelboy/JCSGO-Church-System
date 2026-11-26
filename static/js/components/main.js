@@ -206,11 +206,11 @@ function confirmLogout() {
 
 $(document).ready(function () {
     setTimeout(function () {
-        $('.alert').fadeOut('slow');
+        $('.toast-alerts .alert').fadeOut('slow');
     }, 5000);
 });
 
-$('.alert').on('close.bs.alert', function () {
+$('.toast-alerts .alert').on('close.bs.alert', function () {
     $(this).fadeOut('slow');
 });
 

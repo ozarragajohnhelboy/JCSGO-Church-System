@@ -1,0 +1,10 @@
+<div class="card stats-tile stats-tile--{{ variant|default:'primary' }}">
+  <div class="card-body d-flex justify-content-between align-items-center">
+    <div>
+      <h6 class="stats-tile__label">{{ label }}</h6>
+      <div class="stats-tile__value">{{ value }}</div>
+      {% if hint %}<small class="stats-tile__hint">{{ hint }}</small>{% endif %}
+    </div>
+    {% if icon %}<i class="bi bi-{{ icon }} stats-tile__icon" aria-hidden="true"></i>{% endif %}
+  </div>
+</div>

@@ -26,6 +26,11 @@ from .groups_views import (
     group_detail
 )
 
+from .group_leave_views import (
+    group_leave_request,
+    group_leave_review,
+)
+
 # Import all placeholder views temporarily
 from .placeholder_views import (
     activity_logs,
@@ -97,6 +102,8 @@ __all__ = [
     # Groups
     'group_list',
     'group_detail',
+    'group_leave_request',
+    'group_leave_review',
     
     # All other views (temporarily from placeholder_views)
     'activity_logs',

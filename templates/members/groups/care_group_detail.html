@@ -3,165 +3,76 @@
 
 {% block title %}{{ group.name }} - Care Group - {{ block.super }}{% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'css/components/member_record.css' %}" rel="stylesheet" />
+<link href="{% static 'css/pages/care_group_detail.css' %}" rel="stylesheet" />
+{% endblock %}
+
 {% block content %}
 <div class="page-header d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2 mb-0">
-        <i class="bi bi-collection me-2"></i>
-        {{ group.name }}
-    </h1>
-    <div class="page-actions">
-        <a href="{% url 'members:care_group_list' %}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-arrow-left"></i>Back to Care Groups
-        </a>
-        {% if is_leader %}
-        <a href="{% url 'members:care_group_edit' group.pk %}" class="btn btn-sm btn-outline-primary">
-            <i class="bi bi-pencil"></i>Edit Group
-        </a>
-        {% endif %}
-        {% if user.role.name == 'VSL' or user.role.name == 'CSL' or user.role.name == 'CL' or user.role.name == 'ADMIN' %}
-        <a href="{% url 'members:care_group_attendance_tracking' group.pk %}" class="btn btn-sm btn-outline-success">
-            <i class="bi bi-calendar-check"></i>Track Attendance
-        </a>
-        {% endif %}
-    </div>
+    <h1 class="h2 mb-0">{{ group.name }}</h1>
+    <a href="{% url 'members:care_group_list' %}" class="btn btn-sm btn-outline-secondary">Back to Care Groups</a>
 </div>
 
-<!-- Group Information -->
-<div class="row mb-4">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-info-circle me-2"></i>
-                    Care Group Information
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="text-muted">Group Name</h6>
-                        <p class="fw-bold">{{ group.name }}</p>
-                        
-                        <h6 class="text-muted">Leader</h6>
-                        <div class="d-flex align-items-center mb-3">
-                            {% if group.leader.profile_picture %}
-                            <img src="{{ group.leader.profile_picture.url }}" alt="Leader" class="rounded-circle me-2" width="40" height="40">
-                            {% else %}
-                            <div class="bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                <span class="text-white fw-bold">{{ group.leader.first_name|first }}{{ group.leader.last_name|first }}</span>
-                            </div>
-                            {% endif %}
-                            <div>
-                                <div class="fw-bold">{{ group.leader.full_name }}</div>
-                                <small class="text-muted">{% if group.leader.role %}{{ group.leader.role.get_name_display }}{% endif %}</small>
-                            </div>
-                        </div>
-                        
-                        {% if group.description %}
-                        <h6 class="text-muted">Description</h6>
-                        <p>{{ group.description }}</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <h6 class="text-muted">Capacity</h6>
-                        <div class="progress mb-2" style="height: 25px;">
-                            <div class="progress-bar {% if capacity_percentage >= 80 %}bg-danger{% elif capacity_percentage >= 60 %}bg-warning{% else %}bg-success{% endif %}" 
-                                 role="progressbar" style="width: {{ capacity_percentage }}%">
-                                {{ capacity_percentage }}%
-                            </div>
-                        </div>
-                        <p class="small text-muted">{{ group.member_count }} of {{ group.max_members }} members</p>
-                        
-                        {% if group.meeting_day or group.meeting_time %}
-                        <h6 class="text-muted">Meeting Schedule</h6>
-                        <p>
-                            {% if group.meeting_day %}{{ group.get_meeting_day_display }}{% endif %}
-                            {% if group.meeting_time %} at {{ group.meeting_time|time:"g:i A" }}{% endif %}
-                        </p>
-                        {% endif %}
-                        
-                        {% if group.meeting_location %}
-                        <h6 class="text-muted">Meeting Location</h6>
-                        <p><i class="bi bi-geo-alt me-1"></i>{{ group.meeting_location }}</p>
-                        {% endif %}
-                        
-                        {% if group.meeting_schedule %}
-                        <h6 class="text-muted">Schedule Details</h6>
-                        <p><i class="bi bi-calendar-event me-1"></i>{{ group.meeting_schedule }}</p>
-                        {% endif %}
-                        
-                        <h6 class="text-muted">Status</h6>
-                        <p>
-                            {% if group.is_active %}
-                            <span class="badge bg-success">Active</span>
-                            {% else %}
-                            <span class="badge bg-danger">Inactive</span>
-                            {% endif %}
-                            {% if is_full %}
-                            <span class="badge bg-warning ms-2">Full</span>
-                            {% endif %}
-                        </p>
-                    </div>
-                </div>
+<section class="member-record mb-4">
+    <div class="member-record__head">
+        <div class="member-record__who">
+            {% if group.leader.profile_picture %}
+            <img src="{{ group.leader.profile_picture.url }}" alt="" class="member-record__photo">
+            {% else %}
+            <span class="member-record__photo member-record__photo--empty" aria-hidden="true">{{ group.leader.first_name|first|upper }}{{ group.leader.last_name|first|upper }}</span>
+            {% endif %}
+            <div>
+                <p class="member-assignment__kicker mb-1">Care group · {% if group.is_active %}Active{% else %}Inactive{% endif %}{% if is_full %} · Full{% endif %}</p>
+                <h2 class="h5 mb-0">{{ group.name }}</h2>
+                <p class="text-muted mb-0">Led by {{ group.leader.full_name }}{% if group.leader.role %} · {{ group.leader.role.get_name_display }}{% endif %}</p>
             </div>
         </div>
+        <div class="member-record__actions mt-0 pt-0 border-0">
+            {% if is_leader and not is_full %}
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="showAddMemberModal()">Add member</button>
+            {% endif %}
+            {% if is_leader %}
+            <a href="{% url 'members:care_group_edit' group.pk %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            {% endif %}
+            {% if user.role.name == 'VSL' or user.role.name == 'CSL' or user.role.name == 'CL' or user.role.name == 'ADMIN' %}
+            <a href="{% url 'members:care_group_attendance_tracking' group.pk %}" class="btn btn-sm btn-outline-secondary">Attendance</a>
+            {% endif %}
+        </div>
     </div>
-    
-    <div class="col-lg-4">
-        {% if is_leader %}
-        <div class="card mb-3">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-gear me-2"></i>
-                    Group Management
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if not is_full %}
-                <button class="btn btn-success btn-sm mb-2 w-100" onclick="showAddMemberModal()">
-                    <i class="bi bi-person-plus me-1"></i>
-                    Add Member
-                </button>
-                {% else %}
-                <div class="alert alert-warning">
-                    <i class="bi bi-exclamation-triangle me-1"></i>
-                    Group is at full capacity
-                </div>
-                {% endif %}
-                
-                <a href="{% url 'members:care_group_edit' group.pk %}" class="btn btn-outline-primary btn-sm w-100">
-                    <i class="bi bi-pencil me-1"></i>
-                    Edit Group Details
-                </a>
-            </div>
+    <dl class="member-record__facts">
+        <div>
+            <dt>Members</dt>
+            <dd>{{ group.member_count }}/{{ group.max_members }}{% if is_full %} · full{% endif %}</dd>
+        </div>
+        {% if group.meeting_day or group.meeting_time %}
+        <div>
+            <dt>Meeting</dt>
+            <dd>{% if group.meeting_day %}{{ group.get_meeting_day_display }}{% endif %}{% if group.meeting_time %} at {{ group.meeting_time|time:"g:i A" }}{% endif %}</dd>
         </div>
         {% endif %}
-        
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-bar-chart me-2"></i>
-                    Group Statistics
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="text-center">
-                    <div class="row">
-                        <div class="col-6">
-                            <h3 class="text-primary">{{ group.member_count }}</h3>
-                            <small class="text-muted">Members</small>
-                        </div>
-                        <div class="col-6">
-                            <h3 class="text-success">{{ capacity_percentage }}%</h3>
-                            <small class="text-muted">Capacity</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        {% if group.meeting_location %}
+        <div>
+            <dt>Location</dt>
+            <dd>{{ group.meeting_location }}</dd>
         </div>
-    </div>
-</div>
+        {% endif %}
+        {% if group.meeting_schedule %}
+        <div>
+            <dt>Schedule</dt>
+            <dd>{{ group.meeting_schedule }}</dd>
+        </div>
+        {% endif %}
+    </dl>
+    {% if group.description %}
+    <p class="text-muted mb-0 mt-3">{{ group.description }}</p>
+    {% endif %}
+    {% if is_leader and is_full %}
+    <p class="member-assignment__status mt-3 mb-0">This group is at capacity. Remove a member before adding another.</p>
+    {% endif %}
+</section>
+
+{% include 'members/groups/_leave_requests_panel.html' %}
 
 <!-- Group Members -->
 <div class="card mb-4">
@@ -174,7 +85,7 @@
     <div class="card-body">
         {% if members %}
         <div class="table-responsive">
-            <table class="table table-hover">
+            <table class="table table-hover table-stack">
                 <thead>
                     <tr>
                         <th>Member</th>
@@ -189,7 +100,7 @@
                 <tbody>
                     {% for member in members %}
                     <tr>
-                        <td>
+                        <td data-label="Member">
                             <div class="d-flex align-items-center">
                                 {% if member.user.profile_picture %}
                                 <img src="{{ member.user.profile_picture.url }}" alt="Member" class="rounded-circle me-2" width="32" height="32">
@@ -206,7 +117,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Role">
                             <span class="badge bg-info">
                                 {% if member.user.role %}
                                     {{ member.user.role.get_name_display }}
@@ -217,7 +128,7 @@
                                 {% endif %}
                             </span>
                         </td>
-                        <td>
+                        <td data-label="Contact">
                             <div>
                                 <small class="text-muted">{{ member.user.email }}</small>
                                 {% if member.user.phone_number %}
@@ -225,15 +136,15 @@
                                 {% endif %}
                             </div>
                         </td>
-                        <td>
+                        <td data-label="Joined">
                             <small>{{ member.user.date_joined|date:"M d, Y" }}</small>
                         </td>
                         {% if is_leader %}
-                        <td>
+                        <td data-label="Actions">
                             <button class="btn btn-sm btn-outline-danger" 
                                     onclick="removeMember({{ member.user.pk }}, '{{ member.user.full_name }}')"
                                     data-bs-toggle="tooltip" title="Remove from group">
-                                <i class="bi bi-person-dash"></i>
+                                <i class="bi bi-person-dash me-0"></i>
                             </button>
                         </td>
                         {% endif %}
@@ -243,17 +154,12 @@
             </table>
         </div>
         {% else %}
-        <div class="text-center py-4">
-            <i class="bi bi-people display-4 text-muted"></i>
-            <h5 class="text-muted mt-3">No Members Yet</h5>
-            <p class="text-muted">This care group doesn't have any members yet.</p>
-            {% if is_leader %}
-            <button class="btn btn-primary" onclick="showAddMemberModal()">
-                <i class="bi bi-person-plus me-1"></i>
-                Add First Member
-            </button>
-            {% endif %}
+        {% include 'components/empty_state.html' with icon='people' message='No members in this group yet.' %}
+        {% if is_leader %}
+        <div class="mt-3">
+            <button type="button" class="btn btn-sm btn-primary" onclick="showAddMemberModal()">Add member</button>
         </div>
+        {% endif %}
         {% endif %}
     </div>
 </div>
@@ -298,7 +204,7 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label">&nbsp;</label>
+                <label class="form-label d-none d-md-block">&nbsp;</label>
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-primary btn-sm" onclick="loadGroupActivities({{ group.id }}, 5)">
                         <i class="bi bi-search"></i> Filter
@@ -329,10 +235,7 @@
             </div>
             {% endfor %}
             {% else %}
-            <div class="text-center py-3">
-                <i class="bi bi-activity fs-1 text-muted"></i>
-                <p class="text-muted">No recent activity</p>
-            </div>
+            {% include 'components/empty_state.html' with icon='activity' message='No recent activity.' %}
             {% endif %}
         </div>
         
@@ -372,10 +275,6 @@
 </div>
 {% endif %}
 
-{% endblock %}
-
-{% block extra_css %}
-<link href="{% static 'css/pages/care_group_detail.css' %}" rel="stylesheet" />
 {% endblock %}
 
 {% block extra_js %}

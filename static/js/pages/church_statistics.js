@@ -64,7 +64,7 @@ function initializeCharts() {
                 datasets: [{
                     label: 'Total Members',
                     data: window.growthData || [120, 135, 142, 158, 165, 172, 180, 188, 195, 203, 210, 218],
-                    borderColor: '#007bff',
+                    borderColor: '#3498db',
                     backgroundColor: 'rgba(0, 123, 255, 0.1)',
                     tension: 0.4
                 }]

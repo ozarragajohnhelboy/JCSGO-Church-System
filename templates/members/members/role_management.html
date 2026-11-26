@@ -15,31 +15,6 @@
       margin-bottom: 2rem;
     }
     
-    .role-stats-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border-radius: 15px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    .role-stats-card:nth-child(2) {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-    
-    .role-stats-card:nth-child(3) {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-    
-    .role-stats-card:nth-child(4) {
-      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    }
-    
-    .role-stats-card:nth-child(5) {
-      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-    }
-    
     .user-table {
       background: white;
       border-radius: 15px;
@@ -109,7 +84,7 @@
     }
     
     .user-details-modal .modal-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--primary-color, #2c3e50);
       color: white;
     }
     
@@ -157,21 +132,20 @@
       </div>
     </div>
 
-    <!-- Role Statistics -->
-    <div class="row mb-4">
+    <div class="row g-3 mb-4">
       {% for role_name, stats in role_stats.items %}
-        <div class="col-md-4 col-lg-2 mb-3">
-          <div class="role-stats-card">
-            <div class="d-flex justify-content-between align-items-center">
-              <div>
-                <h6 class="mb-1">{{ stats.name }}</h6>
-                <h3 class="mb-0">{{ stats.count }}</h3>
-              </div>
-              <div class="text-end">
-                <small>{{ stats.percentage }}%</small>
-              </div>
-            </div>
-          </div>
+        <div class="col-6 col-lg">
+          {% if forloop.counter == 1 %}
+            {% include 'components/stats_card.html' with variant='primary' label=stats.name value=stats.count icon='people' %}
+          {% elif forloop.counter == 2 %}
+            {% include 'components/stats_card.html' with variant='secondary' label=stats.name value=stats.count icon='diagram-3' %}
+          {% elif forloop.counter == 3 %}
+            {% include 'components/stats_card.html' with variant='info' label=stats.name value=stats.count icon='people' %}
+          {% elif forloop.counter == 4 %}
+            {% include 'components/stats_card.html' with variant='success' label=stats.name value=stats.count icon='person-badge' %}
+          {% else %}
+            {% include 'components/stats_card.html' with variant='warning' label=stats.name value=stats.count icon='person' %}
+          {% endif %}
         </div>
       {% endfor %}
     </div>
@@ -195,7 +169,7 @@
           </select>
         </div>
         <div class="col-md-3">
-          <label class="form-label">&nbsp;</label>
+          <label class="form-label d-none d-md-block">&nbsp;</label>
           <div class="d-grid">
             <button type="submit" class="btn btn-primary">
               <i class="bi bi-search me-2"></i>
@@ -204,7 +178,7 @@
           </div>
         </div>
         <div class="col-md-2">
-          <label class="form-label">&nbsp;</label>
+          <label class="form-label d-none d-md-block">&nbsp;</label>
           <div class="d-grid">
             <a href="{% url 'members:role_management' %}" class="btn btn-outline-secondary">
               <i class="bi bi-arrow-clockwise me-2"></i>
@@ -258,7 +232,7 @@
       </div>
 
       <div class="user-table">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover mb-0 table-stack">
           <thead>
             <tr>
               <th width="50">
@@ -278,7 +252,7 @@
                 <td>
                   <input type="checkbox" class="form-check-input user-checkbox" value="{{ user_item.id }}">
                 </td>
-                <td>
+                <td data-label="User">
                   <div class="d-flex align-items-center">
                     <div class="me-3">
                       {% if user_item.profile_picture %}
@@ -295,7 +269,7 @@
                     </div>
                   </div>
                 </td>
-                <td>
+                <td data-label="Current Role">
                   {% if user_item.role %}
                     <span class="role-badge role-{{ user_item.role.name|lower }}">
                       {{ user_item.role.get_name_display }}
@@ -304,7 +278,7 @@
                     <span class="badge bg-secondary">No Role</span>
                   {% endif %}
                 </td>
-                <td>
+                <td data-label="Status">
                   {% if user_item.is_new_friend %}
                     <span class="badge bg-warning">
                       New Friend ({{ user_item.timer_status }}{% if user_item.timer_status == 1 %}st{% elif user_item.timer_status == 2 %}nd{% elif user_item.timer_status == 3 %}rd{% else %}th{% endif %} Timer)
@@ -313,23 +287,23 @@
                     <span class="badge bg-success">Regular Member</span>
                   {% endif %}
                 </td>
-                <td>
+                <td data-label="Date Joined">
                   <small>{{ user_item.date_joined|date:"M d, Y" }}</small>
                 </td>
-                <td>
+                <td data-label="Last Activity">
                   {% if user_item.last_attendance %}
                     <small>{{ user_item.last_attendance|date:"M d, Y" }}</small>
                   {% else %}
                     <small class="text-muted">Never</small>
                   {% endif %}
                 </td>
-                <td>
+                <td data-label="Actions">
                   <div class="user-actions">
                     <button class="btn btn-sm btn-outline-primary" onclick="viewUserDetails({{ user_item.id }})">
-                      <i class="bi bi-eye"></i>
+                      <i class="bi bi-eye me-0"></i>
                     </button>
                     <button class="btn btn-sm btn-outline-success" onclick="changeUserRole({{ user_item.id }})">
-                      <i class="bi bi-pencil"></i>
+                      <i class="bi bi-pencil me-0"></i>
                     </button>
                   </div>
                 </td>
@@ -622,35 +596,40 @@
         return;
       }
       
-      if (!confirm(`Are you sure you want to update ${checkedBoxes.length} users to ${newRole}?`)) {
-        return;
-      }
-      
-      const formData = new FormData();
-      checkedBoxes.forEach(checkbox => {
-        formData.append('user_ids[]', checkbox.value);
-      });
-      formData.append('role', newRole);
-      
-      fetch('/members/ajax/bulk-role-update/', {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+      window.appConfirm(`Are you sure you want to update ${checkedBoxes.length} users to ${newRole}?`, {
+        title: 'Update roles',
+        confirmLabel: 'Update',
+      }).then(function (ok) {
+        if (!ok) {
+          return;
         }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          showSuccess(data.message);
-          setTimeout(() => location.reload(), 1500);
-        } else {
-          showError(data.error);
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        showError('Error updating user roles');
+
+        const formData = new FormData();
+        checkedBoxes.forEach(checkbox => {
+          formData.append('user_ids[]', checkbox.value);
+        });
+        formData.append('role', newRole);
+
+        fetch('/members/ajax/bulk-role-update/', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            showSuccess(data.message);
+            setTimeout(() => location.reload(), 1500);
+          } else {
+            showError(data.error);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          showError('Error updating user roles');
+        });
       });
     }
     
@@ -672,13 +651,11 @@
     
     // Utility functions
     function showSuccess(message) {
-      // You can implement a toast notification here
-      alert('Success: ' + message);
+      window.appAlert(message, { title: 'Success' });
     }
     
     function showError(message) {
-      // You can implement a toast notification here
-      alert('Error: ' + message);
+      window.appAlert(message, { title: 'Error', danger: true });
     }
   </script>
 {% endblock %} 

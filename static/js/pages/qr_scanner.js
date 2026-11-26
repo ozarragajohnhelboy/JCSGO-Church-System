@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const timerInfo = document.createElement('div');
                         timerInfo.className = 'alert alert-info mt-2';
                         timerInfo.innerHTML = `
-                        <i class="fas fa-info-circle me-2"></i>
+                        <i class="bi bi-info-circle me-2"></i>
                         <strong>New Friend Status:</strong> ${data.user.timer_status}${data.user.timer_status == 1 ? 'st' : data.user.timer_status == 2 ? 'nd' : data.user.timer_status == 3 ? 'rd' : 'th'} Timer
                     `;
                         document.querySelector('.scanner-container').appendChild(timerInfo);
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         const timerInfo = document.createElement('div');
                         timerInfo.className = 'alert alert-info mt-2';
                         timerInfo.innerHTML = `
-                        <i class="fas fa-info-circle me-2"></i>
+                        <i class="bi bi-info-circle me-2"></i>
                         <strong>New Friend Status:</strong> ${data.user.timer_status}${data.user.timer_status == 1 ? 'st' : data.user.timer_status == 2 ? 'nd' : data.user.timer_status == 3 ? 'rd' : 'th'} Timer
                     `;
                         document.querySelector('.scanner-container').appendChild(timerInfo);
@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        const emptyState = list.querySelector('.text-center.py-4');
+        const emptyState = list.querySelector('.empty-state');
         if (emptyState) {
             emptyState.remove();
         }
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function showMessage(type, message) {
         const alertClass = type === 'success' ? 'success-alert' : 'error-alert';
-        const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+        const icon = type === 'success' ? 'bi bi-check-circle' : 'bi bi-exclamation-circle';
 
         const messageDiv = document.createElement('div');
         messageDiv.className = alertClass;
@@ -390,7 +390,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateScannerStatus(message, type) {
         if (scannerStatus) {
-            scannerStatus.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+            scannerStatus.innerHTML = `<i class="bi bi-info-circle"></i> ${message}`;
 
             scannerStatus.className = 'text-white-50';
             if (type === 'success') {

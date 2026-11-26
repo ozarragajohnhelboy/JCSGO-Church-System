@@ -6,25 +6,6 @@
 
 {% block extra_css %}
   <style>
-    .stats-card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    }
-    
-    .stats-card:nth-child(2) {
-      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-    
-    .stats-card:nth-child(3) {
-      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-    }
-    
-    .stats-card:nth-child(4) {
-      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    }
-    
     .report-section {
       background: white;
       border-radius: 15px;
@@ -62,17 +43,6 @@
       padding-left: 2rem;
     }
     
-    .counter-badge {
-      display: inline-block;
-      padding: 8px 16px;
-      background: linear-gradient(135deg, #007bff, #0056b3);
-      color: white;
-      border-radius: 20px;
-      font-weight: 600;
-      font-size: 1.1rem;
-      min-width: 60px;
-    }
-    
     .date-filter-form {
       background: #f8f9fa;
       padding: 1rem;
@@ -85,7 +55,7 @@
       font-weight: 600;
       margin-bottom: 1rem;
       padding-bottom: 0.5rem;
-      border-bottom: 2px solid #007bff;
+      border-bottom: 2px solid #3498db;
     }
   </style>
 {% endblock %}
@@ -97,17 +67,14 @@
       <div class="col-12">
         <div class="d-flex justify-content-between align-items-center">
           <div>
-            <h1 class="h3 mb-0 text-gray-800">Church Report</h1>
-            <p class="text-muted mb-0">{{ church.name }} - Demographic Statistics</p>
+            <h1 class="h2 mb-0">Church Report</h1>
+            <p class="text-muted mb-0">{{ church.name }}{% if church.location %} · {{ church.location }}{% endif %}</p>
           </div>
-          <div class="d-flex gap-2 align-items-center">
-            <span class="badge bg-primary fs-6">{{ church.location }}</span>
-            <a href="{% url 'churches:export_church_report_to_sheets' %}?start_date={% if start_date %}{{ start_date|date:'Y-m-d' }}{% endif %}&end_date={% if end_date %}{{ end_date|date:'Y-m-d' }}{% endif %}" 
-               class="btn btn-success" 
-               target="_blank">
-              Connect to Google Sheet
-            </a>
-          </div>
+          <a href="{% url 'churches:export_church_report_to_sheets' %}?start_date={% if start_date %}{{ start_date|date:'Y-m-d' }}{% endif %}&end_date={% if end_date %}{{ end_date|date:'Y-m-d' }}{% endif %}"
+             class="btn btn-sm btn-outline-primary"
+             target="_blank">
+            Connect to Google Sheet
+          </a>
         </div>
       </div>
     </div>
@@ -134,70 +101,18 @@
       </div>
     </div>
 
-    <!-- Summary Cards -->
-    <div class="row mb-4">
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card text-white">
-          <div class="card-body">
-            <div class="row no-gutters align-items-center">
-              <div class="col mr-2">
-                <div class="text-xs font-weight-bold text-uppercase mb-1">Total Members</div>
-                <div class="h5 mb-0 font-weight-bold">{{ total_members }}</div>
-              </div>
-              <div class="col-auto">
-                <i class="fas fa-users fa-2x"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div class="row g-3 mb-4">
+      <div class="col-xl-3 col-md-6">
+        {% include 'components/stats_card.html' with variant='primary' label='Total Members' value=total_members hint='All members' icon='people' %}
       </div>
-
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card text-white">
-          <div class="card-body">
-            <div class="row no-gutters align-items-center">
-              <div class="col mr-2">
-                <div class="text-xs font-weight-bold text-uppercase mb-1">Regular Members</div>
-                <div class="h5 mb-0 font-weight-bold">{{ regular_members_count }}</div>
-              </div>
-              <div class="col-auto">
-                <i class="fas fa-user-check fa-2x"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="col-xl-3 col-md-6">
+        {% include 'components/stats_card.html' with variant='info' label='Regular Members' value=regular_members_count hint='VSL, CSL, CL, CM' icon='person-check' %}
       </div>
-
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card text-white">
-          <div class="card-body">
-            <div class="row no-gutters align-items-center">
-              <div class="col mr-2">
-                <div class="text-xs font-weight-bold text-uppercase mb-1">New Friends</div>
-                <div class="h5 mb-0 font-weight-bold">{{ new_friends_count }}</div>
-              </div>
-              <div class="col-auto">
-                <i class="fas fa-user-plus fa-2x"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="col-xl-3 col-md-6">
+        {% include 'components/stats_card.html' with variant='secondary' label='New Friends' value=new_friends_count hint='1st-5th timer' icon='person-plus' %}
       </div>
-
-      <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stats-card text-white">
-          <div class="card-body">
-            <div class="row no-gutters align-items-center">
-              <div class="col mr-2">
-                <div class="text-xs font-weight-bold text-uppercase mb-1">Sunday Attendance</div>
-                <div class="h5 mb-0 font-weight-bold">{{ sunday_attendance_stats.sunday_attendance.total }}</div>
-              </div>
-              <div class="col-auto">
-                <i class="fas fa-calendar-check fa-2x"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div class="col-xl-3 col-md-6">
+        {% include 'components/stats_card.html' with variant='success' label='Sunday Attendance' value=sunday_attendance_stats.sunday_attendance.total hint='Onsite and online' icon='calendar-check' %}
       </div>
     </div>
 

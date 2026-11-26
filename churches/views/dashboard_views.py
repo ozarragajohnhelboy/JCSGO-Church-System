@@ -331,7 +331,8 @@ def dashboard(request):
     
     # Church leader dashboard (VSL, CSL, CL)
     elif user.role.name in ['VSL', 'CSL', 'CL']:
-        from members.models import Group, RegularMember
+        from django.db.models import Count
+        from members.models import Group, GroupLeaveRequest, RegularMember
         
         # Get care groups led by this user
         led_groups = Group.objects.filter(
@@ -440,6 +441,13 @@ def dashboard(request):
         # Get group statistics with enhanced data
         group_stats = []
         total_group_members = 0
+        leave_counts = {
+            row['group']: row['c']
+            for row in GroupLeaveRequest.objects.filter(
+                group__in=led_groups,
+                status='PENDING',
+            ).values('group').annotate(c=Count('id'))
+        }
         
         for group in led_groups:
             member_count = group.member_count
@@ -457,7 +465,8 @@ def dashboard(request):
                 'member_count': member_count,
                 'capacity_percentage': group.capacity_percentage,
                 'is_full': group.is_full,
-                'recent_activities': recent_group_activities
+                'recent_activities': recent_group_activities,
+                'pending_leave_count': leave_counts.get(group.id, 0),
             })
         
         # Get recent group activities (self + downline only, same as care group reports)
@@ -474,6 +483,26 @@ def dashboard(request):
             user,
             CareGroupReport.objects.filter(church=user.church)
         ).select_related('care_group').order_by('-date_of_cg', '-created_at')[:5]
+
+        user_group = None
+        pending_leave_request = None
+        try:
+            user_group = RegularMember.objects.select_related(
+                'group', 'group__leader'
+            ).get(user=user).group
+        except RegularMember.DoesNotExist:
+            user_group = None
+        if user_group:
+            pending_leave_request = GroupLeaveRequest.objects.filter(
+                member=user,
+                group=user_group,
+                status='PENDING',
+            ).first()
+
+        pending_leave_requests = GroupLeaveRequest.objects.filter(
+            group__in=led_groups,
+            status='PENDING',
+        ).select_related('member', 'group').order_by('created_at')
         
         context.update({
             'led_groups': led_groups,
@@ -487,6 +516,9 @@ def dashboard(request):
             'care_group_growth_counts': care_group_growth_counts,
             'recent_group_activities': recent_group_activities,
             'recent_reports': recent_reports,
+            'user_group': user_group,
+            'pending_leave_request': pending_leave_request,
+            'pending_leave_requests': pending_leave_requests,
         })
         return render(request, 'churches/dashboard/leader_dashboard.html', context)
     
@@ -495,7 +527,9 @@ def dashboard(request):
         # Get user's group membership
         from members.models import RegularMember
         try:
-            regular_profile = RegularMember.objects.get(user=user)
+            regular_profile = RegularMember.objects.select_related(
+                'group', 'group__leader'
+            ).get(user=user)
             user_group = regular_profile.group
         except RegularMember.DoesNotExist:
             user_group = None
@@ -516,10 +550,20 @@ def dashboard(request):
                 attendance_streak = 1
                 # Could implement more complex streak logic here
         
+        pending_leave_request = None
+        if user_group:
+            from members.models import GroupLeaveRequest
+            pending_leave_request = GroupLeaveRequest.objects.filter(
+                member=user,
+                group=user_group,
+                status='PENDING',
+            ).first()
+
         context.update({
             'user_group': user_group,
             'user_activities': user_activities,
             'attendance_streak': attendance_streak,
+            'pending_leave_request': pending_leave_request,
         })
         return render(request, 'churches/dashboard/member_dashboard.html', context)
 

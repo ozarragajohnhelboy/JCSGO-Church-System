@@ -16,72 +16,18 @@
     </div>
   </div>
 
-  <!-- Statistics Cards -->
-  <div class="row mb-3">
-    <div class="col-xl-3 col-md-6 mb-3">
-      <div class="card stats-card">
-        <div class="card-body py-3">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="card-title text-white mb-1">Total Members</h6>
-              <h3 class="text-white mb-0">{{ total_members }}</h3>
-            </div>
-            <div class="align-self-center">
-              <i class="bi bi-people fs-2 text-white-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="row g-3 mb-3">
+    <div class="col-xl-3 col-md-6">
+      {% include 'components/stats_card.html' with variant='primary' label='Total Members' value=total_members hint='Active members' icon='people' %}
     </div>
-
-    <div class="col-xl-3 col-md-6 mb-3">
-      <div class="card stats-card">
-        <div class="card-body py-3">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="card-title text-white mb-1">New Friends</h6>
-              <h3 class="text-white mb-0">{{ new_friends_count }}</h3>
-              <small class="text-white-50">1st-5th Timer</small>
-            </div>
-            <div class="align-self-center">
-              <i class="bi bi-person-plus fs-2 text-white-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="col-xl-3 col-md-6">
+      {% include 'components/stats_card.html' with variant='secondary' label='New Friends' value=new_friends_count hint='1st-5th Timer' icon='person-plus' %}
     </div>
-
-    <div class="col-xl-3 col-md-6 mb-3">
-      <div class="card stats-card">
-        <div class="card-body py-3">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="card-title text-white mb-1">Regular Members</h6>
-              <h3 class="text-white mb-0">{{ regulars_count }}</h3>
-              <small class="text-white-50">VSL, CSL, CL, CM</small>
-            </div>
-            <div class="align-self-center">
-              <i class="bi bi-person-check fs-2 text-white-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="col-xl-3 col-md-6">
+      {% include 'components/stats_card.html' with variant='info' label='Regular Members' value=regulars_count hint='VSL, CSL, CL, CM' icon='person-check' %}
     </div>
-
-    <div class="col-xl-3 col-md-6 mb-3">
-      <div class="card stats-card">
-        <div class="card-body py-3">
-          <div class="d-flex justify-content-between">
-            <div>
-              <h6 class="card-title text-white mb-1">Active Groups</h6>
-              <h3 class="text-white mb-0">{{ active_groups_count|default:"0" }}</h3>
-            </div>
-            <div class="align-self-center">
-              <i class="bi bi-collection fs-2 text-white-50"></i>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="col-xl-3 col-md-6">
+      {% include 'components/stats_card.html' with variant='success' label='Active Groups' value=active_groups_count|default:'0' hint='Care & Ministry' icon='collection' %}
     </div>
   </div>
 
@@ -257,8 +203,8 @@
             <div class="d-flex align-items-center gap-2">
               <label for="modal_activity_date" class="form-label mb-0" style="font-size: 0.8rem;">Date:</label>
               <input type="date" class="form-control form-control-sm" id="modal_activity_date" name="activity_date" value="{{ activity_date_filter|default:'' }}" style="width: auto;">
-              <button type="button" class="btn btn-primary btn-sm" onclick="filterModalActivity()"><i class="bi bi-funnel"></i></button>
-              {% if activity_date_filter %}<button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearModalDateFilter()"><i class="bi bi-x"></i></button>{% endif %}
+              <button type="button" class="btn btn-primary btn-sm" onclick="filterModalActivity()"><i class="bi bi-funnel me-0"></i></button>
+              {% if activity_date_filter %}<button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearModalDateFilter()"><i class="bi bi-x me-0"></i></button>{% endif %}
             </div>
           </div>
         </div>

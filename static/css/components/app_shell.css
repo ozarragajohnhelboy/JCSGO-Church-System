@@ -1,0 +1,334 @@
+/*
+ * JCSGO app shell: shared page chrome, stat tiles, stacked tables, empty states.
+ * Loaded after mobile.css so these rules win on small screens.
+ * Colors come from the tokens in style.css (:root).
+ */
+
+/* Buttons: icon spacing */
+.btn > .bi:first-child {
+    margin-right: 0.4rem;
+}
+
+/* Page header, action rows */
+.page-header,
+.page-actions,
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.page-header {
+    justify-content: space-between;
+    padding-top: 1rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.page-header h1,
+.page-header .h2,
+.page-header .h3 {
+    margin-bottom: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.page-header .page-subtitle {
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.table-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    align-items: center;
+}
+
+/* Stat tiles (see components/stats_card.html) */
+.stats-tile {
+    height: 100%;
+    border: none;
+    border-radius: 15px;
+    color: #fff;
+    box-shadow: var(--box-shadow-lg);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stats-tile:hover {
+    transform: translateY(-3px);
+}
+
+.stats-tile .card-body {
+    flex-wrap: nowrap !important;
+}
+
+.stats-tile--primary {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+.stats-tile--secondary {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+.stats-tile--success {
+    background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+}
+
+.stats-tile--info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+}
+
+.stats-tile--warning {
+    background: linear-gradient(135deg, #f39c12 0%, #d68910 100%);
+}
+
+.stats-tile--brand {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stats-tile__label {
+    margin: 0 0 0.25rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    opacity: 0.9;
+}
+
+.stats-tile__value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1.1;
+}
+
+.stats-tile__hint {
+    opacity: 0.8;
+}
+
+.stats-tile__icon {
+    font-size: 2.5rem;
+    opacity: 0.45;
+}
+
+/* Empty states (see components/empty_state.html) */
+.empty-state {
+    padding: 2.5rem 1rem;
+    text-align: center;
+    color: #6c757d;
+}
+
+.empty-state .bi {
+    display: block;
+    margin-bottom: 0.75rem;
+    font-size: 2.5rem;
+    color: #adb5bd;
+}
+
+/* PWA install prompt (shown by static/js/pwa-install.js) */
+.pwa-install-card {
+    display: none;
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 1060;
+    max-width: 300px;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: var(--box-shadow-lg);
+}
+
+.pwa-install-card h6 {
+    margin: 0 0 0.5rem;
+    color: var(--primary-color);
+}
+
+.pwa-install-card p {
+    margin: 0 0 0.75rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Tablet and below: stack action rows */
+@media (max-width: 991px) {
+    .page-header,
+    .d-flex.flex-md-nowrap {
+        flex-wrap: wrap !important;
+        gap: 0.75rem;
+    }
+
+    .page-header .btn-toolbar,
+    .btn-toolbar {
+        width: 100%;
+        margin: 0;
+    }
+
+    .form-actions,
+    .card-header .btn-group,
+    .btn-toolbar .btn-group,
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .btn-group > .btn,
+    .btn-group > .btn:first-child,
+    .btn-group > .btn:last-child,
+    .btn-group > .btn:not(:first-child),
+    .btn-group > .btn:not(:last-child) {
+        width: 100%;
+        margin: 0 !important;
+        border-radius: 8px !important;
+    }
+
+    .card-header.d-flex {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.75rem;
+    }
+
+    .table-actions,
+    td .d-flex.gap-1 {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    .table-actions .btn,
+    td .d-flex.gap-1 .btn {
+        width: 100%;
+    }
+
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Phone: header stacks, tables become cards */
+@media (max-width: 767.98px) {
+    main .row.mb-4 > .col-12 > .d-flex.justify-content-between,
+    .page-header {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 0.75rem;
+    }
+
+    main .row.mb-4 > .col-12 > .d-flex.justify-content-between > .text-end {
+        width: 100%;
+        text-align: left !important;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .page-header h1,
+    .page-header .h2,
+    .page-header .h3 {
+        font-size: 1.25rem;
+    }
+
+    .page-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .page-actions .btn {
+        width: 100%;
+        margin-bottom: 0;
+    }
+
+    .stats-tile__value {
+        font-size: 1.6rem;
+    }
+
+    .stats-tile__icon {
+        font-size: 2rem;
+    }
+
+    .pwa-install-card {
+        right: 12px;
+        left: 12px;
+        bottom: 12px;
+        max-width: none;
+    }
+
+    /* Tables with class table-stack render each row as a card. Cells need data-label. */
+    .table-stack,
+    .table-stack tbody {
+        display: block;
+        width: 100%;
+    }
+
+    .table-stack thead {
+        display: none;
+    }
+
+    .table-stack tbody tr {
+        display: block;
+        margin-bottom: 0.75rem;
+        padding: 0.5rem 1rem;
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        box-shadow: var(--box-shadow);
+    }
+
+    .table-stack > tbody > tr > * {
+        box-shadow: none;
+        background: transparent;
+    }
+
+    .table-stack tbody td {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.45rem 0;
+        border: 0;
+        text-align: right;
+        white-space: normal;
+    }
+
+    .table-stack tbody td + td {
+        border-top: 1px solid #f1f3f4;
+    }
+
+    .table-stack tbody td[data-label]::before {
+        flex: 0 0 38%;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-align: left;
+        text-transform: uppercase;
+        color: #6c757d;
+        content: attr(data-label);
+    }
+
+    .table-stack tbody td[data-label="Actions"] {
+        display: block;
+        text-align: left;
+    }
+
+    .table-stack tbody td[data-label="Actions"]::before {
+        display: none;
+    }
+
+    .table-stack tbody td[colspan] {
+        display: block;
+        text-align: center;
+    }
+}

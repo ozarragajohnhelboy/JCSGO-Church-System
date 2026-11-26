@@ -32,6 +32,8 @@
     <link href="{% static 'css/components/messages.css' %}" rel="stylesheet" />
     <link href="{% static 'css/pages/dashboard.css' %}" rel="stylesheet" />
     <link href="{% static 'css/mobile.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/components/app_shell.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/components/app_dialog.css' %}" rel="stylesheet" />
 
     {% block extra_css %}
 
@@ -80,9 +82,9 @@
     {% endif %}
 
     {% if user.is_authenticated %}
-      <div id="pwa-install-container" style="display:none; position:fixed; bottom:20px; right:20px; z-index:9999; background:white; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.15); padding:20px; max-width:300px;">
-        <h6 style="margin:0 0 10px 0;">Install App</h6>
-        <p style="margin:0 0 15px 0; font-size:14px; color:#6c757d;">Install JCSGO Church for quick access</p>
+      <div id="pwa-install-container" class="pwa-install-card">
+        <h6>Install App</h6>
+        <p>Install JCSGO Church for quick access</p>
         <button id="pwa-install-button" class="btn btn-primary btn-sm w-100 mb-2">Install</button>
         <button id="pwa-dismiss-button" class="btn btn-outline-secondary btn-sm w-100">Not Now</button>
       </div>
@@ -91,7 +93,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{% static 'js/components/main.js' %}"></script>
+    <script src="{% static 'js/components/app_dialog.js' %}"></script>
     <script src="{% static 'js/pwa-install.js' %}"></script>
+    {% include 'components/app_dialog.html' %}
     <script>
       window.logoutUrl = "{% url 'churches:custom_logout' %}";
       window.churchDomain = "{{ church.domain|default:'' }}";

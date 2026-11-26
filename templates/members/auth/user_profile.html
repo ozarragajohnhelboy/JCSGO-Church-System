@@ -5,25 +5,52 @@
   My Profile
 {% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'css/components/member_record.css' %}" rel="stylesheet" />
+{% endblock %}
+
 {% block content %}
   <div class="container-fluid">
-    <div class="row">
-      <div class="col-12">
-        <div class="page-header d-flex justify-content-between align-items-center mb-4">
-          <h2 class="mb-0"><i class="bi bi-person"></i> My Profile</h2>
-          <a href="{% url 'members:generate_qr_code' user.id %}" class="btn btn-outline-primary">
-            <i class="bi bi-qr-code"></i>Generate QR Code
-          </a>
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+      <h1 class="h2 mb-0">My Profile</h1>
+      <a href="{% url 'members:generate_qr_code' user.id %}" class="btn btn-sm btn-outline-secondary">Generate QR code</a>
+    </div>
+
+    <section class="member-record mb-4">
+      <div class="member-record__head">
+        <div class="member-record__who">
+          {% if user.profile_picture %}
+          <img src="{{ user.profile_picture.url }}" alt="" class="member-record__photo">
+          {% else %}
+          <span class="member-record__photo member-record__photo--empty" aria-hidden="true">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+          {% endif %}
+          <div>
+            <h2 class="h5 mb-0">{{ user.full_name }}</h2>
+            <p class="text-muted mb-0">
+              {% if user.role %}{{ user.role.get_name_display }}{% else %}No role{% endif %}
+              {% if user.church %} · {{ user.church.name }}{% endif %}
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+      <dl class="member-record__facts">
+        <div>
+          <dt>Email</dt>
+          <dd>{{ user.email }}</dd>
+        </div>
+        <div>
+          <dt>Phone</dt>
+          <dd>{{ user.phone_number|default:'—' }}</dd>
+        </div>
+      </dl>
+    </section>
 
     <div class="row">
       <!-- Profile Information -->
       <div class="col-lg-8">
         <div class="card">
           <div class="card-header">
-            <h5 class="card-title mb-0"><i class="fas fa-edit"></i> Profile Information</h5>
+            <h5 class="card-title mb-0"><i class="bi bi-pencil-square"></i> Profile Information</h5>
           </div>
           <div class="card-body">
             <form method="post" enctype="multipart/form-data">
@@ -101,93 +128,54 @@
               </div>
 
               <div class="d-flex justify-content-end">
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Profile</button>
+                <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> Update Profile</button>
               </div>
             </form>
           </div>
         </div>
       </div>
 
-      <!-- QR Code and Profile Picture -->
       <div class="col-lg-4">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title mb-0"><i class="fas fa-qrcode"></i> QR Code</h5>
-          </div>
-          <div class="card-body text-center">
-            {% if user.qr_code_image %}
-              <img src="{{ user.qr_code_image.url }}" alt="QR Code" class="img-fluid mb-3" style="max-width: 300px;" />
-              <p class="text-muted small">Scan this QR code for attendance</p>
-              <a href="{{ user.qr_code_image.url }}" download class="btn btn-outline-primary btn-sm"><i class="fas fa-download"></i> Download QR Code</a>
-            {% else %}
-              <div class="text-center py-4">
-                <i class="fas fa-qrcode fa-3x text-muted mb-3"></i>
-                <p class="text-muted">No QR code generated yet</p>
-                <a href="{% url 'members:generate_qr_code' user.id %}" class="btn btn-primary"><i class="bi bi-qr-code"></i>Generate QR Code</a>
-              </div>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="card mt-3">
-          <div class="card-header">
-            <h5 class="card-title mb-0"><i class="fas fa-image"></i> Profile Picture</h5>
-          </div>
-          <div class="card-body text-center">
-            {% if user.profile_picture %}
-              <img src="{{ user.profile_picture.url }}" alt="Profile Picture" class="img-fluid rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;" />
-            {% else %}
-              <div class="text-center py-4">
-                <i class="fas fa-user-circle fa-5x text-muted mb-3"></i>
-                <p class="text-muted">No profile picture uploaded</p>
-              </div>
-            {% endif %}
-          </div>
-        </div>
+        <section class="member-assignment h-100">
+          <p class="member-assignment__kicker">Attendance QR</p>
+          <h2 class="h5 mb-3">QR code</h2>
+          {% if user.qr_code_image %}
+            <img src="{{ user.qr_code_image.url }}" alt="Attendance QR code" class="img-fluid mb-3" style="max-width: 180px;" />
+            <p class="text-muted small">Scan this code to record attendance.</p>
+            <div class="member-assignment__actions">
+              <a href="{{ user.qr_code_image.url }}" download class="btn btn-sm btn-outline-secondary">Download</a>
+            </div>
+          {% else %}
+            {% include 'components/empty_state.html' with icon='qr-code' message='No QR code generated yet.' %}
+            <div class="member-assignment__actions mt-3">
+              <a href="{% url 'members:generate_qr_code' user.id %}" class="btn btn-sm btn-outline-primary">Generate QR code</a>
+            </div>
+          {% endif %}
+        </section>
       </div>
     </div>
 
-    <!-- Attendance Summary -->
-    <div class="row mt-4">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title mb-0"><i class="fas fa-calendar-check"></i> Attendance Summary (Last 30 Days)</h5>
-          </div>
-          <div class="card-body">
-            <div class="row">
-              <div class="col-md-3">
-                <div class="text-center">
-                  <h3 class="text-primary">{{ attendance_summary.total_attendances }}</h3>
-                  <p class="text-muted">Total Attendances</p>
-                </div>
-              </div>
-              <div class="col-md-3">
-                <div class="text-center">
-                  <h3 class="text-success">{{ attendance_summary.attendance_rate }}%</h3>
-                  <p class="text-muted">Attendance Rate</p>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="text-center">
-                  <h5 class="text-info">Recent Attendances</h5>
-                  {% if attendance_summary.recent_attendances %}
-                    <div class="list-group list-group-flush">
-                      {% for attendance in attendance_summary.recent_attendances|slice:':5' %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center py-2">
-                          <span>{{ attendance.get_attendance_type_display }}</span>
-                          <small class="text-muted">{{ attendance.date|date:'M d' }}</small>
-                        </div>
-                      {% endfor %}
-                    </div>
-                  {% else %}
-                    <p class="text-muted">No recent attendances</p>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div class="row g-3 mt-4">
+      <div class="col-md-4">
+        {% include 'components/stats_card.html' with variant='primary' label='Attendances' value=attendance_summary.total_attendances hint='Last 30 days' icon='calendar-check' %}
+      </div>
+      <div class="col-md-4">
+        {% include 'components/stats_card.html' with variant='success' label='Attendance rate' value=attendance_summary.attendance_rate hint='Percent, last 30 days' icon='graph-up' %}
+      </div>
+      <div class="col-md-4">
+        <section class="member-assignment h-100">
+          <p class="member-assignment__kicker">Recent</p>
+          <h2 class="h6 mb-3">Last 30 days</h2>
+          {% if attendance_summary.recent_attendances %}
+            <ul class="member-assignment__meta">
+              {% for attendance in attendance_summary.recent_attendances|slice:':5' %}
+                <li>{{ attendance.get_attendance_type_display }} · {{ attendance.date|date:'M d' }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            {% include 'components/empty_state.html' with icon='calendar' message='No recent attendances.' %}
+          {% endif %}
+        </section>
       </div>
     </div>
   </div>

@@ -7,8 +7,8 @@ from import_export.fields import Field
 from import_export.widgets import ForeignKeyWidget, DateWidget
 
 from .models import (
-    Church, Role, CustomUser, NewFriend, RegularMember, 
-    Group, ActivityLog, Attendance
+    Church, Role, CustomUser, NewFriend, RegularMember,
+    Group, GroupLeaveRequest, ActivityLog, Attendance
 )
 
 
@@ -204,6 +204,14 @@ class GroupAdmin(ImportExportModelAdmin):
     def member_count(self, obj):
         return obj.members.count()
     member_count.short_description = 'Members'
+
+
+@admin.register(GroupLeaveRequest)
+class GroupLeaveRequestAdmin(admin.ModelAdmin):
+    list_display = ('member', 'group', 'status', 'created_at', 'reviewed_by', 'reviewed_at')
+    list_filter = ('status', 'church', 'created_at')
+    search_fields = ('member__first_name', 'member__last_name', 'member__email', 'group__name', 'reason')
+    readonly_fields = ('created_at', 'updated_at', 'reviewed_at')
 
 
 @admin.register(ActivityLog)

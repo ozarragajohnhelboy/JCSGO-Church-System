@@ -27,7 +27,7 @@
             <!-- Report Information -->
             <div class="row mb-4">
               <div class="col-md-6">
-                <h5 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Report Information</h5>
+                <h5 class="text-primary mb-3"><i class="bi bi-info-circle me-2"></i>Report Information</h5>
                 <table class="table table-borderless">
                   <tr>
                     <td>
@@ -57,7 +57,7 @@
               </div>
 
               <div class="col-md-6">
-                <h5 class="text-primary mb-3"><i class="fas fa-crown me-2"></i>Leadership</h5>
+                <h5 class="text-primary mb-3"><i class="bi bi-award me-2"></i>Leadership</h5>
                 <table class="table table-borderless">
                   {% if report.vine_servant_leader %}
                     <tr>
@@ -96,7 +96,7 @@
             <!-- Meeting Details -->
             <div class="row mb-4">
               <div class="col-12">
-                <h5 class="text-primary mb-3"><i class="fas fa-calendar-alt me-2"></i>Meeting Details</h5>
+                <h5 class="text-primary mb-3"><i class="bi bi-calendar3 me-2"></i>Meeting Details</h5>
                 <div class="row">
                   <div class="col-md-6">
                     <table class="table table-borderless">
@@ -146,7 +146,7 @@
             <!-- Member Reports -->
             <div class="row">
               <div class="col-12">
-                <h5 class="text-primary mb-3"><i class="fas fa-users me-2"></i>Member Reports</h5>
+                <h5 class="text-primary mb-3"><i class="bi bi-people me-2"></i>Member Reports</h5>
 
                 {% if member_reports %}
                   <div class="table-responsive">
@@ -263,11 +263,7 @@
                     </div>
                   </div>
                 {% else %}
-                  <div class="text-center py-4">
-                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">No member reports found</h5>
-                    <p class="text-muted">This report doesn't have any member data yet.</p>
-                  </div>
+                  {% include 'components/empty_state.html' with icon='people' message='This report has no member data yet.' %}
                 {% endif %}
               </div>
             </div>

@@ -1,0 +1,201 @@
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="page-header d-flex justify-content-between align-items-center">
+          <div>
+            <h1 class="h3 mb-0">
+              <i class="bi bi-person-circle"></i> Member Dashboard
+            </h1>
+            <p class="text-muted mb-0">Welcome back, {{ user.full_name }} - {{ user.church.name }}</p>
+          </div>
+          <div class="page-actions">
+            <span class="badge bg-primary fs-6">{{ user.get_role_display }}</span>
+            {% if user.is_new_friend %}
+              <span class="badge bg-warning ms-2 fs-6">{{ user.timer_status }}{% if user.timer_status == 1 %}st{% elif user.timer_status == 2 %}nd{% elif user.timer_status == 3 %}rd{% else %}th{% endif %} Timer</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-xl-3 col-md-6">
+        <div class="member-snapshot member-snapshot--membership">
+          <div class="member-snapshot__icon"><i class="bi bi-calendar-check" aria-hidden="true"></i></div>
+          <div>
+            <p class="member-snapshot__label">With the church</p>
+            <div class="member-snapshot__value">{{ user.membership_duration }} days</div>
+            <div class="member-snapshot__hint">Since {{ user.date_joined|date:"M d, Y" }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-md-6">
+        <div class="member-snapshot member-snapshot--attendance">
+          <div class="member-snapshot__icon"><i class="bi bi-calendar-event" aria-hidden="true"></i></div>
+          <div>
+            <p class="member-snapshot__label">Last attendance</p>
+            {% if user.last_attendance %}
+              <div class="member-snapshot__value">{{ user.days_since_last_attendance }} days ago</div>
+              <div class="member-snapshot__hint">{{ user.last_attendance|date:"M d, Y" }}</div>
+            {% else %}
+              <div class="member-snapshot__value">No record yet</div>
+              <div class="member-snapshot__hint">Attend a service to start</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-md-6">
+        <div class="member-snapshot member-snapshot--activity">
+          <div class="member-snapshot__icon"><i class="bi bi-activity" aria-hidden="true"></i></div>
+          <div>
+            <p class="member-snapshot__label">Your activity</p>
+            <div class="member-snapshot__value">{{ user_activities.count }}</div>
+            <div class="member-snapshot__hint">Recent logged actions</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-3 col-md-6">
+        <div class="member-snapshot member-snapshot--group">
+          <div class="member-snapshot__icon"><i class="bi bi-collection" aria-hidden="true"></i></div>
+          <div>
+            <p class="member-snapshot__label">Your group</p>
+            {% if user_group %}
+              <div class="member-snapshot__value">{{ user_group.name }}</div>
+              <div class="member-snapshot__hint">{{ user_group.get_group_type_display }}</div>
+            {% else %}
+              <div class="member-snapshot__value">Unassigned</div>
+              <div class="member-snapshot__hint">No group yet</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Streak -->
+    {% if attendance_streak > 0 %}
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="attendance-streak">
+            <div class="streak-number">{{ attendance_streak }}</div>
+            <h4>Week Attendance Streak!</h4>
+            <p class="mb-0">Keep up the great work! You've been attending regularly.</p>
+          </div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="row g-3 mb-4">
+      <div class="col-lg-7">
+        <section class="member-record h-100">
+          <div class="member-record__head">
+            <div class="member-record__who">
+              {% if user.profile_picture %}
+                <img src="{{ user.profile_picture.url }}" alt="" class="member-record__photo">
+              {% else %}
+                <span class="member-record__photo member-record__photo--empty" aria-hidden="true">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</span>
+              {% endif %}
+              <div>
+                <h2 class="h5 mb-0">{{ user.full_name }}</h2>
+                <p class="text-muted mb-0">{{ user.get_role_display }} · {{ user.church.name }}</p>
+              </div>
+            </div>
+            <a href="{% url 'members:member_detail' user.pk %}" class="btn btn-sm btn-outline-primary">Edit profile</a>
+          </div>
+          <dl class="member-record__facts">
+            <div>
+              <dt>Email</dt>
+              <dd>{{ user.email }}</dd>
+            </div>
+            <div>
+              <dt>Phone</dt>
+              <dd>{{ user.phone_number|default:"Not provided" }}</dd>
+            </div>
+            {% if user.birth_date %}
+            <div>
+              <dt>Age</dt>
+              <dd>{{ user.age }} years</dd>
+            </div>
+            {% endif %}
+            <div>
+              <dt>Member since</dt>
+              <dd>{{ user.date_joined|date:"M d, Y" }}</dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+
+      <div class="col-lg-5">
+        <section class="member-assignment h-100">
+          {% if user_group %}
+            <p class="member-assignment__kicker">{{ user_group.get_group_type_display }}</p>
+            <h2 class="h5 mb-1">{{ user_group.name }}</h2>
+            <p class="text-muted mb-3">Led by {{ user_group.leader.full_name }}</p>
+            <ul class="member-assignment__meta">
+              {% if user_group.description %}
+                <li>{{ user_group.description }}</li>
+              {% endif %}
+              {% if user_group.meeting_schedule %}
+                <li>{{ user_group.meeting_schedule }}</li>
+              {% endif %}
+              {% if user_group.meeting_location %}
+                <li>{{ user_group.meeting_location }}</li>
+              {% endif %}
+              <li>{{ user_group.member_count }}/{{ user_group.max_members }} members</li>
+            </ul>
+            {% if pending_leave_request %}
+              <p class="member-assignment__status">Leave request sent. Waiting for {{ user_group.leader.full_name }} to review.</p>
+            {% elif user_group.leader_id == user.id %}
+              <p class="member-assignment__status member-assignment__status--note">You lead this group. Assign a new leader before requesting to leave.</p>
+            {% endif %}
+            <div class="member-assignment__actions">
+              <a href="{% url 'members:group_detail' user_group.pk %}" class="btn btn-sm btn-outline-primary">View group</a>
+              {% if not pending_leave_request and user_group.leader_id != user.id %}
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#leaveGroupModal">Request to leave</button>
+              {% endif %}
+            </div>
+          {% else %}
+            <p class="member-assignment__kicker">Care group</p>
+            <h2 class="h5 mb-2">Not assigned</h2>
+            <p class="text-muted mb-3">You are not in a group yet. Ask your leader to add you, or look for an open group.</p>
+            {% if user.role.name == 'VSL' or user.role.name == 'CSL' or user.role.name == 'CL' %}
+              <a href="{% url 'members:care_group_list' %}" class="btn btn-sm btn-primary">Browse care groups</a>
+            {% else %}
+              <a href="{% url 'members:group_list' %}" class="btn btn-sm btn-primary">Browse groups</a>
+            {% endif %}
+          {% endif %}
+        </section>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="dashboard-panel">
+          <h5 class="card-title mb-3"><i class="bi bi-activity"></i> Recent Activity</h5>
+          {% if user_activities %}
+            {% for activity in user_activities %}
+              <div class="activity-item">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <strong>{{ activity.get_action_display }}</strong>
+                    <small class="text-muted d-block">{{ activity.description }}</small>
+                  </div>
+                  <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="text-muted">No recent activity</p>
+          {% endif %}
+          
+          <div class="mt-3">
+            <a href="{% url 'members:activity_logs' %}" class="btn btn-outline-secondary">
+              <i class="bi bi-list"></i> View All Activities
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% include 'members/groups/_leave_request_modal.html' %}

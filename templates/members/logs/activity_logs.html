@@ -15,31 +15,15 @@
     </div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h3>{{ total_activities }}</h3>
-            <p>Total Activities</p>
-        </div>
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        {% include 'components/stats_card.html' with variant='primary' label='Total Activities' value=total_activities hint='All recorded actions' icon='activity' %}
     </div>
-    <div class="col-md-3">
-        <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <h3>{{ activity_summary.unique_users }}</h3>
-            <p>Unique Users</p>
-        </div>
+    <div class="col-md-4">
+        {% include 'components/stats_card.html' with variant='secondary' label='Unique Users' value=activity_summary.unique_users hint='People with activity' icon='people' %}
     </div>
-    <div class="col-md-3">
-        <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <h3>{{ activity_summary.total_activities }}</h3>
-            <p>This Month</p>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-            <h3>{{ page_obj.paginator.count }}</h3>
-            <p>Showing</p>
-        </div>
+    <div class="col-md-4">
+        {% include 'components/stats_card.html' with variant='info' label='This Month' value=activity_summary.total_activities hint='Current month' icon='calendar' %}
     </div>
 </div>
 
@@ -84,7 +68,7 @@
             <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
         </div>
         <div class="col-md-2">
-            <label class="form-label">&nbsp;</label>
+            <label class="form-label d-none d-md-block">&nbsp;</label>
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-search"></i> Filter
@@ -153,18 +137,14 @@
                     <button type="button" class="btn btn-sm btn-outline-info" 
                             onclick="showActivityDetails({{ activity.pk }})"
                             data-bs-toggle="tooltip" title="View Details">
-                        <i class="bi bi-info-circle"></i>
+                        <i class="bi bi-info-circle me-0"></i>
                     </button>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" class="text-center py-4">
-                    <div class="text-muted">
-                        <i class="bi bi-activity display-4"></i>
-                        <p class="mt-2">No activity logs found matching your criteria.</p>
-                        <p>Try adjusting your search or filters.</p>
-                    </div>
+                <td colspan="6">
+                    {% include 'components/empty_state.html' with icon='activity' message='No activity logs match these filters.' %}
                 </td>
             </tr>
             {% endfor %}

@@ -45,43 +45,9 @@ body {
         margin: 0 auto;
     }
 
-    .stats-card {
-        margin-bottom: 1rem;
-    }
-
-    .stats-card h3 {
-        font-size: 1.5rem;
-    }
-
-    .stats-card h2 {
-        font-size: 1.8rem;
-    }
-
-    .stats-card h5 {
-        font-size: 0.9rem;
-    }
-
-    .stats-card p,
-    .stats-card small {
-        font-size: 0.75rem;
-    }
-
-    .row.justify-content-between .col-md-2,
-    .col-xl-3,
-    .col-md-6,
-    .col-lg-4,
-    .col-md-4 {
-        width: 100% !important;
-        flex: 0 0 100% !important;
-        max-width: 100% !important;
+    .row.justify-content-between .col-md-2 {
+        width: 100%;
         margin: 0;
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
-    }
-
-    .row > * {
-        flex: 0 0 100% !important;
-        max-width: 100% !important;
     }
 
     .btn {
@@ -408,10 +374,6 @@ body {
         flex-wrap: wrap !important;
     }
 
-    .justify-content-between {
-        justify-content: center !important;
-    }
-
     .text-end,
     .text-md-end,
     .text-lg-end {
@@ -500,10 +462,6 @@ body {
     .church-logo {
         max-width: 100px;
         margin-left: 0;
-    }
-
-    .stats-card h3 {
-        font-size: 2rem;
     }
 
     .col-xl-3,
@@ -730,119 +688,5 @@ body {
         left: 0;
         width: auto;
         height: auto;
-    }
-}
-
-.btn > .bi:not(:last-child),
-.btn > .fas:not(:last-child),
-.btn > .fa:not(:last-child),
-.btn > i:not(:last-child) {
-    margin-right: 0.4rem;
-}
-
-.page-header,
-.page-actions,
-.form-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
-}
-
-.table-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-    align-items: center;
-}
-
-@media (max-width: 991px) {
-    .page-header,
-    .d-flex.flex-md-nowrap {
-        flex-wrap: wrap !important;
-        gap: 0.75rem;
-    }
-
-    .page-header .btn-toolbar,
-    .btn-toolbar {
-        width: 100%;
-        margin: 0;
-    }
-
-    .page-actions,
-    .form-actions,
-    .card-header .btn-group,
-    .btn-toolbar .btn-group,
-    .btn-group {
-        display: flex;
-        flex-direction: column;
-        flex-wrap: nowrap;
-        width: 100%;
-        gap: 0.5rem;
-    }
-
-    .btn-group > .btn,
-    .btn-group > .btn:first-child,
-    .btn-group > .btn:last-child,
-    .btn-group > .btn:not(:first-child),
-    .btn-group > .btn:not(:last-child) {
-        width: 100%;
-        margin: 0 !important;
-        border-radius: 8px !important;
-    }
-
-    .card-header.d-flex {
-        flex-direction: column;
-        align-items: stretch !important;
-        gap: 0.75rem;
-    }
-
-    .card-header .btn-group {
-        width: 100%;
-    }
-
-    .table-actions,
-    td .d-flex.gap-1 {
-        flex-direction: column;
-        align-items: stretch !important;
-    }
-
-    .table-actions .btn,
-    td .d-flex.gap-1 .btn {
-        width: 100%;
-    }
-
-    .form-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .form-actions .btn {
-        width: 100%;
-    }
-}
-
-@media (max-width: 768px) {
-    main .row.mb-4 > .col-12 > .d-flex.justify-content-between,
-    .page-header {
-        flex-direction: column;
-        align-items: stretch !important;
-        gap: 0.75rem;
-    }
-
-    main .row.mb-4 > .col-12 > .d-flex.justify-content-between > .text-end {
-        width: 100%;
-        text-align: left !important;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        align-items: center;
-    }
-
-    .page-header h1,
-    .page-header h2,
-    .page-header .h2,
-    .page-header .h3 {
-        margin-bottom: 0;
     }
 }

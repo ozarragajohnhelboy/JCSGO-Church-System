@@ -5,6 +5,10 @@
   {{ group.name }} - Care Group Details - {{ block.super }}
 {% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'css/components/member_record.css' %}" rel="stylesheet" />
+{% endblock %}
+
 {% block content %}
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">{{ group.name }}</h1>
@@ -17,155 +21,62 @@
   </div>
 
   <div class="row">
-    <!-- Group Information Card -->
-    <div class="col-md-4">
-      <div class="card">
-        <div class="card-header">
-          <h6 class="mb-0">Group Information</h6>
-        </div>
-        <div class="card-body">
-          <div class="text-center mb-3">
-            <div class="bg-{% if group.group_type == 'CARE' %}
-                info
-              {% else %}
-                warning
-              {% endif %} rounded-circle mx-auto d-flex align-items-center justify-content-center mb-3"
-              style="width: 80px; height: 80px;">
-              <i class="bi bi-{% if group.group_type == 'CARE' %}
-                  people
-                {% else %}
-                  collection
-                {% endif %} text-white"
-                style="font-size: 2rem;">
-
-              </i>
+    <div class="col-md-4 mb-4">
+      <section class="member-record">
+        <div class="member-record__head">
+          <div class="member-record__who">
+            <div>
+              <p class="member-assignment__kicker mb-1">{{ group.get_group_type_display }} · {% if group.is_active %}Active{% else %}Inactive{% endif %}{% if group.is_full %} · Full{% endif %}</p>
+              <h2 class="h5 mb-0">{{ group.name }}</h2>
+              <p class="text-muted mb-0">Led by {{ group.leader.full_name }}</p>
             </div>
-            <h5 class="card-title">{{ group.name }}</h5>
-            <span class="badge bg-{% if group.group_type == 'CARE' %}
-                info
-              {% else %}
-                warning
-              {% endif %} fs-6">
-              {{ group.get_group_type_display }}
-            </span>
           </div>
-
-          <hr />
-
-          <div class="text-start">
-            <p>
-              <strong>Leader:</strong> {{ group.leader.full_name }}
-            </p>
-            <p>
-              <strong>Church:</strong> {{ group.church.name }}
-            </p>
-            <p>
-              <strong>Status:</strong>
-              {% if group.is_active %}
-                <span class="badge bg-success">Active</span>
-              {% else %}
-                <span class="badge bg-danger">Inactive</span>
-              {% endif %}
-            </p>
-            <p>
-              <strong>Created:</strong> {{ group.created_at|date:'M d, Y' }}
-            </p>
+          <div class="member-record__actions mt-0 pt-0 border-0">
+            {% if not group.is_full %}
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addMemberToGroup({{ group.pk }})">Add member</button>
+            {% endif %}
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportGroupMembers({{ group.pk }})">Export</button>
           </div>
-
-          {% if group.description %}
-            <hr />
-            <p>
-              <strong>Description:</strong>
-            </p>
-            <p class="text-muted">{{ group.description }}</p>
+        </div>
+        <dl class="member-record__facts member-record__facts--stack">
+          <div>
+            <dt>Members</dt>
+            <dd>{{ group.member_count }}/{{ group.max_members }}{% if group.is_full %} · full{% elif group.capacity_percentage >= 80 %} · nearly full{% endif %}</dd>
+          </div>
+          <div>
+            <dt>Church</dt>
+            <dd>{{ group.church.name }}</dd>
+          </div>
+          {% if group.meeting_day or group.meeting_time %}
+          <div>
+            <dt>Meeting</dt>
+            <dd>{% if group.meeting_day %}{{ group.get_meeting_day_display }}{% endif %}{% if group.meeting_time %} at {{ group.meeting_time|time:'g:i A' }}{% endif %}</dd>
+          </div>
           {% endif %}
-        </div>
-      </div>
-
-      <!-- Capacity Information -->
-      <div class="card mt-3">
-        <div class="card-header">
-          <h6 class="mb-0">Capacity</h6>
-        </div>
-        <div class="card-body">
-          <div class="text-center">
-            <h3 class="text-{% if group.capacity_percentage >= 80 %}
-                danger
-              {% elif group.capacity_percentage >= 60 %}
-                warning
-              {% else %}
-                success
-              {% endif %}">
-              {{ group.member_count }}/{{ group.max_members }}
-            </h3>
-            <div class="progress mb-2" style="height: 25px;">
-              <div class="progress-bar {% if group.capacity_percentage >= 80 %}
-                  bg-danger
-                {% elif group.capacity_percentage >= 60 %}
-                  bg-warning
-                {% else %}
-                  bg-success
-                {% endif %}"
-                role="progressbar"
-                style="width: {{ group.capacity_percentage }}%">{{ group.capacity_percentage }}%</div>
-            </div>
-            <p class="mb-0">
-              {% if group.is_full %}
-                <span class="badge bg-danger">Group is Full</span>
-              {% elif group.capacity_percentage >= 80 %}
-                <span class="badge bg-warning">Nearly Full</span>
-              {% else %}
-                <span class="badge bg-success">Available Space</span>
-              {% endif %}
-            </p>
+          {% if group.meeting_location %}
+          <div>
+            <dt>Location</dt>
+            <dd>{{ group.meeting_location }}</dd>
           </div>
-        </div>
-      </div>
-
-      <!-- Meeting Information -->
-      {% if group.meeting_day or group.meeting_time or group.meeting_location %}
-        <div class="card mt-3">
-          <div class="card-header">
-            <h6 class="mb-0">Meeting Information</h6>
-          </div>
-          <div class="card-body">
-            {% if group.meeting_day %}
-              <p>
-                <strong>Day:</strong> {{ group.get_meeting_day_display }}
-              </p>
-            {% endif %}
-            {% if group.meeting_time %}
-              <p>
-                <strong>Time:</strong> {{ group.meeting_time|time:'g:i A' }}
-              </p>
-            {% endif %}
-            {% if group.meeting_location %}
-              <p>
-                <strong>Location:</strong> {{ group.meeting_location }}
-              </p>
-            {% endif %}
-            {% if group.meeting_schedule %}
-              <p>
-                <strong>Schedule:</strong> {{ group.meeting_schedule }}
-              </p>
-            {% endif %}
-          </div>
-        </div>
-      {% endif %}
-
-      <!-- Quick Actions -->
-      <div class="card mt-3">
-        <div class="card-header">
-          <h6 class="mb-0">Quick Actions</h6>
-        </div>
-        <div class="card-body">
-          {% if not group.is_full %}
-            <button type="button" class="btn btn-success btn-sm w-100 mb-2" onclick="addMemberToGroup({{ group.pk }})"><i class="bi bi-person-plus"></i> Add Member</button>
           {% endif %}
-
-          <button type="button" class="btn btn-info btn-sm w-100 mb-2" onclick="exportGroupMembers({{ group.pk }})"><i class="bi bi-download"></i> Export Members</button>
-        </div>
-      </div>
+          {% if group.meeting_schedule %}
+          <div>
+            <dt>Schedule</dt>
+            <dd>{{ group.meeting_schedule }}</dd>
+          </div>
+          {% endif %}
+          <div>
+            <dt>Created</dt>
+            <dd>{{ group.created_at|date:'M d, Y' }}</dd>
+          </div>
+        </dl>
+        {% if group.description %}
+          <p class="text-muted mb-0 mt-3">{{ group.description }}</p>
+        {% endif %}
+        {% if group.is_full %}
+          <p class="member-assignment__status mt-3 mb-0">This group is at capacity.</p>
+        {% endif %}
+      </section>
     </div>
 
     <!-- Group Members -->
@@ -180,7 +91,7 @@
         <div class="card-body">
           {% if members %}
             <div class="table-responsive">
-              <table class="table table-hover">
+              <table class="table table-hover table-stack">
                 <thead>
                   <tr>
                     <th>Member</th>
@@ -193,7 +104,7 @@
                 <tbody>
                   {% for member in members %}
                     <tr>
-                      <td>
+                      <td data-label="Member">
                         <div class="d-flex align-items-center">
                           {% if member.user.profile_picture %}
                             <img src="{{ member.user.profile_picture.url }}" alt="Profile" class="rounded-circle me-2" width="32" height="32" />
@@ -208,10 +119,10 @@
                           </div>
                         </div>
                       </td>
-                      <td>
+                      <td data-label="Role Type">
                         <span class="badge bg-primary">{{ member.get_role_type_display }}</span>
                       </td>
-                      <td>
+                      <td data-label="Availability">
                         <span class="badge bg-{% if member.availability == 'AVAILABLE' %}
                             success
                           {% elif member.availability == 'LIMITED' %}
@@ -222,17 +133,17 @@
                           {{ member.get_availability_display }}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Ministry">
                         {% if member.ministry_involvement %}
                           <small class="text-truncate d-inline-block" style="max-width: 150px;" title="{{ member.ministry_involvement }}">{{ member.ministry_involvement }}</small>
                         {% else %}
                           <span class="text-muted">-</span>
                         {% endif %}
                       </td>
-                      <td>
+                      <td data-label="Actions">
                         <div class="btn-group" role="group">
-                          <a href="{% url 'members:member_detail' member.user.pk %}" class="btn btn-sm btn-outline-primary btn-action" data-bs-toggle="tooltip" title="View Details"><i class="bi bi-eye"></i></a>
-                          <button type="button" class="btn btn-sm btn-outline-danger btn-action" onclick="removeFromGroup({{ member.user.pk }}, {{ group.pk }})" data-bs-toggle="tooltip" title="Remove from Group"><i class="bi bi-person-x"></i></button>
+                          <a href="{% url 'members:member_detail' member.user.pk %}" class="btn btn-sm btn-outline-primary btn-action" data-bs-toggle="tooltip" title="View Details"><i class="bi bi-eye me-0"></i></a>
+                          <button type="button" class="btn btn-sm btn-outline-danger btn-action" onclick="removeFromGroup({{ member.user.pk }}, {{ group.pk }})" data-bs-toggle="tooltip" title="Remove from Group"><i class="bi bi-person-x me-0"></i></button>
                         </div>
                       </td>
                     </tr>
@@ -241,13 +152,7 @@
               </table>
             </div>
           {% else %}
-            <div class="text-center py-4">
-              <div class="text-muted">
-                <i class="bi bi-people display-4"></i>
-                <p class="mt-2">No members in this group yet.</p>
-                <p>Add members to get started!</p>
-              </div>
-            </div>
+            {% include 'components/empty_state.html' with icon='people' message='No members in this group yet.' %}
           {% endif %}
         </div>
       </div>
@@ -271,7 +176,7 @@
               {% endfor %}
             </div>
           {% else %}
-            <p class="text-muted text-center">No recent activity</p>
+            {% include 'components/empty_state.html' with icon='activity' message='No recent activity.' %}
           {% endif %}
         </div>
       </div>

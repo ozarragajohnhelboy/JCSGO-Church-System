@@ -10,9 +10,9 @@
     <div class="row">
       <div class="col-12">
         <div class="d-flex justify-content-between align-items-center mb-4">
-          <h2><i class="fas fa-upload"></i> Import Member Profiles</h2>
+          <h2><i class="bi bi-upload"></i> Import Member Profiles</h2>
           <div>
-            <a href="{% url 'members:profile_export' %}" class="btn btn-outline-primary"><i class="fas fa-download"></i> Export Profiles</a>
+            <a href="{% url 'members:profile_export' %}" class="btn btn-outline-primary"><i class="bi bi-download"></i> Export Profiles</a>
           </div>
         </div>
       </div>
@@ -22,7 +22,7 @@
       <div class="col-lg-8">
         <div class="card">
           <div class="card-header">
-            <h5 class="card-title mb-0"><i class="fas fa-upload"></i> Upload File</h5>
+            <h5 class="card-title mb-0"><i class="bi bi-upload"></i> Upload File</h5>
           </div>
           <div class="card-body">
             <form method="post" enctype="multipart/form-data">
@@ -54,7 +54,7 @@
               </div>
 
               <div class="d-flex justify-content-end">
-                <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-upload"></i> Import Profiles</button>
+                <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-upload"></i> Import Profiles</button>
               </div>
             </form>
           </div>
@@ -64,16 +64,16 @@
       <div class="col-lg-4">
         <div class="card">
           <div class="card-header">
-            <h5 class="card-title mb-0"><i class="fas fa-info-circle"></i> Import Instructions</h5>
+            <h5 class="card-title mb-0"><i class="bi bi-info-circle"></i> Import Instructions</h5>
           </div>
           <div class="card-body">
             <h6>Supported Formats:</h6>
             <ul class="list-unstyled">
               <li>
-                <i class="fas fa-file-csv text-success"></i> <strong>CSV</strong> - Comma-separated values
+                <i class="bi bi-filetype-csv text-success"></i> <strong>CSV</strong> - Comma-separated values
               </li>
               <li>
-                <i class="fas fa-file-excel text-primary"></i> <strong>Excel</strong> - .xlsx, .xls files
+                <i class="bi bi-file-earmark-excel text-primary"></i> <strong>Excel</strong> - .xlsx, .xls files
               </li>
             </ul>
 
@@ -82,38 +82,38 @@
             <h6>Required Columns:</h6>
             <ul class="list-unstyled">
               <li>
-                <i class="fas fa-check text-success"></i> <strong>email</strong> - Member's email address
+                <i class="bi bi-check-lg text-success"></i> <strong>email</strong> - Member's email address
               </li>
               <li>
-                <i class="fas fa-check text-success"></i> <strong>first_name</strong> - First name
+                <i class="bi bi-check-lg text-success"></i> <strong>first_name</strong> - First name
               </li>
               <li>
-                <i class="fas fa-check text-success"></i> <strong>last_name</strong> - Last name
+                <i class="bi bi-check-lg text-success"></i> <strong>last_name</strong> - Last name
               </li>
             </ul>
 
             <h6>Optional Columns:</h6>
             <ul class="list-unstyled">
               <li>
-                <i class="fas fa-check text-info"></i> <strong>phone_number</strong> - Phone number
+                <i class="bi bi-check-lg text-info"></i> <strong>phone_number</strong> - Phone number
               </li>
               <li>
-                <i class="fas fa-check text-info"></i> <strong>address</strong> - Address
+                <i class="bi bi-check-lg text-info"></i> <strong>address</strong> - Address
               </li>
               <li>
-                <i class="fas fa-check text-info"></i> <strong>birth_date</strong> - Birth date (YYYY-MM-DD)
+                <i class="bi bi-check-lg text-info"></i> <strong>birth_date</strong> - Birth date (YYYY-MM-DD)
               </li>
             </ul>
 
             <hr />
 
             <div class="alert alert-info">
-              <i class="fas fa-lightbulb"></i>
+              <i class="bi bi-lightbulb"></i>
               <strong>Tip:</strong> Download the export template first to see the correct format.
             </div>
 
             <div class="alert alert-warning">
-              <i class="fas fa-exclamation-triangle"></i>
+              <i class="bi bi-exclamation-triangle"></i>
               <strong>Note:</strong> Maximum file size is 10MB.
             </div>
           </div>
@@ -121,11 +121,11 @@
 
         <div class="card mt-3">
           <div class="card-header">
-            <h5 class="card-title mb-0"><i class="fas fa-download"></i> Download Template</h5>
+            <h5 class="card-title mb-0"><i class="bi bi-download"></i> Download Template</h5>
           </div>
           <div class="card-body">
             <p class="text-muted">Download a sample CSV file to see the correct format:</p>
-            <a href="#" class="btn btn-outline-primary" onclick="downloadTemplate()"><i class="fas fa-download"></i> Download Template</a>
+            <a href="#" class="btn btn-outline-primary" onclick="downloadTemplate()"><i class="bi bi-download"></i> Download Template</a>
           </div>
         </div>
       </div>

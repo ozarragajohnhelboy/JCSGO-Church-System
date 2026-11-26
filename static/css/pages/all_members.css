@@ -6,32 +6,6 @@
     margin-bottom: 1.5rem;
 }
 
-.stats-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 15px;
-    padding: 1.5rem;
-    color: white;
-    text-align: center;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.2s;
-}
-
-.stats-card:hover {
-    transform: translateY(-5px);
-}
-
-.stats-card h3 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.stats-card p {
-    font-size: 1rem;
-    opacity: 0.9;
-    margin: 0;
-}
-
 .search-form {
     background: #f8f9fa;
     border-radius: 12px;
@@ -141,14 +115,6 @@
     .btn-toolbar .btn-group .btn-group {
         flex-direction: column;
         width: 100%;
-    }
-
-    .stats-card {
-        margin-bottom: 1rem;
-    }
-
-    .stats-card h3 {
-        font-size: 1.75rem;
     }
 
     .search-form .row {
@@ -364,14 +330,6 @@
         margin-bottom: 0.5rem;
     }
 
-    .stats-card h3 {
-        font-size: 1.5rem;
-    }
-
-    .stats-card p {
-        font-size: 0.9rem;
-    }
-
     .search-form {
         padding: 1rem;
     }
@@ -448,19 +406,6 @@
     .col-md-6 {
         flex: 0 0 100% !important;
         max-width: 100% !important;
-    }
-
-    .stats-card {
-        padding: 1.25rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .stats-card h3 {
-        font-size: 1.5rem;
-    }
-
-    .stats-card p {
-        font-size: 0.875rem;
     }
 
     .search-form {

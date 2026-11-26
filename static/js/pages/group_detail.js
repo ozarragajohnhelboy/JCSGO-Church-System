@@ -24,7 +24,14 @@ function addMemberToGroup(groupId) {
 }
 
 function removeFromGroup(userId, groupId) {
-    if (confirm('Remove this member from the group?')) {
+    window.appConfirm('Remove this member from the group?', {
+        title: 'Remove member',
+        confirmLabel: 'Remove',
+        danger: true,
+    }).then(function (ok) {
+        if (!ok) {
+            return;
+        }
         $.ajax({
             url: `/members/ajax/remove-from-group/${userId}/${groupId || window.groupId}/`,
             method: 'POST',
@@ -42,19 +49,19 @@ function removeFromGroup(userId, groupId) {
                 showError('Failed to remove member from group');
             }
         });
-    }
+    });
 }
 
 function exportGroupMembers(groupId) {
-    // You can implement group member export functionality here
-    alert('Export functionality will be implemented here');
+    window.appAlert('Export functionality will be implemented here', {
+        title: 'Export members',
+    });
 }
 
 function showError(message) {
-    // Use the global showError function if available, otherwise create a simple alert
-    if (typeof window.JCSGOCMS !== 'undefined' && window.JCSGOCMS.showError) {
+    if (typeof window.appAlert === 'function') {
+        window.appAlert(message, { title: 'Error', danger: true });
+    } else if (typeof window.JCSGOCMS !== 'undefined' && window.JCSGOCMS.showError) {
         window.JCSGOCMS.showError(null, message);
-    } else {
-        alert(message);
     }
 }

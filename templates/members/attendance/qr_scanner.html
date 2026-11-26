@@ -12,10 +12,10 @@
     <div class="row">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="fas fa-qrcode"></i> QR Code Scanner</h2>
+                <h2><i class="bi bi-qr-code"></i> QR Code Scanner</h2>
                 <div>
                     <a href="{% url 'members:attendance_list' %}" class="btn btn-outline-primary">
-                        <i class="fas fa-list"></i> View Attendance List
+                        <i class="bi bi-list-ul"></i> View Attendance List
                     </a>
                 </div>
             </div>
@@ -28,7 +28,7 @@
             <!-- QR Code Scanner Section -->
             <div class="scanner-container mb-4">
                 <div class="text-center mb-4">
-                    <h3><i class="fas fa-camera"></i> Automatic QR Scanner</h3>
+                    <h3><i class="bi bi-camera"></i> Automatic QR Scanner</h3>
                     <p class="mb-4">Point your camera at a member's QR code - attendance will be recorded automatically!</p>
                 </div>
 
@@ -49,13 +49,13 @@
                         </div>
                     </div>
                     <button id="start-camera" class="btn btn-outline-light btn-lg">
-                        <i class="fas fa-camera"></i> Start Automatic Scanner
+                        <i class="bi bi-camera"></i> Start Automatic Scanner
                     </button>
                     <button id="stop-camera" class="btn btn-outline-warning btn-lg d-none">
-                        <i class="fas fa-stop"></i> Stop Scanner
+                        <i class="bi bi-stop-circle"></i> Stop Scanner
                     </button>
                     <button id="debug-camera" class="btn btn-outline-info btn-sm ms-2 d-none">
-                        <i class="fas fa-bug"></i> Debug
+                        <i class="bi bi-bug"></i> Debug
                     </button>
                     <div class="mt-3">
                         <video id="video" class="d-none w-100" autoplay muted playsinline style="max-width: 100%; height: auto; border-radius: 10px; border: 3px solid #fff;"></video>
@@ -63,11 +63,11 @@
                     </div>
                     <div class="mt-3">
                         <div id="scanner-status" class="text-white-50">
-                            <i class="fas fa-info-circle"></i> 
+                            <i class="bi bi-info-circle"></i> 
                             Camera will automatically record attendance when QR code is detected
                         </div>
                         <div class="text-white-50 mt-1">
-                            <i class="fas fa-qrcode"></i> 
+                            <i class="bi bi-qr-code"></i> 
                         </div>
                         <div id="debug-info" class="text-white-50 mt-2 d-none">
                             <div>Video: <span id="video-info">Not ready</span></div>
@@ -92,7 +92,7 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="card-title mb-0">
-                        <i class="fas fa-edit"></i> Manual Attendance Entry
+                        <i class="bi bi-pencil-square"></i> Manual Attendance Entry
                     </h5>
                 </div>
                 <div class="card-body">
@@ -182,7 +182,7 @@
 
                         <div class="text-center">
                             <button type="submit" class="btn btn-primary btn-lg px-5">
-                                <i class="fas fa-plus"></i> Record Manual Attendance
+                                <i class="bi bi-plus-lg"></i> Record Manual Attendance
                             </button>
                         </div>
                     </form>
@@ -195,7 +195,7 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="card-title mb-0">
-                        <i class="fas fa-clock"></i> Today's Attendances
+                        <i class="bi bi-clock"></i> Today's Attendances
                     </h5>
                 </div>
                 <div class="card-body" id="today-attendances-list">
@@ -217,10 +217,7 @@
                             </div>
                         {% endfor %}
                     {% else %}
-                        <div class="text-center py-4">
-                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">No attendances recorded today</p>
-                        </div>
+                        {% include 'components/empty_state.html' with icon='calendar-x' message='No attendances recorded today.' %}
                     {% endif %}
                 </div>
             </div>

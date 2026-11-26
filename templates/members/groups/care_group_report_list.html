@@ -8,18 +8,16 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="card-title mb-0">
-                        <i class="bi bi-graph-up-arrow me-2"></i>Care Group Reports
-                    </h3>
+                <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h1 class="h5 card-title mb-0">Care Group Reports</h1>
                     <div class="page-actions">
                         {% if user.role.name == 'ADMIN' %}
-                        <button type="button" class="btn btn-success" onclick="exportCareGroupReports()">
-                            <i class="bi bi-download"></i>Export
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="exportCareGroupReports()">
+                            Export
                         </button>
                         {% endif %}
-                        <a href="{% url 'members:care_group_report_create' %}" class="btn btn-primary">
-                            <i class="bi bi-plus-lg"></i>Create Report
+                        <a href="{% url 'members:care_group_report_create' %}" class="btn btn-sm btn-primary">
+                            Create report
                         </a>
                     </div>
                 </div>
@@ -52,10 +50,10 @@
                             </div>
                             <div class="col-md-3">
                                 <button type="submit" class="btn btn-outline-primary me-2">
-                                    <i class="fas fa-search me-1"></i>Search
+                                    <i class="bi bi-search me-1"></i>Search
                                 </button>
                                 <a href="{% url 'members:care_group_report_list' %}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-times me-1"></i>Clear
+                                    <i class="bi bi-x-lg me-1"></i>Clear
                                 </a>
                             </div>
                         </div>
@@ -64,7 +62,7 @@
                     <!-- Reports Table -->
                     {% if page_obj %}
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-striped table-hover table-stack">
                                 <thead class="table-dark">
                                     <tr>
                                         <th>Care Group</th>
@@ -79,17 +77,17 @@
                                 <tbody>
                                     {% for report in page_obj %}
                                         <tr>
-                                            <td>
+                                            <td data-label="Care Group">
                                                 <strong>{{ report.care_group.name }}</strong>
                                             </td>
-                                            <td>{{ report.date_of_cg|date:"M d, Y" }}</td>
-                                            <td>{{ report.topic_discussed|truncatechars:30 }}</td>
-                                            <td>{{ report.scripture_used|truncatechars:30 }}</td>
-                                            <td>
+                                            <td data-label="Date">{{ report.date_of_cg|date:"M d, Y" }}</td>
+                                            <td data-label="Topic">{{ report.topic_discussed|truncatechars:30 }}</td>
+                                            <td data-label="Scripture">{{ report.scripture_used|truncatechars:30 }}</td>
+                                            <td data-label="Members">
                                                 <span class="badge bg-info">{{ report.total_members_reported }}</span>
                                             </td>
-                                            <td>{{ report.created_by.full_name }}</td>
-                                            <td>
+                                            <td data-label="Created By">{{ report.created_by.full_name }}</td>
+                                            <td data-label="Actions">
                                                 <div class="table-actions">
                                                     <a href="{% url 'members:care_group_report_detail' report.id %}" 
                                                        class="btn btn-outline-primary btn-sm" title="View Details">
@@ -161,13 +159,9 @@
                             </nav>
                         {% endif %}
                     {% else %}
-                        <div class="text-center py-5">
-                            <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">No care group reports found</h5>
-                            <p class="text-muted">Create your first care group report to get started.</p>
-                            <a href="{% url 'members:care_group_report_create' %}" class="btn btn-primary">
-                                <i class="fas fa-plus me-1"></i>Create Report
-                            </a>
+                        {% include 'components/empty_state.html' with icon='file-text' message='No care group reports found.' %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'members:care_group_report_create' %}" class="btn btn-sm btn-primary">Create report</a>
                         </div>
                     {% endif %}
                 </div>
@@ -421,7 +415,7 @@ function exportCareGroupReports() {
           text-align: center;
         ">
           <div style="margin-bottom: 1.5rem;">
-            <i class="fas fa-download" style="font-size: 3rem; color: #28a745; margin-bottom: 1rem;"></i>
+            <i class="bi bi-download" style="font-size: 1.5rem; color: #2c3e50; margin-bottom: 1rem;"></i>
             <h3 style="color: #2c3e50; margin: 0 0 0.5rem 0; font-size: 1.5rem;">Export Care Group Reports</h3>
             <p style="color: #6c757d; margin: 0; font-size: 0.9rem;">Choose your preferred export format</p>
           </div>
@@ -430,7 +424,7 @@ function exportCareGroupReports() {
             <button id="csvBtn" style="
               flex: 1;
               padding: 0.75rem 1rem;
-              background: linear-gradient(135deg, #28a745, #20c997);
+              background: #27ae60;
               color: white;
               border: none;
               border-radius: 8px;
@@ -442,13 +436,13 @@ function exportCareGroupReports() {
               justify-content: center;
               gap: 0.5rem;
             " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(40, 167, 69, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-              <i class="fas fa-file-csv"></i>
+              <i class="bi bi-filetype-csv"></i>
               CSV
             </button>
             <button id="excelBtn" style="
               flex: 1;
               padding: 0.75rem 1rem;
-              background: linear-gradient(135deg, #007bff, #0056b3);
+              background: #3498db;
               color: white;
               border: none;
               border-radius: 8px;
@@ -460,7 +454,7 @@ function exportCareGroupReports() {
               justify-content: center;
               gap: 0.5rem;
             " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 123, 255, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-              <i class="fas fa-file-excel"></i>
+              <i class="bi bi-file-earmark-excel"></i>
               Excel
             </button>
           </div>
@@ -563,14 +557,14 @@ function showDeleteModal(reportId, careGroupName) {
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-danger text-white border-0">
                     <h5 class="modal-title">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <i class="bi bi-exclamation-triangle me-2"></i>
                         Confirm Deletion
                     </h5>
                     <button type="button" class="btn-close btn-close-white" onclick="closeDeleteModal()"></button>
                 </div>
                 <div class="modal-body p-4">
                     <div class="text-center mb-3">
-                        <i class="fas fa-trash-alt text-danger" style="font-size: 3rem;"></i>
+                        <i class="bi bi-trash text-danger" style="font-size: 3rem;"></i>
                     </div>
                     <h6 class="text-center mb-3">Are you sure you want to delete this care group report?</h6>
                     <div class="alert alert-warning border-0">
@@ -578,16 +572,16 @@ function showDeleteModal(reportId, careGroupName) {
                         <strong>Report ID:</strong> #${reportId}
                     </div>
                     <p class="text-muted text-center mb-0">
-                        <i class="fas fa-info-circle me-1"></i>
+                        <i class="bi bi-info-circle me-1"></i>
                         This action cannot be undone and will permanently remove all data associated with this report.
                     </p>
                 </div>
                 <div class="modal-footer border-0 p-4">
                     <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">
-                        <i class="fas fa-times me-1"></i>Cancel
+                        <i class="bi bi-x-lg me-1"></i>Cancel
                     </button>
                     <button type="button" class="btn btn-danger" onclick="confirmDelete(${reportId})">
-                        <i class="fas fa-trash me-1"></i>Delete Report
+                        <i class="bi bi-trash me-1"></i>Delete Report
                     </button>
                 </div>
             </div>

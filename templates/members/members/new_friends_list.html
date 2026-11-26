@@ -32,31 +32,15 @@
     </div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="stats-card">
-            <h3>{{ total_new_friends }}</h3>
-            <p>Total New Friends</p>
-        </div>
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        {% include 'components/stats_card.html' with variant='primary' label='New Friends' value=total_new_friends hint='1st-5th timer' icon='person-plus' %}
     </div>
-    <div class="col-md-3">
-        <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <h3>{{ pending_follow_up }}</h3>
-            <p>Pending Follow-up</p>
-        </div>
+    <div class="col-md-4">
+        {% include 'components/stats_card.html' with variant='warning' label='Pending Follow-up' value=pending_follow_up hint='Needs contact' icon='clock' %}
     </div>
-    <div class="col-md-3">
-        <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <h3>{{ engaged_count }}</h3>
-            <p>Engaged</p>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
-            <h3>{{ page_obj.paginator.count }}</h3>
-            <p>Showing</p>
-        </div>
+    <div class="col-md-4">
+        {% include 'components/stats_card.html' with variant='success' label='Engaged' value=engaged_count hint='Active follow-up' icon='person-check' %}
     </div>
 </div>
 
@@ -91,7 +75,7 @@
             </select>
         </div>
         <div class="col-md-2">
-            <label class="form-label">&nbsp;</label>
+            <label class="form-label d-none d-md-block">&nbsp;</label>
             <div class="d-grid">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-search"></i> Filter
@@ -103,7 +87,7 @@
 
 <!-- New Friends Table -->
 <div class="table-responsive">
-    <table class="table table-striped table-hover">
+    <table class="table table-striped table-hover table-stack">
         <thead>
             <tr>
                 <th>Name</th>
@@ -119,7 +103,7 @@
         <tbody>
             {% for new_friend in page_obj %}
             <tr>
-                <td>
+                <td data-label="Name">
                     <div class="d-flex align-items-center">
                         {% if new_friend.user.profile_picture %}
                         <img src="{{ new_friend.user.profile_picture.url }}" alt="Profile" class="rounded-circle me-2" width="32" height="32">
@@ -136,27 +120,27 @@
                         </div>
                     </div>
                 </td>
-                <td>
+                <td data-label="Email">
                     <a href="mailto:{{ new_friend.user.email }}" class="text-decoration-none">{{ new_friend.user.email }}</a>
                 </td>
-                <td>
+                <td data-label="Timer Status">
                     <span class="badge bg-warning text-dark">
                         {{ new_friend.user.timer_status }}{% if new_friend.user.timer_status == 1 %}st{% elif new_friend.user.timer_status == 2 %}nd{% elif new_friend.user.timer_status == 3 %}rd{% else %}th{% endif %} timer
                     </span>
                 </td>
-                <td>
+                <td data-label="Follow-up Status">
                     <span class="badge bg-{% if new_friend.follow_up_status == 'PENDING' %}warning{% elif new_friend.follow_up_status == 'ENGAGED' %}success{% elif new_friend.follow_up_status == 'NOT_INTERESTED' %}danger{% else %}info{% endif %}">
                         {{ new_friend.get_follow_up_status_display }}
                     </span>
                 </td>
-                <td>
+                <td data-label="Invited By">
                     {% if new_friend.invited_by %}
                     {{ new_friend.invited_by.full_name }}
                     {% else %}
                     <span class="text-muted">-</span>
                     {% endif %}
                 </td>
-                <td>
+                <td data-label="Endorsed To">
                     {% if new_friend.endorsed_to %}
                     <span class="badge bg-info">{{ new_friend.endorsed_to.full_name }}</span>
                     <br><small class="text-muted">{{ new_friend.endorsed_to.role.get_name_display }}</small>
@@ -164,21 +148,21 @@
                     <span class="text-muted">-</span>
                     {% endif %}
                 </td>
-                <td>
+                <td data-label="Registration">
                     <small>{{ new_friend.registration_date|date:"M d, Y" }}</small>
                     <br>
                     <small class="text-muted">{{ new_friend.days_since_registration }} days ago</small>
                 </td>
-                <td>
+                <td data-label="Actions">
                     <div class="btn-group" role="group">
                         <a href="{% url 'members:member_detail' new_friend.user.pk %}?from=new_friends" class="btn btn-sm btn-outline-primary btn-action" 
                            data-bs-toggle="tooltip" title="View Details">
-                            <i class="bi bi-eye"></i>
+                            <i class="bi bi-eye me-0"></i>
                         </a>
                         {% if user.is_superuser or user.role.name == 'ADMIN' %}
                         <a href="{% url 'members:new_friend_edit' new_friend.pk %}" class="btn btn-sm btn-outline-warning btn-action" 
                            data-bs-toggle="tooltip" title="Edit New Friend">
-                            <i class="bi bi-pencil"></i>
+                            <i class="bi bi-pencil me-0"></i>
                         </a>
                         <button type="button" class="btn btn-sm btn-outline-secondary btn-action" 
                                 data-user-id="{{ new_friend.user.pk }}"
@@ -186,35 +170,31 @@
                                 data-full-name="{{ new_friend.user.full_name }}"
                                 onclick="openTimerOrRegularModalFromBtn(this)"
                                 data-bs-toggle="tooltip" title="Update Timer / Make Regular">
-                            <i class="bi bi-clock-history"></i>
+                            <i class="bi bi-clock-history me-0"></i>
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-danger btn-action" 
                                 onclick="deleteNewFriend({{ new_friend.pk }}, '{{ new_friend.user.full_name|escapejs }}')"
                                 data-bs-toggle="tooltip" title="Delete New Friend">
-                            <i class="bi bi-trash"></i>
+                            <i class="bi bi-trash me-0"></i>
                         </button>
                         {% endif %}
                         <button type="button" class="btn btn-sm btn-outline-info btn-action" 
                                 onclick="updateFollowUp({{ new_friend.pk }})"
                                 data-bs-toggle="tooltip" title="Update Follow-up">
-                            <i class="bi bi-chat-dots"></i>
+                            <i class="bi bi-chat-dots me-0"></i>
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-success btn-action" 
                                 onclick="recordAttendance({{ new_friend.user.pk }})"
                                 data-bs-toggle="tooltip" title="Record Attendance">
-                            <i class="bi bi-check-circle"></i>
+                            <i class="bi bi-check-circle me-0"></i>
                         </button>
                     </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8" class="text-center py-4">
-                    <div class="text-muted">
-                        <i class="bi bi-person-plus display-4"></i>
-                        <p class="mt-2">No new friends found matching your criteria.</p>
-                        <p>Try adjusting your search or filters.</p>
-                    </div>
+                <td colspan="8">
+                    {% include 'components/empty_state.html' with icon='person-plus' message='No new friends match these filters.' %}
                 </td>
             </tr>
             {% endfor %}
