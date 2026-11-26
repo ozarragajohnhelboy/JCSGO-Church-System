@@ -21,6 +21,8 @@
     </div>
   </div>
 
+  {% include 'members/groups/_pending_leave_inbox.html' with leave_requests=pending_leave_requests %}
+
   <div class="row g-3 mb-4">
     <div class="col-xl-3 col-md-6">
       {% include 'components/stats_card.html' with variant='primary' label='Direct Members' value=direct_members_count hint='In your care groups' icon='people' %}
@@ -36,49 +38,35 @@
     </div>
   </div>
 
-  {% if pending_leave_requests %}
-  <section class="member-assignment mb-4">
-    <p class="member-assignment__kicker">Pending leave</p>
-    <h2 class="h5 mb-1">Leave requests ({{ pending_leave_requests|length }})</h2>
-    <p class="text-muted mb-3">Approve to remove the member from the group, or decline to keep them.</p>
-    {% for leave_request in pending_leave_requests %}
-      <div class="mb-3{% if not forloop.last %} pb-3 border-bottom{% endif %}">
-        <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
-          <strong>{{ leave_request.member.full_name }}</strong>
-          <small class="text-muted">{{ leave_request.group.name }} · {{ leave_request.created_at|timesince }} ago</small>
-        </div>
-        <p class="mb-3">{{ leave_request.reason }}</p>
-        <div class="member-assignment__actions">
-          <form method="post" action="{% url 'members:group_leave_review' leave_request.pk %}" class="d-inline" data-confirm="Approve this leave request? {{ leave_request.member.full_name }} will be removed from {{ leave_request.group.name }}." data-confirm-title="Approve leave" data-confirm-label="Approve">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="approve">
-            <button type="submit" class="btn btn-sm btn-outline-primary">Approve leave</button>
-          </form>
-          <form method="post" action="{% url 'members:group_leave_review' leave_request.pk %}" class="d-inline" data-confirm="Decline this leave request? {{ leave_request.member.full_name }} will stay in {{ leave_request.group.name }}." data-confirm-title="Decline leave" data-confirm-label="Decline">
-            {% csrf_token %}
-            <input type="hidden" name="action" value="reject">
-            <button type="submit" class="btn btn-sm btn-outline-secondary">Decline</button>
-          </form>
-        </div>
-      </div>
-    {% endfor %}
-  </section>
-  {% endif %}
-
-  {% if user_group and user_group.leader_id != user.id %}
-  <section class="member-assignment mb-4">
-    <p class="member-assignment__kicker">{{ user_group.get_group_type_display }}</p>
-    <h2 class="h5 mb-1">{{ user_group.name }}</h2>
-    <p class="text-muted mb-3">Led by {{ user_group.leader.full_name }}</p>
-    {% if pending_leave_request %}
-      <p class="member-assignment__status">Leave request sent. Waiting for {{ user_group.leader.full_name }} to review.</p>
-    {% else %}
-      <div class="member-assignment__actions">
-        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#leaveGroupModal">Request to leave</button>
-      </div>
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="h5 mb-0">Care groups</h2>
+    {% if not led_groups %}
+      <a href="{% url 'members:care_group_create' %}" class="btn btn-sm btn-outline-primary">Create care group</a>
     {% endif %}
-  </section>
-  {% endif %}
+  </div>
+  <div class="row g-3 mb-4">
+    {% if user_group and user_group.leader_id != user.id %}
+    <div class="col-sm-6 col-xl-4">
+      {% if pending_leave_request %}
+        {% include 'components/care_group_tile.html' with kicker=user_group.get_group_type_display name=user_group.name leader_name=user_group.leader.full_name status="Leave request sent. Waiting for review." only %}
+      {% else %}
+        {% include 'components/care_group_tile.html' with kicker=user_group.get_group_type_display name=user_group.name leader_name=user_group.leader.full_name show_leave=True only %}
+      {% endif %}
+    </div>
+    {% endif %}
+    {% for group in group_stats %}
+    <div class="col-sm-6 col-xl-4">
+      {% url 'members:care_group_detail' group.group.id as group_view_url %}
+      {% include 'components/care_group_tile.html' with kicker=group.group.get_group_type_display name=group.group.name member_count=group.member_count max_members=group.group.max_members pending_leave_count=group.pending_leave_count view_url=group_view_url only %}
+    </div>
+    {% empty %}
+      {% if not user_group or user_group.leader_id == user.id %}
+      <div class="col-12">
+        {% include 'components/empty_state.html' with icon='collection' message='You have not created any care groups yet.' %}
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
 
   <!-- Charts and Analytics Section -->
   <div class="row mb-4">
@@ -105,35 +93,6 @@
     </div>
   </div>
 
-
-  <div class="care-group-list">
-    <h2 class="h5 mb-3">Your care groups</h2>
-    {% if led_groups %}
-      {% for group in group_stats %}
-        <section class="member-assignment mb-3">
-          <p class="member-assignment__kicker">{{ group.group.get_group_type_display }}{% if group.is_full %} · Full{% endif %}</p>
-          <h3 class="h6 mb-1">{{ group.group.name }}</h3>
-          {% if group.group.description %}
-          <p class="text-muted mb-2">{{ group.group.description|truncatechars:100 }}</p>
-          {% endif %}
-          <ul class="member-assignment__meta">
-            <li>{{ group.member_count }}/{{ group.group.max_members }} members</li>
-            {% if group.pending_leave_count %}
-            <li>{{ group.pending_leave_count }} pending leave request{{ group.pending_leave_count|pluralize }}</li>
-            {% endif %}
-          </ul>
-          <div class="member-assignment__actions">
-            <a href="{% url 'members:care_group_detail' group.group.id %}" class="btn btn-sm btn-outline-secondary">View group</a>
-          </div>
-        </section>
-      {% endfor %}
-    {% else %}
-      {% include 'components/empty_state.html' with icon='collection' message='You have not created any care groups yet.' %}
-      <div class="text-center mt-3">
-        <a href="{% url 'members:care_group_create' %}" class="btn btn-sm btn-primary">Create care group</a>
-      </div>
-    {% endif %}
-  </div>
 
   <!-- Recent Activities and Reports -->
   <div class="row mt-4">
@@ -197,6 +156,8 @@
       </div>
     </div>
   </div>
+
+  {% include 'components/announcements_panel.html' %}
 </div>
 {% include 'members/groups/_leave_request_modal.html' %}
 

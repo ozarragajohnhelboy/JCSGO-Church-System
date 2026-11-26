@@ -36,6 +36,18 @@ from .pwa_views import (
     offline
 )
 
+from .settings_views import (
+    account_settings,
+)
+
+from .announcement_views import (
+    announcement_board,
+    announcement_list,
+    announcement_create,
+    announcement_edit,
+    announcement_toggle,
+)
+
 __all__ = [
     'church_selection',
     'church_login',
@@ -58,4 +70,10 @@ __all__ = [
     'manifest',
     'service_worker',
     'offline',
+    'account_settings',
+    'announcement_board',
+    'announcement_list',
+    'announcement_create',
+    'announcement_edit',
+    'announcement_toggle',
 ]

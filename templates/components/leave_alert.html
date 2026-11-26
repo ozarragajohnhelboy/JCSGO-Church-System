@@ -1,0 +1,19 @@
+{% if pending_leave_count and request.resolver_match.url_name != 'dashboard' %}
+<div class="leave-alert leave-alert--review" role="status">
+  <div>
+    <p class="leave-alert__kicker">Leave requests</p>
+    <p class="leave-alert__text mb-0">
+      {{ pending_leave_count }} pending leave request{{ pending_leave_count|pluralize }} need review.
+    </p>
+  </div>
+  <a class="btn btn-sm btn-outline-primary" href="{% url 'churches:dashboard' %}">Review</a>
+</div>
+{% elif own_pending_leave and request.resolver_match.url_name != 'dashboard' %}
+<div class="leave-alert leave-alert--own" role="status">
+  <div>
+    <p class="leave-alert__kicker">Leave request</p>
+    <p class="leave-alert__text mb-0">Your leave request is waiting for your leader to review.</p>
+  </div>
+  <a class="btn btn-sm btn-outline-secondary" href="{% url 'churches:dashboard' %}">View status</a>
+</div>
+{% endif %}

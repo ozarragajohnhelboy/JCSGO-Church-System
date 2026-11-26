@@ -1,0 +1,28 @@
+{% if leave_requests %}
+<section class="member-assignment mb-4">
+  <p class="member-assignment__kicker">Pending leave</p>
+  <h2 class="h5 mb-1">Leave requests ({{ leave_requests|length }})</h2>
+  <p class="text-muted mb-3">Approve to remove the member from the group, or decline to keep them.</p>
+  {% for leave_request in leave_requests %}
+    <div class="mb-3{% if not forloop.last %} pb-3 border-bottom{% endif %}">
+      <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+        <strong>{{ leave_request.member.full_name }}</strong>
+        <small class="text-muted">{{ leave_request.group.name }} · {{ leave_request.created_at|timesince }} ago</small>
+      </div>
+      <p class="mb-3">{{ leave_request.reason }}</p>
+      <div class="member-assignment__actions">
+        <form method="post" action="{% url 'members:group_leave_review' leave_request.pk %}" class="d-inline" data-confirm="Approve this leave request? {{ leave_request.member.full_name }} will be removed from {{ leave_request.group.name }}." data-confirm-title="Approve leave" data-confirm-label="Approve">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="approve">
+          <button type="submit" class="btn btn-sm btn-outline-primary">Approve leave</button>
+        </form>
+        <form method="post" action="{% url 'members:group_leave_review' leave_request.pk %}" class="d-inline" data-confirm="Decline this leave request? {{ leave_request.member.full_name }} will stay in {{ leave_request.group.name }}." data-confirm-title="Decline leave" data-confirm-label="Decline">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reject">
+          <button type="submit" class="btn btn-sm btn-outline-secondary">Decline</button>
+        </form>
+      </div>
+    </div>
+  {% endfor %}
+</section>
+{% endif %}

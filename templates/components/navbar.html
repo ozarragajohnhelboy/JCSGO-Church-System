@@ -11,6 +11,13 @@
       <span class="brand-text">JCSGO CMS</span>
     </a>
 
+    {% if pending_leave_count %}
+    <a class="navbar-alert" href="{% url 'churches:dashboard' %}" aria-label="{{ pending_leave_count }} leave requests waiting">
+      <i class="bi bi-bell" aria-hidden="true"></i>
+      <span class="navbar-alert__count">{{ pending_leave_count }}</span>
+    </a>
+    {% endif %}
+
     <div class="navbar-profile">
       <ul class="navbar-nav">
         <li class="nav-item dropdown">
@@ -51,7 +58,7 @@
               <a class="dropdown-item d-flex align-items-center" href="{% url 'members:user_profile' %}"><i class="bi bi-person me-2"></i> Profile</a>
             </li>
             <li>
-              <a class="dropdown-item d-flex align-items-center" href="#"><i class="bi bi-gear me-2"></i> Settings</a>
+              <a class="dropdown-item d-flex align-items-center" href="{% url 'churches:account_settings' %}"><i class="bi bi-gear me-2"></i> Settings</a>
             </li>
             <li>
               <hr class="dropdown-divider" />

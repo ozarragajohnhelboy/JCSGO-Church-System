@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Announcements - {{ user.church.name }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/components/member_record.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center pt-3 pb-2 mb-3">
+  <div>
+    <h1 class="h2 mb-0">Announcements</h1>
+    <p class="text-muted mb-0">{{ user.church.name }}</p>
+  </div>
+  {% if can_manage_announcements %}
+  <div class="d-flex gap-2">
+    <a href="{% url 'churches:announcement_list' %}" class="btn btn-sm btn-outline-secondary">Manage</a>
+    <a href="{% url 'churches:announcement_create' %}" class="btn btn-sm btn-primary">New announcement</a>
+  </div>
+  {% endif %}
+</div>
+
+{% if announcements %}
+  {% for announcement in announcements %}
+    <article class="member-record mb-3">
+      <p class="member-assignment__kicker mb-1">
+        <span class="announcement-priority announcement-priority--{{ announcement.priority }}">{{ announcement.get_priority_display }}</span>
+        {% if announcement.is_current %}
+          · {{ announcement.start_date|date:"M d, Y" }}
+        {% else %}
+          · Starts {{ announcement.start_date|date:"M d, Y" }}
+        {% endif %}
+      </p>
+      <h2 class="h5 mb-2">{{ announcement.title }}</h2>
+      <p class="mb-0">{{ announcement.content|linebreaksbr }}</p>
+    </article>
+  {% endfor %}
+{% else %}
+  {% include 'components/empty_state.html' with icon='megaphone' message='No announcements right now.' %}
+{% endif %}
+{% endblock %}

@@ -618,19 +618,9 @@ body {
     }
 
     #pwa-install-container {
-        bottom: 10px;
-        right: 10px;
-        left: 10px;
+        bottom: 8px;
+        width: calc(100% - 1rem);
         max-width: none;
-        padding: 15px;
-    }
-
-    #pwa-install-container h6 {
-        font-size: 0.95rem;
-    }
-
-    #pwa-install-container p {
-        font-size: 0.8rem;
     }
 }
 

@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Settings{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/components/member_record.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center pt-3 pb-2 mb-3">
+  <div>
+    <h1 class="h2 mb-0">Settings</h1>
+    {% if user.church %}
+      <p class="text-muted mb-0">{{ user.church.name }} · {{ user.full_name }}</p>
+    {% else %}
+      <p class="text-muted mb-0">{{ user.full_name }}</p>
+    {% endif %}
+  </div>
+  <a href="{% url 'members:user_profile' %}" class="btn btn-sm btn-outline-secondary">Profile</a>
+</div>
+
+<section class="member-record mb-4">
+  <p class="member-assignment__kicker">Account</p>
+  <h2 class="h5 mb-3">Change password</h2>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="form" value="password">
+    {% if password_form.non_field_errors %}
+      <div class="text-danger mb-3">{{ password_form.non_field_errors }}</div>
+    {% endif %}
+    {% for field in password_form %}
+      <div class="mb-3">
+        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+        {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <div class="member-record__actions">
+      <button type="submit" class="btn btn-sm btn-primary">Update password</button>
+    </div>
+  </form>
+</section>
+
+{% if can_manage_church and church_form %}
+<section class="member-record mb-4">
+  <p class="member-assignment__kicker">Church</p>
+  <h2 class="h5 mb-3">Registration</h2>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="form" value="church">
+    {% if church_form.non_field_errors %}
+      <div class="text-danger mb-3">{{ church_form.non_field_errors }}</div>
+    {% endif %}
+    <div class="form-check mb-3">
+      {{ church_form.allow_public_registration }}
+      <label for="{{ church_form.allow_public_registration.id_for_label }}" class="form-check-label">{{ church_form.allow_public_registration.label }}</label>
+      <div class="form-text">When off, people cannot register themselves on this church login page.</div>
+    </div>
+    <div class="form-check mb-3">
+      {{ church_form.require_email_verification }}
+      <label for="{{ church_form.require_email_verification.id_for_label }}" class="form-check-label">{{ church_form.require_email_verification.label }}</label>
+    </div>
+    <div class="member-record__actions">
+      <button type="submit" class="btn btn-sm btn-primary">Save church settings</button>
+    </div>
+  </form>
+</section>
+{% endif %}
+
+<section class="member-record mb-4" id="install-app">
+  <p class="member-assignment__kicker">App</p>
+  <h2 class="h5 mb-2">Install on this device</h2>
+  <p class="text-muted mb-3">Add JCSGO Church to your home screen for quicker access. This does not send notifications.</p>
+  <div class="member-record__actions">
+    <button type="button" id="pwa-install-settings" class="btn btn-sm btn-outline-primary d-none">Install app</button>
+    <p id="pwa-install-settings-hint" class="text-muted small mb-0">If your browser supports it, an Install button will appear here.</p>
+  </div>
+</section>
+{% endblock %}
