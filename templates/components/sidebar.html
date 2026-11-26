@@ -42,6 +42,7 @@
           <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'churches:dashboard' %}">
             <i class="bi bi-speedometer2 me-2"></i>
             Admin Dashboard
+            {% if pending_leave_count %}<span class="sidebar-count">{{ pending_leave_count }}</span>{% endif %}
           </a>
         </li>
 
@@ -96,6 +97,12 @@
             Church Report
           </a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'announcement_board' or request.resolver_match.url_name == 'announcement_list' or request.resolver_match.url_name == 'announcement_create' or request.resolver_match.url_name == 'announcement_edit' %}active{% endif %}" href="{% url 'churches:announcement_board' %}">
+            <i class="bi bi-megaphone me-2"></i>
+            Announcements
+          </a>
+        </li>
 
         <li class="nav-item">
           <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted text-uppercase"><span>Attendance System</span></h6>
@@ -130,6 +137,7 @@
             {% else %}
               Care Leader Dashboard
             {% endif %}
+            {% if pending_leave_count %}<span class="sidebar-count">{{ pending_leave_count }}</span>{% endif %}
           </a>
         </li>
 
@@ -155,6 +163,12 @@
             Care Group Reports
           </a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'announcement_board' %}active{% endif %}" href="{% url 'churches:announcement_board' %}">
+            <i class="bi bi-megaphone me-2"></i>
+            Announcements
+          </a>
+        </li>
       {% elif user.role.name == 'CM' %}
         <li class="nav-item">
           <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'churches:dashboard' %}">
@@ -171,6 +185,18 @@
           <a class="nav-link {% if request.resolver_match.url_name == 'user_profile' %}active{% endif %}" href="{% url 'members:user_profile' %}">
             <i class="bi bi-person me-2"></i>
             My Profile
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'account_settings' %}active{% endif %}" href="{% url 'churches:account_settings' %}">
+            <i class="bi bi-gear me-2"></i>
+            Settings
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.resolver_match.url_name == 'announcement_board' %}active{% endif %}" href="{% url 'churches:announcement_board' %}">
+            <i class="bi bi-megaphone me-2"></i>
+            Announcements
           </a>
         </li>
       {% endif %}

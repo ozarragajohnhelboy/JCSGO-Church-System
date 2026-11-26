@@ -1,0 +1,18 @@
+<section class="care-group-tile">
+  <p class="care-group-tile__kicker">{{ kicker }}</p>
+  <h2 class="care-group-tile__name">{{ name }}</h2>
+  {% if leader_name %}
+    <p class="care-group-tile__meta">Led by {{ leader_name }}</p>
+  {% elif max_members %}
+    <p class="care-group-tile__meta">{{ member_count }}/{{ max_members }} members{% if pending_leave_count %} · {{ pending_leave_count }} pending leave{% endif %}</p>
+  {% endif %}
+  {% if status %}<p class="care-group-tile__note">{{ status }}</p>{% endif %}
+  <div class="care-group-tile__actions">
+    {% if view_url %}
+      <a href="{{ view_url }}" class="btn btn-sm btn-outline-secondary">{{ view_label|default:"View group" }}</a>
+    {% endif %}
+    {% if show_leave %}
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#leaveGroupModal">Request to leave</button>
+    {% endif %}
+  </div>
+</section>

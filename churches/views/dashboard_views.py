@@ -7,6 +7,7 @@ from django.db.models import Count
 
 from members.models import Church, Role, CustomUser, ActivityLog
 from members.services.care_group_hierarchy import filter_visible_reports, get_scope_user_ids
+from members.services.leave_alerts import pending_leave_queryset
 
 User = get_user_model()
 
@@ -326,6 +327,7 @@ def dashboard(request):
             'transition_counts': transition_counts,
             'current_month_transitions': current_month_transitions,
             'transition_rate': transition_rate,
+            'pending_leave_requests': pending_leave_queryset(user).order_by('created_at'),
         })
         return render(request, 'churches/dashboard/admin_dashboard.html', context)
     
@@ -499,10 +501,7 @@ def dashboard(request):
                 status='PENDING',
             ).first()
 
-        pending_leave_requests = GroupLeaveRequest.objects.filter(
-            group__in=led_groups,
-            status='PENDING',
-        ).select_related('member', 'group').order_by('created_at')
+        pending_leave_requests = pending_leave_queryset(user).order_by('created_at')
         
         context.update({
             'led_groups': led_groups,

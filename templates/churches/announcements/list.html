@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Announcements - {{ user.church.name }}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/components/member_record.css' %}" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center pt-3 pb-2 mb-3">
+  <div>
+    <h1 class="h2 mb-0">Announcements</h1>
+    <p class="text-muted mb-0">{{ user.church.name }}</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{% url 'churches:announcement_board' %}" class="btn btn-sm btn-outline-secondary">View board</a>
+    <a href="{% url 'churches:announcement_create' %}" class="btn btn-sm btn-primary">New announcement</a>
+  </div>
+</div>
+
+{% if announcements %}
+  {% for announcement in announcements %}
+    <article class="member-record mb-3">
+      <div class="member-record__head">
+        <div>
+          <p class="member-assignment__kicker mb-1">
+            <span class="announcement-priority announcement-priority--{{ announcement.priority }}">{{ announcement.get_priority_display }}</span>
+            {% if announcement.is_current %}
+              · Current
+            {% elif announcement.is_active %}
+              · Scheduled
+            {% else %}
+              · Inactive
+            {% endif %}
+          </p>
+          <h2 class="h5 mb-0">{{ announcement.title }}</h2>
+        </div>
+      </div>
+      <p class="mb-2">{{ announcement.content }}</p>
+      <dl class="member-record__facts">
+        <div>
+          <dt>Starts</dt>
+          <dd>{{ announcement.start_date|date:"M d, Y g:i A" }}</dd>
+        </div>
+        <div>
+          <dt>Ends</dt>
+          <dd>{% if announcement.end_date %}{{ announcement.end_date|date:"M d, Y g:i A" }}{% else %}No end date{% endif %}</dd>
+        </div>
+      </dl>
+      <div class="member-record__actions">
+        <a href="{% url 'churches:announcement_edit' announcement.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+        <form method="post" action="{% url 'churches:announcement_toggle' announcement.pk %}" class="d-inline">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-secondary">
+            {% if announcement.is_active %}Deactivate{% else %}Activate{% endif %}
+          </button>
+        </form>
+      </div>
+    </article>
+  {% endfor %}
+{% else %}
+  {% include 'components/empty_state.html' with icon='megaphone' message='No announcements yet. Publish one for your church.' %}
+{% endif %}
+{% endblock %}

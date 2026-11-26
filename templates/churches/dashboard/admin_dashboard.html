@@ -4,7 +4,14 @@
   {{ church.name }} - Admin Dashboard
 {% endblock %}
 
+{% block extra_css %}
+<link href="{% static 'css/components/member_record.css' %}" rel="stylesheet" />
+{% endblock %}
+
 {% block content %}
+<div class="container-fluid pt-3">
+  {% include 'members/groups/_pending_leave_inbox.html' with leave_requests=pending_leave_requests %}
+</div>
 <form method="get" id="dashboardForm">
 <div class="container-fluid">
     <!-- Header -->
@@ -268,6 +275,8 @@
         </div>
       </div>
     </div>
+
+    {% include 'components/announcements_panel.html' %}
   </div>
 </form>
 

@@ -34,6 +34,7 @@
     <link href="{% static 'css/mobile.css' %}" rel="stylesheet" />
     <link href="{% static 'css/components/app_shell.css' %}" rel="stylesheet" />
     <link href="{% static 'css/components/app_dialog.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/components/inbox_alerts.css' %}" rel="stylesheet" />
 
     {% block extra_css %}
 
@@ -58,6 +59,7 @@
               {% include 'components/sidebar.html' %}
               
               <div class="col-md-9 col-lg-10 ms-sm-auto px-md-4">
+                {% include 'components/leave_alert.html' %}
                 {% block content %}
                 {% endblock %}
               </div>
@@ -65,6 +67,7 @@
           </div>
         {% else %}
           <div class="container">
+            {% include 'components/leave_alert.html' %}
             {% block non_admin_content %}
             {% endblock %}
           </div>
@@ -82,11 +85,12 @@
     {% endif %}
 
     {% if user.is_authenticated %}
-      <div id="pwa-install-container" class="pwa-install-card">
-        <h6>Install App</h6>
-        <p>Install JCSGO Church for quick access</p>
-        <button id="pwa-install-button" class="btn btn-primary btn-sm w-100 mb-2">Install</button>
-        <button id="pwa-dismiss-button" class="btn btn-outline-secondary btn-sm w-100">Not Now</button>
+      <div id="pwa-install-container" class="pwa-install-bar" hidden>
+        <p class="pwa-install-bar__text">Install JCSGO Church on this device</p>
+        <div class="pwa-install-bar__actions">
+          <button type="button" id="pwa-install-button" class="btn btn-sm btn-primary">Install</button>
+          <button type="button" id="pwa-dismiss-button" class="btn btn-sm btn-outline-secondary">Not now</button>
+        </div>
       </div>
     {% endif %}
 

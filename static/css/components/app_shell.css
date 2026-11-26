@@ -129,29 +129,40 @@
     color: #adb5bd;
 }
 
-/* PWA install prompt (shown by static/js/pwa-install.js) */
-.pwa-install-card {
+/* Slim PWA install strip — does not cover page actions */
+.pwa-install-bar {
     display: none;
     position: fixed;
-    right: 20px;
-    bottom: 20px;
-    z-index: 1060;
-    max-width: 300px;
-    padding: 1rem 1.25rem;
+    left: 50%;
+    bottom: 12px;
+    z-index: 1020;
+    transform: translateX(-50%);
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: calc(100% - 2rem);
+    max-width: 420px;
+    padding: 0.5rem 0.75rem;
     background: #fff;
-    border-radius: 12px;
-    box-shadow: var(--box-shadow-lg);
+    border: 1px solid var(--border-subtle, #e9ecef);
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(44, 62, 80, 0.12);
 }
 
-.pwa-install-card h6 {
-    margin: 0 0 0.5rem;
-    color: var(--primary-color);
+.pwa-install-bar.is-visible {
+    display: flex;
 }
 
-.pwa-install-card p {
-    margin: 0 0 0.75rem;
-    font-size: 0.875rem;
-    color: #6c757d;
+.pwa-install-bar__text {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--primary-color, #2c3e50);
+}
+
+.pwa-install-bar__actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.4rem;
 }
 
 /* Tablet and below: stack action rows */
@@ -259,10 +270,9 @@
         font-size: 2rem;
     }
 
-    .pwa-install-card {
-        right: 12px;
-        left: 12px;
-        bottom: 12px;
+    .pwa-install-bar {
+        bottom: 8px;
+        width: calc(100% - 1rem);
         max-width: none;
     }
 

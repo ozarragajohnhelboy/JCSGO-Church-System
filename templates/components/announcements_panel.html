@@ -1,0 +1,16 @@
+{% if current_announcements %}
+<div class="row g-3 mb-4">
+  {% for announcement in current_announcements|slice:":2" %}
+  <div class="col-sm-6 col-xl-4">
+    <section class="care-group-tile">
+      <p class="care-group-tile__kicker">Church news</p>
+      <h2 class="care-group-tile__name">{{ announcement.title }}</h2>
+      <p class="announcement-tile__preview">{{ announcement.content|truncatechars:90 }}</p>
+      <div class="care-group-tile__actions">
+        <a href="{% url 'churches:announcement_board' %}" class="btn btn-sm btn-outline-secondary">Read more</a>
+      </div>
+    </section>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}

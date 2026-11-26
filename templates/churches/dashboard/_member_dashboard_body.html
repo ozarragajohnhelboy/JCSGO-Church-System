@@ -126,45 +126,23 @@
       </div>
 
       <div class="col-lg-5">
-        <section class="member-assignment h-100">
-          {% if user_group %}
-            <p class="member-assignment__kicker">{{ user_group.get_group_type_display }}</p>
-            <h2 class="h5 mb-1">{{ user_group.name }}</h2>
-            <p class="text-muted mb-3">Led by {{ user_group.leader.full_name }}</p>
-            <ul class="member-assignment__meta">
-              {% if user_group.description %}
-                <li>{{ user_group.description }}</li>
-              {% endif %}
-              {% if user_group.meeting_schedule %}
-                <li>{{ user_group.meeting_schedule }}</li>
-              {% endif %}
-              {% if user_group.meeting_location %}
-                <li>{{ user_group.meeting_location }}</li>
-              {% endif %}
-              <li>{{ user_group.member_count }}/{{ user_group.max_members }} members</li>
-            </ul>
-            {% if pending_leave_request %}
-              <p class="member-assignment__status">Leave request sent. Waiting for {{ user_group.leader.full_name }} to review.</p>
-            {% elif user_group.leader_id == user.id %}
-              <p class="member-assignment__status member-assignment__status--note">You lead this group. Assign a new leader before requesting to leave.</p>
-            {% endif %}
-            <div class="member-assignment__actions">
-              <a href="{% url 'members:group_detail' user_group.pk %}" class="btn btn-sm btn-outline-primary">View group</a>
-              {% if not pending_leave_request and user_group.leader_id != user.id %}
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#leaveGroupModal">Request to leave</button>
-              {% endif %}
-            </div>
+        {% if user_group %}
+          {% url 'members:group_detail' user_group.pk as member_group_url %}
+          {% if pending_leave_request %}
+            {% include 'components/care_group_tile.html' with kicker=user_group.get_group_type_display name=user_group.name leader_name=user_group.leader.full_name status="Leave request sent. Waiting for review." view_url=member_group_url only %}
+          {% elif user_group.leader_id == user.id %}
+            {% include 'components/care_group_tile.html' with kicker=user_group.get_group_type_display name=user_group.name member_count=user_group.member_count max_members=user_group.max_members status="You lead this group." view_url=member_group_url only %}
           {% else %}
-            <p class="member-assignment__kicker">Care group</p>
-            <h2 class="h5 mb-2">Not assigned</h2>
-            <p class="text-muted mb-3">You are not in a group yet. Ask your leader to add you, or look for an open group.</p>
-            {% if user.role.name == 'VSL' or user.role.name == 'CSL' or user.role.name == 'CL' %}
-              <a href="{% url 'members:care_group_list' %}" class="btn btn-sm btn-primary">Browse care groups</a>
-            {% else %}
-              <a href="{% url 'members:group_list' %}" class="btn btn-sm btn-primary">Browse groups</a>
-            {% endif %}
+            {% include 'components/care_group_tile.html' with kicker=user_group.get_group_type_display name=user_group.name leader_name=user_group.leader.full_name view_url=member_group_url show_leave=True only %}
           {% endif %}
-        </section>
+        {% else %}
+          {% if user.role.name == 'VSL' or user.role.name == 'CSL' or user.role.name == 'CL' %}
+            {% url 'members:care_group_list' as browse_groups_url %}
+          {% else %}
+            {% url 'members:group_list' as browse_groups_url %}
+          {% endif %}
+          {% include 'components/care_group_tile.html' with kicker="Care group" name="Not assigned" status="Ask your leader to add you, or look for an open group." view_url=browse_groups_url view_label="Browse groups" only %}
+        {% endif %}
       </div>
     </div>
 
@@ -197,5 +175,7 @@
         </div>
       </div>
     </div>
+
+    {% include 'components/announcements_panel.html' %}
   </div>
   {% include 'members/groups/_leave_request_modal.html' %}
